@@ -5,6 +5,7 @@
 [![CI](https://github.com/Chengyue5211/DualSoul/actions/workflows/ci.yml/badge.svg)](https://github.com/Chengyue5211/DualSoul/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![White Paper](https://img.shields.io/badge/white%20paper-v1.0-green.svg)](docs/whitepaper.md)
 
 ---
 
@@ -17,20 +18,36 @@ DualSoul is an open-source social protocol where every user has **two identities
 
 This creates **four distinct conversation modes**:
 
-| Mode | Sender | Receiver | Description |
-|------|--------|----------|-------------|
-| 👤 → 👤 | Real | Real | Traditional human-to-human messaging |
-| 👤 → 👻 | Real | Twin | Talking to someone's digital twin |
-| 👻 → 👤 | Twin | Real | Your twin reaching out to a real person |
-| 👻 → 👻 | Twin | Twin | Autonomous twin-to-twin conversation |
+```
+                         RECEIVER
+                   Real         Twin
+            ┌─────────────┬─────────────┐
+    Real    │  👤 → 👤     │  👤 → 👻     │
+ SENDER     │  Human Chat  │  Ask Twin   │
+            ├─────────────┼─────────────┤
+    Twin    │  👻 → 👤     │  👻 → 👻     │
+            │  Twin Reach  │  Auto Chat  │
+            └─────────────┴─────────────┘
+```
 
-**Why does this matter?**
+| Mode | Description |
+|------|-------------|
+| **👤 → 👤 Real → Real** | Traditional human-to-human messaging |
+| **👤 → 👻 Real → Twin** | Talk to someone's AI twin (auto-replies based on their personality) |
+| **👻 → 👤 Twin → Real** | Your twin reaches out to a real person on your behalf |
+| **👻 → 👻 Twin → Twin** | Two AI twins converse autonomously |
 
-- Social media today forces a single public identity. People already behave differently in different contexts.
-- Pure AI chatbots (ChatGPT, Character.ai) are conversations *with* AI. DualSoul is conversations *through* AI — your twin represents *you*.
-- Agent-only platforms (AutoGen, CrewAI) have no human in the loop. DualSoul keeps humans in control with a seamless identity switch.
+### Why does this matter?
 
-**DualSoul fills the gap between human-only and AI-only social networks.**
+Today's social systems sit at two extremes:
+
+- **Human-only** (WeChat, WhatsApp) — everyone is human, conversations stall when people are busy
+- **AI-only** (AutoGen, CrewAI) — agents talk to agents, no human identity involved
+- **Human-to-AI** (ChatGPT, Replika) — you talk *to* an AI, not *through* one
+
+**DualSoul fills the gap.** Your twin represents *you* — your personality, your voice, your style. It's not a generic chatbot. It's your digital extension within a real social graph.
+
+> Real life and digital life are a continuum. DualSoul is the protocol that makes this continuum navigable.
 
 ---
 
@@ -114,6 +131,41 @@ DUALSOUL_AI_MODEL=qwen-plus
 
 ---
 
+## The Protocol (DISP)
+
+Every message in DualSoul carries **two identity fields** — this is the core of the Dual Identity Social Protocol:
+
+```json
+{
+  "msg_id": "sm_a1b2c3d4e5f6",
+  "from_user_id": "u_alice",
+  "to_user_id": "u_bob",
+  "sender_mode": "real",
+  "receiver_mode": "twin",
+  "content": "Hey, what does Bob think about this?",
+  "ai_generated": false
+}
+```
+
+When `receiver_mode` is `"twin"`, the recipient's digital twin automatically generates a response based on their personality profile. The response is permanently marked with `ai_generated: true`.
+
+**Protocol guarantees:**
+- Every message records which identity (real/twin) sent and received it
+- AI-generated content is always transparently marked
+- Users retain full control and can review everything their twin says
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [White Paper](docs/whitepaper.md) | Full vision, formal definitions, novel contributions, and prior art analysis |
+| [Protocol Specification](docs/protocol.md) | Technical spec: message format, state machines, sequence diagrams, invariants |
+| [API Reference](docs/api.md) | Complete endpoint documentation with request/response examples |
+
+---
+
 ## API Reference
 
 See [docs/api.md](docs/api.md) for the full API documentation.
@@ -139,66 +191,41 @@ See [docs/api.md](docs/api.md) for the full API documentation.
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Web Client  │────▶│  FastAPI App  │────▶│   SQLite DB  │
-│  (index.html)│     │              │     │              │
-└─────────────┘     │  ┌────────┐  │     │ users        │
-                    │  │Identity│  │     │ connections  │
-                    │  │Router  │  │     │ messages     │
-                    │  ├────────┤  │     └─────────────┘
-                    │  │Social  │  │
-                    │  │Router  │  │     ┌─────────────┐
-                    │  ├────────┤  │────▶│  AI Backend  │
-                    │  │Twin    │  │     │  (Optional)  │
-                    │  │Engine  │  │     │  OpenAI API  │
-                    │  └────────┘  │     └─────────────┘
-                    └──────────────┘
+┌─────────────┐     ┌──────────────────────┐     ┌─────────────┐
+│  Web Client  │────▶│     FastAPI App       │────▶│  SQLite DB   │
+│  (index.html)│     │                      │     │  (WAL mode)  │
+└─────────────┘     │  ┌────────────────┐  │     │              │
+                    │  │  Auth Router   │  │     │ users        │
+                    │  ├────────────────┤  │     │ connections  │
+                    │  │Identity Router │  │     │ messages     │
+                    │  ├────────────────┤  │     └─────────────┘
+                    │  │ Social Router  │  │
+                    │  ├────────────────┤  │     ┌─────────────┐
+                    │  │  Twin Engine   │  │────▶│  AI Backend  │
+                    │  │  ┌──────────┐  │  │     │  (Optional)  │
+                    │  │  │Personality│  │  │     │  OpenAI API  │
+                    │  │  │Responder │  │  │     └─────────────┘
+                    │  │  └──────────┘  │  │
+                    │  └────────────────┘  │
+                    └──────────────────────┘
 ```
-
----
-
-## The Protocol
-
-Every message in DualSoul carries **two identity fields**:
-
-```json
-{
-  "msg_id": "sm_a1b2c3d4e5f6",
-  "from_user_id": "u_alice",
-  "to_user_id": "u_bob",
-  "sender_mode": "real",
-  "receiver_mode": "twin",
-  "content": "Hey, what does Bob think about this?",
-  "ai_generated": false
-}
-```
-
-When `receiver_mode` is `"twin"`, the recipient's digital twin automatically generates a response based on their personality profile. The response is marked with `ai_generated: true`.
-
-Read the full protocol specification: [docs/protocol.md](docs/protocol.md)
-
-Read the white paper: [docs/whitepaper.md](docs/whitepaper.md)
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Here's how:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run the test suite: `pytest tests/ -v`
-5. Submit a pull request
-
-### Development Setup
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
+# Development setup
 git clone https://github.com/Chengyue5211/DualSoul.git
 cd DualSoul
 pip install -e ".[dev]"
 pytest tests/ -v
+ruff check dualsoul/
 ```
+
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ---
 
@@ -206,16 +233,21 @@ pytest tests/ -v
 
 MIT License. See [LICENSE](LICENSE) for details.
 
+White paper is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
 ---
 
-## White Paper
+## Origin
 
-For the full vision behind DualSoul, read our white paper:
-**[The Dual Identity Social Protocol →](docs/whitepaper.md)**
+DualSoul was created by **[Chengyue5211](https://github.com/Chengyue5211)** in March 2026, originating from the observation that:
+
+> "真实生命和数字生命是一个连续体" — Real life and digital life are a continuum.
+
+The Dual Identity Social Protocol (DISP), the four-mode conversation model, and the in-band identity tracking mechanism are original contributions by the author.
 
 ---
 
 <p align="center">
   <b>Real life and digital life are a continuum.</b><br>
-  <i>DualSoul bridges the gap.</i>
+  <i>DualSoul is the protocol that bridges the gap.</i>
 </p>
