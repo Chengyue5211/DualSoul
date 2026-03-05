@@ -1,0 +1,71 @@
+<!-- 好友列表页 -->
+<view class="contacts-page">
+  <!-- 当前身份栏 -->
+  <view class="identity-bar" bindtap="switchIdentity">
+    <view class="identity-avatar {{currentMode}}">
+      <text>{{currentMode === 'real' ? '👤' : '👻'}}</text>
+    </view>
+    <view class="identity-info">
+      <text class="identity-name">{{userInfo.display_name || userInfo.username}}</text>
+      <view class="mode-badge {{currentMode}}">
+        {{currentMode === 'real' ? '真我模式' : '分身模式'}}
+      </view>
+    </view>
+    <view class="switch-btn">
+      <text class="switch-text">切换身份</text>
+      <text class="switch-arrow">⇄</text>
+    </view>
+  </view>
+
+  <!-- 搜索添加好友 -->
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索用户名添加好友" bindinput="onSearchInput" value="{{searchText}}" />
+    <view class="search-btn" bindtap="onAddFriend" wx:if="{{searchText}}">添加</view>
+  </view>
+
+  <!-- 好友请求 -->
+  <view class="section" wx:if="{{pendingRequests.length > 0}}">
+    <text class="section-title">好友请求</text>
+    <view class="friend-item" wx:for="{{pendingRequests}}" wx:key="conn_id">
+      <view class="friend-avatar real">
+        <text>👤</text>
+      </view>
+      <view class="friend-info">
+        <text class="friend-name">{{item.display_name}}</text>
+        <text class="friend-status">请求添加你为好友</text>
+      </view>
+      <view class="action-btns">
+        <view class="accept-btn" bindtap="onAccept" data-conn="{{item.conn_id}}">接受</view>
+        <view class="reject-btn" bindtap="onBlock" data-conn="{{item.conn_id}}">拒绝</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 好友列表 -->
+  <view class="section">
+    <text class="section-title">好友 ({{friends.length}})</text>
+    <view class="friend-item" wx:for="{{friends}}" wx:key="user_id" bindtap="onChat" data-friend="{{item}}">
+      <view class="friend-avatar-group">
+        <view class="friend-avatar real small">
+          <text>👤</text>
+        </view>
+        <view class="friend-avatar twin small overlap">
+          <text>👻</text>
+        </view>
+      </view>
+      <view class="friend-info">
+        <text class="friend-name">{{item.display_name}}</text>
+        <view class="mode-badge {{item.current_mode}}">
+          {{item.current_mode === 'twin' ? '分身在线' : '真人在线'}}
+        </view>
+      </view>
+      <view class="chat-arrow">›</view>
+    </view>
+
+    <view class="empty" wx:if="{{friends.length === 0}}">
+      <text class="empty-icon">🤝</text>
+      <text class="empty-text">还没有好友</text>
+      <text class="empty-hint">在上方搜索用户名添加好友</text>
+    </view>
+  </view>
+</view>

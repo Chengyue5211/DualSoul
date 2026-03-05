@@ -1,0 +1,77 @@
+<!-- 个人中心 - 双身份管理 -->
+<view class="profile-page">
+  <!-- 双头像卡片 -->
+  <view class="dual-card">
+    <view class="dual-avatar-row">
+      <!-- 真我 -->
+      <view class="avatar-block {{currentMode === 'real' ? 'active' : ''}}" bindtap="switchToReal">
+        <view class="avatar-circle real">
+          <text class="avatar-emoji">👤</text>
+        </view>
+        <text class="avatar-label">真我</text>
+        <view class="active-dot" wx:if="{{currentMode === 'real'}}"></view>
+      </view>
+
+      <!-- 切换箭头 -->
+      <view class="switch-center" bindtap="toggleMode">
+        <text class="switch-icon">⇄</text>
+        <text class="switch-hint">点击切换</text>
+      </view>
+
+      <!-- 分身 -->
+      <view class="avatar-block {{currentMode === 'twin' ? 'active' : ''}}" bindtap="switchToTwin">
+        <view class="avatar-circle twin">
+          <text class="avatar-emoji">👻</text>
+        </view>
+        <text class="avatar-label">分身</text>
+        <view class="active-dot" wx:if="{{currentMode === 'twin'}}"></view>
+      </view>
+    </view>
+
+    <view class="user-name">{{userInfo.display_name || userInfo.username}}</view>
+    <view class="mode-badge {{currentMode}}">
+      当前：{{currentMode === 'real' ? '真我模式' : '分身模式'}}
+    </view>
+  </view>
+
+  <!-- 分身设置 -->
+  <view class="section">
+    <text class="section-title">分身性格设置</text>
+    <view class="setting-item">
+      <text class="setting-label">性格描述</text>
+      <textarea class="setting-textarea" placeholder="描述你的分身性格，比如：温和、幽默、喜欢用比喻..."
+        value="{{twinPersonality}}" bindinput="onPersonalityInput" />
+    </view>
+    <view class="setting-item">
+      <text class="setting-label">说话风格</text>
+      <textarea class="setting-textarea" placeholder="描述分身的说话方式，比如：简洁明了、喜欢加表情..."
+        value="{{twinSpeechStyle}}" bindinput="onSpeechStyleInput" />
+    </view>
+    <button class="btn-save" bindtap="saveProfile">保存分身设置</button>
+  </view>
+
+  <!-- 账号信息 -->
+  <view class="section">
+    <text class="section-title">账号信息</text>
+    <view class="info-row">
+      <text class="info-label">用户名</text>
+      <text class="info-value">{{userInfo.username}}</text>
+    </view>
+    <view class="info-row">
+      <text class="info-label">用户ID</text>
+      <text class="info-value">{{userInfo.user_id}}</text>
+    </view>
+  </view>
+
+  <!-- 关于 -->
+  <view class="section">
+    <view class="info-row" bindtap="openAbout">
+      <text class="info-label">关于 DualSoul</text>
+      <text class="info-arrow">›</text>
+    </view>
+    <view class="info-row" bindtap="onLogout">
+      <text class="info-label" style="color:#e74c3c;">退出登录</text>
+      <text class="info-arrow">›</text>
+    </view>
+  </view>
+</view>

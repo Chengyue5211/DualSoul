@@ -1,0 +1,38 @@
+<!-- 登录/注册页 -->
+<view class="login-page">
+  <!-- Logo区域 -->
+  <view class="logo-area">
+    <view class="logo-circle">
+      <text class="logo-icon">👤👻</text>
+    </view>
+    <text class="app-name">DualSoul</text>
+    <text class="app-desc">双身份社交 · 真我与分身</text>
+  </view>
+
+  <!-- 表单 -->
+  <view class="form-area">
+    <view class="input-group">
+      <input class="input" placeholder="用户名" bindinput="onUsernameInput" value="{{username}}" />
+    </view>
+    <view class="input-group" wx:if="{{isRegister}}">
+      <input class="input" placeholder="昵称（选填）" bindinput="onDisplayNameInput" value="{{displayName}}" />
+    </view>
+    <view class="input-group">
+      <input class="input" placeholder="密码" password bindinput="onPasswordInput" value="{{password}}" />
+    </view>
+
+    <button class="btn-primary" bindtap="onSubmit" loading="{{loading}}">
+      {{isRegister ? '注册' : '登录'}}
+    </button>
+
+    <view class="switch-mode" bindtap="toggleMode">
+      {{isRegister ? '已有账号？去登录' : '没有账号？去注册'}}
+    </view>
+  </view>
+
+  <!-- 底部说明 -->
+  <view class="footer">
+    <text class="footer-text">每个人都有两个声音</text>
+    <text class="footer-text">DualSoul 让它们都被听见</text>
+  </view>
+</view>

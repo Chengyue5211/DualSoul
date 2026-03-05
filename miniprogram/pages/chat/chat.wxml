@@ -1,0 +1,92 @@
+<!-- 聊天页 - 四种对话模式 -->
+<view class="chat-page">
+  <!-- 顶部：对方信息 + 对话模式选择 -->
+  <view class="chat-header">
+    <view class="header-info">
+      <text class="header-name">{{friendName}}</text>
+      <view class="mode-badge {{friendMode}}">
+        {{friendMode === 'twin' ? '分身在线' : '真人在线'}}
+      </view>
+    </view>
+    <!-- 四模式切换器 -->
+    <view class="mode-switcher">
+      <view class="mode-option {{chatMode === 'real-real' ? 'active' : ''}}" bindtap="setChatMode" data-mode="real-real">
+        <text class="mode-emoji">👤→👤</text>
+        <text class="mode-label">真人聊</text>
+      </view>
+      <view class="mode-option {{chatMode === 'real-twin' ? 'active' : ''}}" bindtap="setChatMode" data-mode="real-twin">
+        <text class="mode-emoji">👤→👻</text>
+        <text class="mode-label">问分身</text>
+      </view>
+      <view class="mode-option {{chatMode === 'twin-real' ? 'active' : ''}}" bindtap="setChatMode" data-mode="twin-real">
+        <text class="mode-emoji">👻→👤</text>
+        <text class="mode-label">分身代言</text>
+      </view>
+      <view class="mode-option {{chatMode === 'twin-twin' ? 'active' : ''}}" bindtap="setChatMode" data-mode="twin-twin">
+        <text class="mode-emoji">👻→👻</text>
+        <text class="mode-label">分身对聊</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 消息列表 -->
+  <scroll-view class="message-list" scroll-y scroll-into-view="{{scrollTo}}" enhanced show-scrollbar="{{false}}">
+    <view class="message-item {{item.from_user_id === myUserId ? 'mine' : 'other'}}" wx:for="{{messages}}" wx:key="msg_id" id="msg-{{item.msg_id}}">
+      <!-- 对方消息 -->
+      <view class="msg-row" wx:if="{{item.from_user_id !== myUserId}}">
+        <view class="msg-avatar {{item.sender_mode}}">
+          <text>{{item.sender_mode === 'twin' ? '👻' : '👤'}}</text>
+        </view>
+        <view class="msg-content-wrap">
+          <view class="msg-meta">
+            <text class="msg-sender">{{friendName}}</text>
+            <view class="mode-badge {{item.sender_mode}}" style="font-size:18rpx;">
+              {{item.sender_mode === 'twin' ? '分身' : '真我'}}
+            </view>
+            <text class="ai-tag" wx:if="{{item.ai_generated}}">AI生成</text>
+          </view>
+          <view class="msg-bubble other-bubble">
+            <text>{{item.content}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 我的消息 -->
+      <view class="msg-row mine-row" wx:else>
+        <view class="msg-content-wrap mine-wrap">
+          <view class="msg-meta mine-meta">
+            <text class="ai-tag" wx:if="{{item.ai_generated}}">AI生成</text>
+            <view class="mode-badge {{item.sender_mode}}" style="font-size:18rpx;">
+              {{item.sender_mode === 'twin' ? '分身' : '真我'}}
+            </view>
+            <text class="msg-sender">我</text>
+          </view>
+          <view class="msg-bubble mine-bubble">
+            <text>{{item.content}}</text>
+          </view>
+        </view>
+        <view class="msg-avatar {{item.sender_mode}}">
+          <text>{{item.sender_mode === 'twin' ? '👻' : '👤'}}</text>
+        </view>
+      </view>
+
+      <!-- 对话模式标注线 -->
+      <view class="mode-indicator" wx:if="{{item.showModeChange}}">
+        <text>── {{item.modeDesc}} ──</text>
+      </view>
+    </view>
+
+    <view class="message-end" id="msg-end"></view>
+  </scroll-view>
+
+  <!-- 输入区域 -->
+  <view class="input-bar">
+    <view class="current-mode-indicator">
+      <text class="mode-emoji-small">{{senderMode === 'real' ? '👤' : '👻'}}</text>
+      <text>→</text>
+      <text class="mode-emoji-small">{{receiverMode === 'real' ? '👤' : '👻'}}</text>
+    </view>
+    <input class="msg-input" placeholder="{{inputPlaceholder}}" bindinput="onMsgInput" value="{{inputText}}" confirm-type="send" bindconfirm="onSend" />
+    <view class="send-btn {{inputText ? 'active' : ''}}" bindtap="onSend">发送</view>
+  </view>
+</view>
