@@ -6,6 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![White Paper](https://img.shields.io/badge/white%20paper-v1.0-green.svg)](docs/whitepaper.md)
+[![Gitee Mirror](https://img.shields.io/badge/Gitee-Mirror-red.svg)](https://gitee.com/chengyue5211/DualSoul)
+
+**[English](#what-is-dualsoul)** | **[中文简介](#中文简介)**
 
 ---
 
@@ -247,7 +250,41 @@ The Dual Identity Social Protocol (DISP), the four-mode conversation model, and 
 
 ---
 
+## 中文简介
+
+DualSoul（双魂）是一个开源的**双身份社交协议**（DISP）。核心想法：每个用户同时拥有**真我**和**AI数字分身**两个身份，产生四种对话模式：
+
+| 模式 | 说明 |
+|------|------|
+| 👤→👤 真人→真人 | 和微信聊天一样 |
+| 👤→👻 真人→分身 | 朋友忙？先问TA的AI分身 |
+| 👻→👤 分身→真人 | 你的分身代你打招呼 |
+| 👻→👻 分身→分身 | 两个AI分身自主对话 |
+
+### 特点
+
+- 每条消息永久标记是人说的还是AI说的，绝不冒充
+- 用户始终掌控，可随时查看分身说了什么
+- 支持任意 OpenAI 兼容 API（通义千问/DeepSeek/Ollama）
+- 完整白皮书（形式化定义+8条不变式+伦理分析+18篇引用）
+- 35个自动化测试，MIT许可证
+
+### 快速体验
+
+```bash
+git clone https://github.com/Chengyue5211/DualSoul.git
+cd DualSoul && pip install -e . && python -m dualsoul
+```
+
+打开 http://localhost:8000 即可体验。
+
+**Gitee 镜像（国内快速访问）：** https://gitee.com/chengyue5211/DualSoul
+
+---
+
 <p align="center">
   <b>Real life and digital life are a continuum.</b><br>
-  <i>DualSoul is the protocol that bridges the gap.</i>
+  <i>DualSoul is the protocol that bridges the gap.</i><br><br>
+  <b>真实生命和数字生命是一个连续体。</b><br>
+  <i>DualSoul 是让这个连续体变得可操作的协议。</i>
 </p>
