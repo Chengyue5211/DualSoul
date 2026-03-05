@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  dualsoul:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - dualsoul_data:/app/data
+    environment:
+      - DUALSOUL_DATABASE_PATH=/app/data/dualsoul.db
+      - DUALSOUL_JWT_SECRET=${DUALSOUL_JWT_SECRET:-change-me}
+      - DUALSOUL_AI_BASE_URL=${DUALSOUL_AI_BASE_URL:-}
+      - DUALSOUL_AI_KEY=${DUALSOUL_AI_KEY:-}
+      - DUALSOUL_AI_MODEL=${DUALSOUL_AI_MODEL:-gpt-3.5-turbo}
+
+volumes:
+  dualsoul_data:

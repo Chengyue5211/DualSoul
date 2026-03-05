@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>DualSoul — Dual Identity Social</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a10;--bg2:#14141e;--bg3:#1e1e2c;--tx:#e8e4de;--tx2:#8a8594;--ac:#7c5cfc;--ac2:#a07cff;--gd:linear-gradient(135deg,#7c5cfc,#5cc8fa);--bd:rgba(255,255,255,.06)}
+body{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--tx);max-width:480px;margin:0 auto;min-height:100vh;overflow-x:hidden}
+a{color:var(--ac);text-decoration:none}
+.page{display:none;min-height:100vh}.page.v{display:block}
+
+/* Toast */
+.toast-wrap{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:none;width:90%;max-width:400px}
+.toast{background:rgba(20,20,30,.95);border:1px solid rgba(124,92,252,.2);border-radius:12px;padding:12px 16px;color:var(--tx);font-size:12px;animation:toastIn .3s ease;backdrop-filter:blur(12px)}
+.toast.out{animation:toastOut .25s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-12px)}}
+
+/* Auth Page */
+.auth{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:30px 24px}
+.auth-logo{font-size:48px;margin-bottom:8px}
+.auth h1{font-size:28px;font-weight:800;letter-spacing:2px;margin-bottom:4px;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth .tagline{font-size:12px;color:var(--tx2);margin-bottom:24px}
+.auth-form{width:100%;max-width:320px}
+.auth-form input{width:100%;padding:12px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:14px;margin-bottom:10px;font-family:inherit}
+.auth-form input::placeholder{color:var(--tx2)}
+.auth-form input:focus{border-color:var(--ac);outline:none;box-shadow:0 0 0 2px rgba(124,92,252,.15)}
+.auth-form button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.auth-form button:active{opacity:.9}
+.auth-switch{margin-top:14px;font-size:12px;color:var(--tx2)}
+.auth-switch span{color:var(--ac);cursor:pointer}
+
+/* Main App */
+.app{display:none}
+.app.v{display:block}
+
+/* Nav */
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;background:var(--bg2);border-top:1px solid var(--bd);z-index:100;padding:6px 0 env(safe-area-inset-bottom)}
+nav .ni{flex:1;text-align:center;padding:6px 0;cursor:pointer;position:relative}
+nav .ni .nc{display:block;font-size:18px;transition:.2s}
+nav .ni .nl{display:block;font-size:9px;color:var(--tx2);margin-top:1px}
+nav .ni.on .nl{color:var(--ac)}
+nav .ni.on .nc{transform:scale(1.15)}
+.ni-badge{position:absolute;top:2px;right:20%;background:#f06030;color:#fff;font-size:7px;padding:1px 5px;border-radius:8px;font-weight:700;display:none}
+
+/* Tabs */
+.tab{display:none;padding:0 14px 80px}.tab.v{display:block}
+
+/* Dual Avatar Component */
+.dual-av{position:relative;flex-shrink:0}
+.dual-av .av-real,.dual-av .av-twin{border-radius:50%;position:absolute;border:2px solid var(--bg2);display:flex;align-items:center;justify-content:center;transition:.3s;font-weight:700}
+.dual-av .av-real{background:var(--bg3);color:var(--tx);bottom:0;left:0;z-index:2}
+.dual-av .av-twin{background:linear-gradient(135deg,rgba(124,92,252,.4),rgba(92,200,250,.4));color:#fff;top:0;right:0;z-index:1;opacity:.65}
+.dual-av.mode-twin .av-twin{z-index:2;opacity:1;bottom:0;left:0;top:auto;right:auto;animation:twinShimmer 3s ease infinite}
+.dual-av.mode-twin .av-real{z-index:1;opacity:.4;top:0;right:0;bottom:auto;left:auto}
+@keyframes twinShimmer{0%,100%{box-shadow:0 0 6px rgba(124,92,252,.3)}50%{box-shadow:0 0 16px rgba(92,200,250,.5)}}
+
+/* Identity Switch */
+.id-switch{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:0 -14px 14px;background:var(--bg2);border-bottom:1px solid var(--bd)}
+.id-label{font-size:10px;color:var(--tx2)}
+.id-toggle{display:flex;border-radius:20px;overflow:hidden;border:1px solid var(--bd);background:var(--bg)}
+.id-toggle .idt{padding:6px 16px;font-size:10px;font-weight:700;cursor:pointer;transition:.2s;color:var(--tx2)}
+.id-toggle .idt.on{background:var(--gd);color:#fff}
+.id-hint{font-size:9px;color:rgba(124,92,252,.7);margin-left:auto;font-style:italic}
+
+/* Add Friend */
+.add-friend{display:flex;gap:8px;margin-bottom:14px}
+.add-friend input{flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit}
+.add-friend input::placeholder{color:var(--tx2)}
+.add-friend button{padding:10px 18px;border-radius:10px;border:none;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* Friend List */
+.section-title{font-size:10px;color:var(--tx2);font-weight:600;margin:14px 0 6px 4px}
+.friend-list{display:flex;flex-direction:column;gap:4px}
+.friend-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;cursor:pointer;transition:.15s}
+.friend-item:active{background:var(--bg3)}
+.fi-info{flex:1;min-width:0}
+.fi-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-mode{font-size:9px;color:rgba(124,92,252,.7)}
+.fi-time{font-size:9px;color:rgba(255,255,255,.2)}
+.fi-badge{background:var(--ac);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
+.pending-btns{display:flex;gap:6px}
+.pending-btns button{padding:5px 14px;border-radius:8px;border:none;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-accept{background:var(--gd);color:#fff}
+.btn-block{background:rgba(255,255,255,.06);color:var(--tx2)}
+
+/* Chat View */
+.chat-view{display:none;flex-direction:column;height:calc(100vh - 60px)}
+.chat-header{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);flex-shrink:0}
+.chat-back{font-size:20px;color:var(--tx2);cursor:pointer;padding:4px}
+.chat-name{font-size:14px;font-weight:700;flex:1}
+.chat-mode-tag{font-size:9px;color:rgba(124,92,252,.8);padding:3px 8px;border:1px solid rgba(124,92,252,.2);border-radius:10px}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:8px}
+.msg{display:flex;gap:8px;max-width:85%;animation:msgIn .2s ease}
+.msg.mine{margin-left:auto;flex-direction:row-reverse}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg .bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6}
+.msg.theirs .bubble{background:var(--bg2);border:1px solid var(--bd);border-top-left-radius:4px}
+.msg.mine .bubble{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.2);border-top-right-radius:4px}
+.msg .ai-tag{font-size:8px;color:rgba(124,92,252,.6);margin-top:2px}
+.msg .twin-icon{font-size:8px;color:rgba(124,92,252,.5)}
+.msg .msg-time{font-size:8px;color:rgba(255,255,255,.15);margin-top:2px}
+.chat-input{display:flex;gap:8px;padding:10px 0;border-top:1px solid var(--bd);flex-shrink:0;align-items:flex-end}
+.chat-input textarea{flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;resize:none;max-height:80px}
+.chat-input textarea::placeholder{color:var(--tx2)}
+.chat-input button{padding:10px 16px;border-radius:12px;border:none;background:var(--gd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.empty{text-align:center;padding:40px 20px;color:var(--tx2);font-size:13px;line-height:1.8}
+
+/* Profile Tab */
+.profile-card{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:20px;margin:14px 0;text-align:center}
+.profile-card .dual-av{margin:0 auto 12px;width:64px;height:64px}
+.profile-card .dual-av .av-real{width:48px;height:48px;font-size:20px}
+.profile-card .dual-av .av-twin{width:48px;height:48px;font-size:20px}
+.profile-name{font-size:18px;font-weight:800;margin-bottom:4px}
+.profile-username{font-size:11px;color:var(--tx2)}
+.profile-section{margin:14px 0}
+.profile-section h3{font-size:12px;font-weight:700;margin-bottom:8px;color:var(--ac2)}
+.profile-field{margin-bottom:8px}
+.profile-field label{display:block;font-size:10px;color:var(--tx2);margin-bottom:3px}
+.profile-field textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit;resize:vertical;min-height:60px}
+.profile-field textarea::placeholder{color:var(--tx2)}
+.profile-save{width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.profile-logout{width:100%;padding:10px;border:1px solid rgba(255,80,80,.2);border-radius:10px;background:transparent;color:rgba(255,80,80,.6);font-size:12px;cursor:pointer;font-family:inherit;margin-top:10px}
+
+/* Header */
+.tab-header{padding:14px 0 10px;display:flex;align-items:center;justify-content:space-between}
+.tab-header h2{font-size:18px;font-weight:800;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tab-header .unread{font-size:10px;color:var(--tx2)}
+
+/* About section */
+.about{padding:14px;margin:14px 0;background:var(--bg2);border:1px solid var(--bd);border-radius:14px}
+.about h3{font-size:14px;font-weight:800;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.about p{font-size:11px;color:var(--tx2);line-height:1.7;margin-bottom:8px}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
+.mode-card{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center}
+.mode-card .mc-icon{font-size:20px;margin-bottom:4px}
+.mode-card .mc-label{font-size:10px;font-weight:700}
+.mode-card .mc-desc{font-size:9px;color:var(--tx2);margin-top:2px}
+</style>
+</head>
+<body>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Auth Page -->
+<div class="page v" id="authPage">
+<div class="auth">
+  <div class="auth-logo">&#x1F47B;</div>
+  <h1>DualSoul</h1>
+  <div class="tagline">Every person has two voices</div>
+  <div class="auth-form" id="authForm">
+    <input id="authUser" placeholder="Username" autocomplete="username">
+    <input id="authPass" type="password" placeholder="Password" autocomplete="current-password">
+    <input id="authName" placeholder="Display name (optional)" style="display:none" autocomplete="name">
+    <button onclick="authSubmit()" id="authBtn">Login</button>
+  </div>
+  <div class="auth-switch">
+    <span id="authToggle" onclick="toggleAuthMode()">Don't have an account? Register</span>
+  </div>
+</div>
+</div>
+
+<!-- Main App -->
+<div class="app" id="mainApp">
+
+<!-- Social Tab -->
+<div class="tab v" id="tabSocial">
+  <!-- Identity Switch -->
+  <div class="id-switch">
+    <span class="id-label">Identity</span>
+    <div class="id-toggle">
+      <div class="idt on" onclick="switchMode('real',this)">Real</div>
+      <div class="idt" onclick="switchMode('twin',this)">Twin</div>
+    </div>
+    <span class="id-hint" id="modeHint">Real mode</span>
+  </div>
+
+  <!-- Friends View -->
+  <div id="friendsView">
+    <div class="tab-header">
+      <h2>Social</h2>
+      <span class="unread" id="unreadLabel"></span>
+    </div>
+    <div class="add-friend">
+      <input id="addInput" placeholder="Add friend by username..." maxlength="50">
+      <button onclick="addFriend()">Add</button>
+    </div>
+    <div id="pendingSection" style="display:none">
+      <div class="section-title">Friend Requests</div>
+      <div class="friend-list" id="pendingList"></div>
+    </div>
+    <div class="section-title">Friends</div>
+    <div class="friend-list" id="friendList">
+      <div class="empty">No friends yet.<br>Add someone by username to get started!</div>
+    </div>
+  </div>
+
+  <!-- Chat View -->
+  <div class="chat-view" id="chatView">
+    <div class="chat-header">
+      <span class="chat-back" onclick="backToList()">&#8249;</span>
+      <div class="dual-av" id="chatAvatar" style="width:36px;height:36px">
+        <div class="av-real" style="width:28px;height:28px;font-size:12px">?</div>
+        <div class="av-twin" style="width:28px;height:28px;font-size:12px">&#x1F47B;</div>
+      </div>
+      <span class="chat-name" id="chatName">Friend</span>
+      <span class="chat-mode-tag" id="chatModeTag">Real &rarr; Real</span>
+    </div>
+    <div class="chat-msgs" id="chatMsgs">
+      <div class="empty">Start the conversation!</div>
+    </div>
+    <div class="chat-input">
+      <textarea id="chatInput" rows="1" placeholder="Say something..."
+        oninput="this.style.height='36px';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+      <button onclick="sendMsg()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- About Tab -->
+<div class="tab" id="tabAbout">
+  <div class="tab-header"><h2>About DualSoul</h2></div>
+  <div class="about">
+    <h3>The Dual Identity Protocol</h3>
+    <p>In the age of AI, every person can have a digital twin &mdash; an AI extension of themselves that can speak, respond, and interact on their behalf.</p>
+    <p>DualSoul lets you switch between your <b>real self</b> and your <b>digital twin</b> in social conversations. Four modes of interaction emerge:</p>
+    <div class="mode-grid">
+      <div class="mode-card"><div class="mc-icon">&#x1F464;&#x2194;&#x1F464;</div><div class="mc-label">Real &rarr; Real</div><div class="mc-desc">Traditional messaging</div></div>
+      <div class="mode-card"><div class="mc-icon">&#x1F464;&#x2194;&#x1F47B;</div><div class="mc-label">Real &rarr; Twin</div><div class="mc-desc">Talk to someone's twin</div></div>
+      <div class="mode-card"><div class="mc-icon">&#x1F47B;&#x2194;&#x1F464;</div><div class="mc-label">Twin &rarr; Real</div><div class="mc-desc">Your twin reaches out</div></div>
+      <div class="mode-card"><div class="mc-icon">&#x1F47B;&#x2194;&#x1F47B;</div><div class="mc-label">Twin &rarr; Twin</div><div class="mc-desc">Twin-to-twin chat</div></div>
+    </div>
+    <p>Your twin's personality is shaped by you. Set its traits in your profile, and it will respond in your style when someone messages it.</p>
+  </div>
+</div>
+
+<!-- Profile Tab -->
+<div class="tab" id="tabProfile">
+  <div class="tab-header"><h2>Profile</h2></div>
+  <div class="profile-card">
+    <div class="dual-av" id="profileAv" style="width:64px;height:64px">
+      <div class="av-real" style="width:48px;height:48px;font-size:20px">?</div>
+      <div class="av-twin" style="width:48px;height:48px;font-size:20px">&#x1F47B;</div>
+    </div>
+    <div class="profile-name" id="profileName">User</div>
+    <div class="profile-username" id="profileUsername">@username</div>
+  </div>
+  <div class="profile-section">
+    <h3>Twin Personality</h3>
+    <div class="profile-field">
+      <label>How would you describe your twin's personality?</label>
+      <textarea id="profPersonality" placeholder="e.g., friendly and thoughtful, a bit humorous"></textarea>
+    </div>
+    <div class="profile-field">
+      <label>Speech style</label>
+      <textarea id="profStyle" placeholder="e.g., casual and warm, uses short sentences"></textarea>
+    </div>
+    <button class="profile-save" onclick="saveProfile()">Save Twin Settings</button>
+  </div>
+  <button class="profile-logout" onclick="logout()">Logout</button>
+</div>
+
+<!-- Bottom Nav -->
+<nav>
+  <div class="ni on" onclick="swTab('Social',this)"><span class="nc">&#x1F4AC;</span><span class="nl">Social</span><span class="ni-badge" id="navBadge"></span></div>
+  <div class="ni" onclick="swTab('About',this)"><span class="nc">&#x2728;</span><span class="nl">About</span></div>
+  <div class="ni" onclick="swTab('Profile',this)"><span class="nc">&#x1F464;</span><span class="nl">Profile</span></div>
+</nav>
+</div>
+
+<script>
+var API='';
+var token='';
+var myId='';
+var myMode='real';
+var chatFriend=null;
+var isRegister=false;
+
+function g(id){return document.getElementById(id)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function toast(msg,ms){
+  var w=g('toastWrap');
+  var d=document.createElement('div');d.className='toast';d.textContent=msg;
+  w.appendChild(d);
+  setTimeout(function(){d.className='toast out';setTimeout(function(){d.remove()},300)},ms||2500);
+}
+
+function headers(){return{'Content-Type':'application/json','Authorization':'Bearer '+token}}
+
+// Auth
+function toggleAuthMode(){
+  isRegister=!isRegister;
+  g('authName').style.display=isRegister?'block':'none';
+  g('authBtn').textContent=isRegister?'Register':'Login';
+  g('authToggle').textContent=isRegister?"Already have an account? Login":"Don't have an account? Register";
+}
+
+function authSubmit(){
+  var u=g('authUser').value.trim();
+  var p=g('authPass').value;
+  if(!u||!p){toast('Please fill in all fields');return}
+  var url=isRegister?'/api/auth/register':'/api/auth/login';
+  var body={username:u,password:p};
+  if(isRegister)body.display_name=g('authName').value.trim()||u;
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  .then(function(r){return r.json()}).then(function(d){
+    if(!d.success){toast(d.error||'Failed');return}
+    token=d.data.token;myId=d.data.user_id;
+    localStorage.setItem('ds_token',token);
+    localStorage.setItem('ds_uid',myId);
+    enterApp();
+  }).catch(function(){toast('Network error')});
+}
+
+function enterApp(){
+  g('authPage').classList.remove('v');
+  g('mainApp').classList.add('v');
+  loadProfile();loadFriends();
+}
+
+function logout(){
+  token='';myId='';
+  localStorage.removeItem('ds_token');localStorage.removeItem('ds_uid');
+  g('mainApp').classList.remove('v');
+  g('authPage').classList.add('v');
+}
+
+// Auto-login
+(function(){
+  var t=localStorage.getItem('ds_token');
+  var u=localStorage.getItem('ds_uid');
+  if(t&&u){token=t;myId=u;enterApp()}
+})();
+
+// Tabs
+function swTab(name,el){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('v')});
+  g('tab'+name).classList.add('v');
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('on')});
+  if(el)el.classList.add('on');
+  if(name==='Social')loadFriends();
+  if(name==='Profile')loadProfile();
+}
+
+// Identity Switch
+function switchMode(mode,el){
+  myMode=mode;
+  el.parentElement.querySelectorAll('.idt').forEach(function(b){b.classList.remove('on')});
+  el.classList.add('on');
+  g('modeHint').textContent=mode==='real'?'Real mode':'Twin mode';
+  document.querySelectorAll('.dual-av').forEach(function(a){a.classList.toggle('mode-twin',mode==='twin')});
+  if(chatFriend)updateModeTag();
+  fetch('/api/identity/switch',{method:'POST',headers:headers(),body:JSON.stringify({mode:mode})}).catch(function(){});
+}
+
+function buildAvatar(name,size){
+  size=size||48;var sm=Math.round(size*0.75);
+  var cls='dual-av'+(myMode==='twin'?' mode-twin':'');
+  return '<div class="'+cls+'" style="width:'+size+'px;height:'+size+'px">'+
+    '<div class="av-real" style="width:'+sm+'px;height:'+sm+'px;font-size:'+Math.round(sm*0.44)+'px">'+esc((name||'?')[0].toUpperCase())+'</div>'+
+    '<div class="av-twin" style="width:'+sm+'px;height:'+sm+'px;font-size:'+Math.round(sm*0.44)+'px">&#x1F47B;</div></div>';
+}
+
+// Friends
+function loadFriends(){
+  fetch('/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success)return;
+    var pending=[],accepted=[];
+    d.friends.forEach(function(f){
+      if(f.status==='pending'&&f.is_incoming)pending.push(f);
+      else if(f.status==='accepted')accepted.push(f);
+    });
+    var ps=g('pendingSection'),pl=g('pendingList');
+    if(pending.length){
+      ps.style.display='block';
+      pl.innerHTML=pending.map(function(f){
+        return '<div class="friend-item">'+buildAvatar(f.display_name,40)+
+          '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+'</div><div class="fi-mode">@'+esc(f.username)+'</div></div>'+
+          '<div class="pending-btns">'+
+          '<button class="btn-accept" onclick="respondFriend(\''+esc(f.conn_id)+'\',\'accept\')">Accept</button>'+
+          '<button class="btn-block" onclick="respondFriend(\''+esc(f.conn_id)+'\',\'block\')">Ignore</button></div></div>';
+      }).join('');
+    }else{ps.style.display='none'}
+    var fl=g('friendList');
+    if(accepted.length){
+      fl.innerHTML=accepted.map(function(f){
+        var ml=f.current_mode==='twin'?'Twin online':'Online';
+        return '<div class="friend-item" onclick="openChat(\''+esc(f.user_id)+'\',\''+esc(f.display_name)+'\',\''+esc(f.current_mode)+'\')">'+
+          buildAvatar(f.display_name,44)+
+          '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+'</div><div class="fi-mode">'+ml+'</div></div>'+
+          '<div class="fi-time">'+esc(f.accepted_at||'').slice(5,16)+'</div></div>';
+      }).join('');
+    }else{fl.innerHTML='<div class="empty">No friends yet.<br>Add someone by username!</div>'}
+  }).catch(function(){});
+  fetch('/api/social/unread',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    var c=d.count||0;
+    g('unreadLabel').textContent=c?c+' unread':'';
+    var b=g('navBadge');b.style.display=c?'inline':'none';b.textContent=c>99?'99+':c;
+  }).catch(function(){});
+}
+
+function addFriend(){
+  var u=g('addInput').value.trim();
+  if(!u){toast('Enter a username');return}
+  fetch('/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){toast('Friend request sent!');g('addInput').value='';loadFriends()}
+    else toast(d.error||'Failed');
+  }).catch(function(){toast('Network error')});
+}
+
+function respondFriend(id,action){
+  fetch('/api/social/friends/respond',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:id,action:action})})
+  .then(function(r){return r.json()}).then(function(d){if(d.success)loadFriends();else toast(d.error||'Failed')})
+  .catch(function(){toast('Network error')});
+}
+
+// Chat
+function openChat(userId,name,friendMode){
+  chatFriend={user_id:userId,name:name,current_mode:friendMode};
+  g('friendsView').style.display='none';
+  g('chatView').style.display='flex';
+  g('chatName').textContent=name;
+  updateModeTag();
+  fetch('/api/social/messages?friend_id='+userId+'&limit=50',{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(!d.success){g('chatMsgs').innerHTML='<div class="empty">'+esc(d.error)+'</div>';return}
+    var box=g('chatMsgs');
+    if(!d.messages.length){box.innerHTML='<div class="empty">Start the conversation!</div>';return}
+    box.innerHTML=d.messages.map(function(m){
+      var mine=m.from_user_id===myId;
+      var cls='msg '+(mine?'mine':'theirs');
+      var ai=m.ai_generated?'<div class="ai-tag">Twin auto-reply</div>':'';
+      var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
+      var t=(m.created_at||'').slice(11,16);
+      return '<div class="'+cls+'">'+(mine?'':buildAvatar(name,30))+
+        '<div><div class="bubble">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+t+'</div></div></div>';
+    }).join('');
+    box.scrollTop=box.scrollHeight;
+  }).catch(function(){});
+}
+
+function updateModeTag(){
+  if(!chatFriend)return;
+  var m=myMode==='twin'?'Twin':'Real';
+  var t=chatFriend.current_mode==='twin'?'Twin':'Real';
+  g('chatModeTag').innerHTML=m+' &rarr; '+t;
+}
+
+function backToList(){
+  g('chatView').style.display='none';
+  g('friendsView').style.display='block';
+  chatFriend=null;loadFriends();
+}
+
+function sendMsg(){
+  if(!chatFriend)return;
+  var inp=g('chatInput');var text=inp.value.trim();
+  if(!text)return;inp.value='';inp.style.height='36px';
+  var rm=chatFriend.current_mode||'real';
+  var box=g('chatMsgs');
+  var empty=box.querySelector('.empty');if(empty)empty.remove();
+  var tw=myMode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
+  box.innerHTML+='<div class="msg mine"><div><div class="bubble">'+tw+esc(text)+'</div><div class="msg-time">now</div></div></div>';
+  box.scrollTop=box.scrollHeight;
+  fetch('/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
+    to_user_id:chatFriend.user_id,content:text,sender_mode:myMode,receiver_mode:rm
+  })}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success){toast(d.error||'Send failed');return}
+    if(d.ai_reply&&d.ai_reply.content){
+      box.innerHTML+='<div class="msg theirs">'+buildAvatar(chatFriend.name,30)+
+        '<div><div class="bubble"><span class="twin-icon">&#x1F47B;</span> '+esc(d.ai_reply.content)+'</div>'+
+        '<div class="ai-tag">Twin auto-reply</div><div class="msg-time">now</div></div></div>';
+      box.scrollTop=box.scrollHeight;
+    }
+  }).catch(function(){toast('Network error')});
+}
+
+// Profile
+function loadProfile(){
+  fetch('/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success)return;
+    var p=d.data;
+    g('profileName').textContent=p.display_name||p.username;
+    g('profileUsername').textContent='@'+p.username;
+    g('profPersonality').value=p.twin_personality||'';
+    g('profStyle').value=p.twin_speech_style||'';
+    var av=g('profileAv');
+    av.querySelector('.av-real').textContent=(p.display_name||p.username||'?')[0].toUpperCase();
+  }).catch(function(){});
+}
+
+function saveProfile(){
+  var body={};
+  var p=g('profPersonality').value.trim();
+  var s=g('profStyle').value.trim();
+  if(p)body.twin_personality=p;
+  if(s)body.twin_speech_style=s;
+  fetch('/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify(body)})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success)toast('Twin settings saved!');else toast(d.error||'Failed');
+  }).catch(function(){toast('Network error')});
+}
+
+// Enter key to send
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey&&document.activeElement===g('chatInput')){e.preventDefault();sendMsg()}
+});
+</script>
+</body>
+</html>
