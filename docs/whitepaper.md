@@ -343,6 +343,26 @@ DISP v1.0 uses a minimal personality model — two free-text fields — which is
 
 Defining formal metrics for Twin fidelity — and establishing minimum accuracy thresholds for different use cases — remains an important direction for future work.
 
+### 5.6 Progressive Twin Identity: From UID to DID
+
+A related approach to the fidelity problem is to treat a Digital Twin not as a static AI configuration, but as a **digital entity with a verifiable lifecycle** — born, growing, and maturing over time. The Yuechuang Nianlun project [18] implements this concept through a *Digital Twin Certificate* system with the following architecture:
+
+1. **Birth Certificate:** Every Twin receives a unique certificate at creation time, recording its owner, birth date, guardian, and an initial personality snapshot. The certificate carries a structured identifier (e.g., `TWIN-2026-BJ-000001`).
+
+2. **Growth Stages:** The Twin progresses through defined maturity stages — from a *surrogate period* (where a caretaker feeds initial personality data) through *sensing*, *understanding*, *resonance*, and finally *independence*. Each stage represents a measurably deeper personality model, with companion days and interaction volume as progression metrics.
+
+3. **Proof Chain:** Every significant growth event (birth, stage transition, personality skeleton update, annual portrait) is recorded in a tamper-evident proof chain with cryptographic hashes. This creates a verifiable history of how the Twin's personality model evolved.
+
+4. **UID → DID Upgrade Path:** The certificate system defines a two-tier identity model:
+   - **Level 1 (UID):** Enterprise-level authentication — the Twin is identified within a single platform (`certificate_id`).
+   - **Level 2 (DID):** Decentralized identity — the Twin receives a W3C-compatible DID (e.g., `did:yc:{twin_id}`), enabling cross-platform portability and independent verification.
+
+5. **Portability and Inheritance:** Certificates carry explicit portability flags (enabling data export) and inheritance flags (enabling post-mortem digital legacy transfer).
+
+This approach reframes Twin fidelity from a static accuracy metric to a **progressive maturity process**: a Twin that has been companioned for 1,000 days with a rich proof chain is demonstrably more faithful than one created yesterday. The certificate system provides the evidentiary infrastructure to make this distinction verifiable.
+
+DISP v2.0 could adopt a certificate-based identity layer, where the Twin's maturity level is visible to conversation partners — enabling recipients to calibrate trust based on the Twin's verified growth history, not just the `ai_generated` flag alone.
+
 ---
 
 ## 6. Novel Contributions
@@ -663,6 +683,7 @@ The Dual Identity Social Protocol, the four-mode conversation model, and the in-
 15. J. Park et al., "Twin-2K-500: A dataset for building digital twins of over 2,000 people," arXiv:2505.17479, 2025.
 16. NTT, "Human Digital Twin Computing," NTT R&D, 2023. https://www.rd.ntt/e/ai/0004.html
 17. Meta, "AI Studio: Build AI Characters for Creators," 2024. https://ai.meta.com/ai-studio/
+18. Chengyue5211, "Yuechuang Nianlun (跃创年轮): Progressive Digital Twin Growth System with Certificate-Based Identity," 2026. https://github.com/Chengyue5211/Nianlun
 
 ---
 
