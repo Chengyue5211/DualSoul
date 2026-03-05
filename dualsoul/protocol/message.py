@@ -12,9 +12,12 @@ This creates four distinct conversation modes:
   Twin → Twin   : Autonomous twin-to-twin conversation
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
+
+# Protocol version — included in every DISP message
+DISP_VERSION = "1.0"
 
 
 class IdentityMode(str, Enum):
@@ -49,6 +52,7 @@ class DualSoulMessage:
     msg_type: MessageType = MessageType.TEXT
     ai_generated: bool = False
     created_at: Optional[str] = None
+    disp_version: str = field(default=DISP_VERSION)
 
     @property
     def conversation_mode(self) -> ConversationMode:
@@ -58,6 +62,7 @@ class DualSoulMessage:
 
     def to_dict(self) -> dict:
         return {
+            "disp_version": self.disp_version,
             "msg_id": self.msg_id,
             "from_user_id": self.from_user_id,
             "to_user_id": self.to_user_id,

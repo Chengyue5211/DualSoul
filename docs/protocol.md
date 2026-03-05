@@ -67,6 +67,7 @@ switch(user, new_mode) ::=
 
 ```
 DISPMessage ::= {
+    disp_version  : String,        -- Protocol version (e.g. "1.0")
     msg_id        : String,        -- Unique identifier (prefix: "sm_")
     from_user_id  : String,        -- Sender's user_id
     to_user_id    : String,        -- Receiver's user_id
@@ -86,6 +87,7 @@ MessageType ::= "text" | "image" | "voice" | "system"
 
 ```json
 {
+  "disp_version":  "1.0",
   "msg_id":        "sm_a1b2c3d4e5f6",
   "from_user_id":  "u_sender12345",
   "to_user_id":    "u_receiver6789",
@@ -111,6 +113,8 @@ A conforming implementation MUST enforce:
 | I4 | No Self-Message | `from_user_id ≠ to_user_id` |
 | I5 | Content Non-Empty | `len(content.strip()) > 0` |
 | I6 | Immutability | `sender_mode`, `receiver_mode`, `ai_generated` are write-once |
+| I7 | Version Presence | Every message MUST include `disp_version` |
+| I8 | Auto-Reply Termination | An auto-reply (`ai_generated = true`) MUST NOT trigger further auto-replies |
 
 ---
 
@@ -152,6 +156,16 @@ ConversationMode ::= IdentityMode × IdentityMode
 |-----------|:-----------:|-----------|
 | `receiver_mode = "real"` | No | — |
 | `receiver_mode = "twin"` | Yes | Receiver's Digital Twin |
+
+### 4.4 T→T Termination Rule
+
+To prevent unbounded recursive auto-replies in Twin-to-Twin conversations:
+
+1. **No Cascading Auto-Reply:** A Twin auto-reply (message where `ai_generated = true`) MUST NOT trigger a further auto-reply. Only messages initiated by a human action or an explicit orchestration request may trigger Twin responses.
+
+2. **Autonomous Session Limit:** When a client explicitly initiates a multi-turn T→T session, the implementation MUST enforce `max_autonomous_rounds` (default: 10). After the limit is reached, the session terminates and both Twin owners are notified.
+
+3. **Explicit Initiation:** T→T sessions require a human on at least one side to initiate the first message. Fully autonomous initiation (where a Twin decides on its own to start a conversation) is NOT permitted in DISP v1.0.
 
 ---
 
