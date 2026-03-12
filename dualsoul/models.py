@@ -24,6 +24,7 @@ class UpdateProfileRequest(BaseModel):
     display_name: str = ""
     twin_personality: str = ""
     twin_speech_style: str = ""
+    preferred_lang: str = ""  # ISO 639-1: zh, en, ja, ko, fr, de, es, etc.
 
 
 # Social
@@ -36,9 +37,16 @@ class RespondFriendRequest(BaseModel):
     action: str  # 'accept' or 'block'
 
 
+class TranslateRequest(BaseModel):
+    content: str
+    source_lang: str = "auto"
+    target_lang: str = "en"
+
+
 class SendMessageRequest(BaseModel):
     to_user_id: str
     content: str
     sender_mode: str = "real"
     receiver_mode: str = "real"
     msg_type: str = "text"
+    target_lang: str = ""  # If set, twin translates to this language with personality preservation

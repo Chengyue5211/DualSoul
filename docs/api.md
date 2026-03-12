@@ -78,6 +78,7 @@ Get your dual identity profile.
     "current_mode": "real",
     "twin_personality": "friendly and thoughtful",
     "twin_speech_style": "casual and warm",
+    "preferred_lang": "en",
     "avatar": "",
     "twin_avatar": ""
   }
@@ -92,7 +93,8 @@ Update twin personality settings.
 ```json
 {
   "twin_personality": "analytical and curious",
-  "twin_speech_style": "concise, uses technical terms"
+  "twin_speech_style": "concise, uses technical terms",
+  "preferred_lang": "en"
 }
 ```
 
@@ -155,9 +157,19 @@ Send a message. If `receiver_mode` is `"twin"`, the recipient's twin auto-replie
   "to_user_id": "u_bob456",
   "content": "Hey, what do you think?",
   "sender_mode": "real",
-  "receiver_mode": "twin"
+  "receiver_mode": "twin",
+  "target_lang": ""
 }
 ```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `to_user_id` | string | required | Recipient's user ID |
+| `content` | string | required | Message text (non-empty) |
+| `sender_mode` | string | `"real"` | `"real"` or `"twin"` |
+| `receiver_mode` | string | `"real"` | `"real"` or `"twin"` |
+| `msg_type` | string | `"text"` | `"text"`, `"image"`, `"voice"`, or `"system"` |
+| `target_lang` | string | `""` | If set, Twin replies in this language with personality preservation |
 
 **Response:**
 ```json
@@ -167,10 +179,49 @@ Send a message. If `receiver_mode` is `"twin"`, the recipient's twin auto-replie
   "ai_reply": {
     "msg_id": "sm_ghi012",
     "content": "That's an interesting point! I'd say...",
-    "ai_generated": true
+    "ai_generated": true,
+    "target_lang": "en",
+    "translation_style": "personality_preserving"
   }
 }
 ```
+
+**Cross-language auto-detection:** When `target_lang` is empty but the sender and receiver have different `preferred_lang` settings, the Twin automatically replies in the sender's language.
+
+### POST /api/social/translate
+
+Personality-preserving translation — translate text as if the user wrote it in another language, preserving their humor, tone, and characteristic expressions.
+
+**Request:**
+```json
+{
+  "content": "这个方案太牛了！",
+  "source_lang": "zh",
+  "target_lang": "en"
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `content` | string | required | Text to translate |
+| `source_lang` | string | `"auto"` | Source language ISO 639-1 code |
+| `target_lang` | string | `"en"` | Target language ISO 639-1 code |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "translated_content": "This plan is absolutely brilliant!",
+    "original_content": "这个方案太牛了！",
+    "source_lang": "zh",
+    "target_lang": "en",
+    "translation_style": "personality_preserving"
+  }
+}
+```
+
+**Note:** Requires an AI backend to be configured. Returns `{"success": false, "error": "Translation unavailable (no AI backend)"}` otherwise.
 
 ### GET /api/social/unread
 

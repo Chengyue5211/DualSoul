@@ -27,7 +27,7 @@ async def get_profile(user=Depends(get_current_user)):
     with get_db() as db:
         row = db.execute(
             "SELECT user_id, username, display_name, current_mode, "
-            "twin_personality, twin_speech_style, avatar, twin_avatar "
+            "twin_personality, twin_speech_style, preferred_lang, avatar, twin_avatar "
             "FROM users WHERE user_id=?",
             (uid,),
         ).fetchone()
@@ -42,6 +42,7 @@ async def get_profile(user=Depends(get_current_user)):
             "current_mode": row["current_mode"] or "real",
             "twin_personality": row["twin_personality"] or "",
             "twin_speech_style": row["twin_speech_style"] or "",
+            "preferred_lang": row["preferred_lang"] or "",
             "avatar": row["avatar"] or "",
             "twin_avatar": row["twin_avatar"] or "",
         },
@@ -63,6 +64,9 @@ async def update_profile(req: UpdateProfileRequest, user=Depends(get_current_use
     if req.twin_speech_style:
         updates.append("twin_speech_style=?")
         params.append(req.twin_speech_style)
+    if req.preferred_lang:
+        updates.append("preferred_lang=?")
+        params.append(req.preferred_lang)
     if not updates:
         return {"success": False, "error": "Nothing to update"}
     params.append(uid)

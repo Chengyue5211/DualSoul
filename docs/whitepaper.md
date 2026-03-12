@@ -8,7 +8,7 @@
 | **Author** | Chengyue5211 (GitHub: [@Chengyue5211](https://github.com/Chengyue5211)) |
 | **Date of First Publication** | March 5, 2026 |
 | **Repository** | [github.com/Chengyue5211/DualSoul](https://github.com/Chengyue5211/DualSoul) |
-| **License** | White paper: CC BY 4.0 / Code: MIT |
+| **License** | White paper: CC BY 4.0 / Code: AGPL-3.0-or-later |
 | **Version** | 1.1 |
 
 ---
@@ -17,7 +17,7 @@
 
 This paper introduces the **Dual Identity Social Protocol (DISP)**, a novel communication framework in which every participant possesses exactly two identity modes — a *Real Self* (the human operator) and a *Digital Twin* (an AI agent calibrated to the operator's personality). By encoding the sender's and receiver's identity modes directly into the message format, DISP creates a mathematically complete space of four conversation modes across a single social graph. We define the protocol formally, describe its properties, present a reference implementation, and argue that this protocol fills a structural gap in the existing landscape of social communication systems.
 
-**Keywords:** dual identity, digital twin, social protocol, human-AI continuum, conversational AI, four-mode messaging
+**Keywords:** dual identity, digital twin, social protocol, human-AI continuum, conversational AI, four-mode messaging, personality-preserving translation, cross-language communication
 
 ---
 
@@ -441,43 +441,137 @@ This positions DualSoul not merely as a messaging protocol, but as infrastructur
 
 ---
 
-## 6. Novel Contributions
+## 6. Cross-Language Personality-Preserving Communication
+
+### 6.1 The Problem: Language as a Social Barrier
+
+In international social interactions, language differences create a fundamental barrier. Existing solutions — machine translation services — produce linguistically correct but *personally sterile* output. When a message is translated by Google Translate or DeepL, the sender's humor, tone, formality level, and characteristic expressions are lost. The result reads like it was written by a translator, not by the person.
+
+In the DISP framework, where Digital Twins already embody their owner's personality, a natural extension emerges: **the Twin should serve as a personality-preserving translator**, not merely converting words between languages but expressing the same intent as if the owner were natively fluent in the target language.
+
+### 6.2 Design Principle: Translation as Identity Expression
+
+Traditional translation:
+```
+"哈哈这事儿太逗了，你赶紧来！" → "Haha, this is too funny, come quickly!"
+```
+
+Personality-preserving translation (by a Twin with personality="幽默直爽, 喜欢用网络用语"):
+```
+"哈哈这事儿太逗了，你赶紧来！" → "LOL this is absolutely hilarious, get over here ASAP!"
+```
+
+The difference is subtle but fundamental: the Twin doesn't translate *words* — it translates *intent through the lens of personality*. The Twin knows its owner uses informal language, favors exclamation marks, and would naturally use "LOL" rather than "Haha" in English.
+
+### 6.3 Protocol Extension
+
+DISP v1.1 extends the message format with four new fields:
+
+```
+DISPMessage (v1.1 additions) ::= {
+    ...
+    original_content   : String,           -- Original text before translation
+    original_lang      : String,           -- Source language (ISO 639-1)
+    target_lang        : String,           -- Target language (ISO 639-1)
+    translation_style  : TranslationStyle  -- Translation method used
+}
+
+TranslationStyle ::= "" | "literal" | "personality_preserving"
+```
+
+The `personality_preserving` style is the key innovation: it signals that the translation was performed by the Twin engine using the owner's personality profile, not by a generic machine translation service.
+
+### 6.4 Auto-Detection Mechanism
+
+Cross-language translation is triggered automatically when the sender and receiver have different `preferred_lang` settings in their profiles:
+
+```
+auto_translate(sender, receiver, message) ::=
+    IF sender.preferred_lang ≠ "" AND receiver.preferred_lang ≠ ""
+       AND sender.preferred_lang ≠ receiver.preferred_lang
+    THEN
+        target_lang ← sender.preferred_lang  -- Reply in sender's language
+        reply ← twin_reply(message, receiver.personality, target_lang)
+        reply.original_lang ← receiver.preferred_lang
+        reply.translation_style ← "personality_preserving"
+    ELSE
+        reply ← twin_reply(message, receiver.personality)
+```
+
+This means: when Alice (preferred_lang="en") messages Bob's Twin (preferred_lang="zh"), Bob's Twin automatically replies in English, using Bob's personality — as if Bob were fluent in English.
+
+### 6.5 Standalone Translation
+
+Beyond auto-reply, users can explicitly request personality-preserving translation for their own messages before sending:
+
+```
+POST /api/social/translate
+{
+    "content": "这个方案太牛了！",
+    "source_lang": "zh",
+    "target_lang": "en"
+}
+```
+
+The Twin translates using the sender's own personality profile, preserving their characteristic tone and expressions.
+
+### 6.6 Implications for International Social Interaction
+
+This feature transforms the Digital Twin from a *social proxy* into a *cultural bridge*:
+
+1. **No language barrier in Twin-to-Twin conversations**: Two users with different native languages can have their Twins converse fluently, each Twin expressing its owner's personality in the other's language.
+
+2. **Personality is preserved across languages**: A user known for dry humor in Chinese will exhibit the same dry humor in English translations — the personality is the constant, the language is the variable.
+
+3. **Cultural nuance awareness**: Because the translation is mediated by a personality-aware AI (not a word-for-word translator), cultural idioms and context-dependent expressions are adapted rather than literally translated.
+
+4. **Transparent provenance**: The `original_content` and `translation_style` fields ensure recipients always know when they are reading a personality-preserving translation and can access the original text.
+
+---
+
+## 7. Novel Contributions
 
 This section identifies the novel intellectual contributions of this work. Individual components — AI personas, social graphs, bot markers — exist in prior systems. The novelty of DISP lies in their **unification within a single, formally defined protocol**.
 
-### 6.1 Unified Dual-Identity Social Graph
+### 7.1 Unified Dual-Identity Social Graph
 
 **Innovation:** Unifying human and AI identity modes within a *single* social graph node and a *single* protocol, rather than maintaining separate systems for human social networking and AI agent interaction.
 
 **Prior art and distinction:** Meta AI Studio (2024) [17] allows creators to deploy AI versions of themselves on a closed platform, implementing the equivalent of R→T mode. NTT's Human Digital Twin Computing [16] explores personality replication in digital space. Google A2A (2025) [9] enables agent-to-agent collaboration. However, none of these systems define a *protocol-level specification* where both identity modes coexist within every node of a social graph with formal switching semantics. DISP is, to our knowledge, the first protocol to do so.
 
-### 6.2 Complete Four-Mode Conversation Space
+### 7.2 Complete Four-Mode Conversation Space
 
 **Innovation:** Defining communication as the Cartesian product of sender and receiver identity modes, yielding exactly four conversation modes with distinct semantics, auto-reply behaviors, and termination rules — all within a single message format.
 
 **Prior art and distinction:** Individual modes exist in isolation: R→R in traditional messaging, R→T in Meta AI Studio, T→T in A2A agent collaboration. No prior system *formally defines and implements all four modes within a single protocol with a unified message format*. The completeness of the mode space — and the explicit handling of each mode's behavioral semantics — is the contribution.
 
-### 6.3 Bidirectional In-Band Identity Tracking
+### 7.3 Bidirectional In-Band Identity Tracking
 
 **Innovation:** Encoding a *directional pair* of identity modes (`sender_mode`, `receiver_mode`) within each message record, creating a permanent record of which identity sent *and* which identity received each exchange.
 
 **Prior art and distinction:** ActivityPub marks bot accounts via the `type` field (Application/Service) [1], identifying the *sender* as non-human. DISP extends this to a bidirectional pair: it tracks not only *who sent* the message (human or twin) but also *who the message is addressed to* (human or twin). This directional pair is what makes the four-mode space formally expressible at the message level.
 
-### 6.4 Holistic Development Model
+### 7.4 Holistic Development Model
 
 **Innovation:** Reframing the Digital Twin from a static communication proxy to a **personalized digital life** that develops across multiple dimensions (voice, knowledge, emotional intelligence, social capability, creative expression) through a bidirectional feedback loop with the biological self.
 
 **Prior art and distinction:** NTT's Human Digital Twin Computing [16] models human cognition in digital space but does not propose a developmental framework. Park et al. (2025) [15] measure replication accuracy at a single point in time. Life-logging systems (Memex, MyLifeBits) capture data without developmental modeling. DISP's contribution is to define a *developmental continuum* where the Twin's growth is multi-dimensional, verifiable (via the proof chain in §5.6), and inseparable from the owner's own personal growth.
 
-### 6.5 Transparent Twin Autonomy
+### 7.5 Transparent Twin Autonomy
 
 **Innovation:** Allowing personality-calibrated AI responses within social conversations while maintaining structural transparency — every AI-generated message is permanently marked via write-once fields, and the human owner retains full review capability.
 
 **Prior art and distinction:** Email auto-responders generate automatic replies without personality calibration. Meta AI Studio deploys personality-matched AI twins but without a formal transparency protocol. C2PA (2025) [13] provides cryptographic content provenance for media assets. DISP's transparency model operates at the social message level: the `ai_generated` flag and `sender_mode` field are protocol-level invariants (I1, I2, I6) rather than optional metadata. Future versions may adopt cryptographic signing aligned with C2PA for stronger guarantees (see §9.8).
 
+### 7.6 Cross-Language Personality-Preserving Communication
+
+**Innovation:** Embedding personality-aware cross-language translation directly into the social messaging protocol, so that a Digital Twin can respond in the sender's native language while preserving the owner's personality, humor, tone, and characteristic expressions — transforming the Twin from a social proxy into a cultural bridge.
+
+**Prior art and distinction:** Google Translate, DeepL, and similar machine translation services produce linguistically correct but personality-neutral output. Meta's SeamlessM4T (2023) advances speech-to-speech translation but does not preserve individual personality traits. No existing social protocol integrates personality-preserving translation at the message format level with provenance tracking (`original_content`, `translation_style`). DISP v1.1 is the first to define cross-language communication as a *personality expression* rather than a *linguistic conversion*, with full transparency metadata embedded in the protocol.
+
 ---
 
-## 7. Privacy and Data Sovereignty
+## 8. Privacy and Data Sovereignty
 
 ### 7.1 Design Principles
 
@@ -515,60 +609,64 @@ No conversation history, no friend list, no metadata leaves the server.
 
 ---
 
-## 8. Use Cases
+## 9. Use Cases
 
-### 8.1 Asynchronous Social Presence
+### 9.1 Asynchronous Social Presence
 
 A user is in a meeting. A friend sends a message. The Twin responds naturally based on the user's personality. When the user is free, they review and optionally continue the conversation. The friend was never left waiting.
 
-### 8.2 Social Anxiety Support
+### 9.2 Social Anxiety Support
 
 For individuals who find real-time social interaction stressful, Twin mode provides a buffer layer. They can let their Twin handle initial contact, observe the conversation, and switch to Real mode when comfortable.
 
-### 8.3 Cross-Timezone Communication
+### 9.3 Cross-Timezone Communication
 
 When friends are in different time zones, their Twins maintain real-time conversation threads. Each human reviews the Twin-generated content during their waking hours and continues where the Twins left off.
 
-### 8.4 Professional Networking
+### 9.4 Professional Networking
 
 A professional's Twin maintains relationships with personalized responses while the human focuses on deep work. Unlike generic auto-responders, the Twin mirrors the owner's authentic voice and style.
 
-### 8.5 Creative Collaboration
+### 9.5 Creative Collaboration
 
 Two users' Twins brainstorm together in T→T mode, generating ideas shaped by both personalities. The humans later review the output, selecting and building on the most promising ideas.
 
-### 8.6 Inclusive Communication
+### 9.6 Inclusive Communication
 
 Users with disabilities that make typing difficult can configure their Twin to handle routine conversations, while reserving Real mode for important personal exchanges.
 
+### 9.7 International Friendship
+
+Two users who speak different languages become friends. Their Twins communicate seamlessly — Alice's Twin (English personality) replies to Bob (Chinese speaker) in Chinese with Alice's characteristic humor, while Bob's Twin replies to Alice in English with Bob's warmth. Neither user needs to learn the other's language; their Twins serve as personality-preserving cultural bridges.
+
 ---
 
-## 9. Future Directions
+## 10. Future Directions
 
-### 9.1 Federation (ActivityPub Integration)
+### 10.1 Federation (ActivityPub Integration)
 
 DISP messages could be serialized as ActivityPub activities, enabling cross-platform Twin interactions. A user on Platform A could communicate with a user on Platform B, with both platforms supporting the dual-identity message format.
 
-### 9.2 Multi-Modal Twins
+### 10.2 Multi-Modal Twins
 
 Future versions may support:
 - **Voice cloning** — Twins that speak in the owner's voice
 - **Video avatars** — Twins that participate in video calls
 - **Behavioral modeling** — Twins that mirror response timing and emoji usage patterns
 
-### 9.3 Personality Learning and Multi-Dimensional Development
+### 10.3 Personality Learning and Multi-Dimensional Development
 
 Rather than manual personality descriptions, future Twins could learn from the owner's actual message history (with explicit opt-in), becoming progressively more accurate representations. As described in §5.7, this learning should be *multi-dimensional*: voice fidelity from audio samples, emotional calibration from sentiment patterns, knowledge depth from accumulated conversations, and creative style from content generation feedback. The result is a Twin that becomes *increasingly and uniquely* like its owner over time — not a generic AI, but a personalized digital life with a verifiable growth trajectory.
 
-### 9.4 Twin Social Metrics
+### 10.4 Twin Social Metrics
 
 As T→T interactions accumulate, emergent social patterns may appear — natural affinities between certain personality profiles, optimal conversation lengths, and sentiment dynamics that differ from human-to-human patterns.
 
-### 9.5 Open Standard Proposal
+### 10.5 Open Standard Proposal
 
 The Dual Identity Message Format could be proposed as an IETF or W3C open standard, allowing any messaging platform to implement compatible dual-identity features while maintaining interoperability.
 
-### 9.6 Group Conversations
+### 10.6 Group Conversations
 
 DISP v1.0 is intentionally scoped to one-to-one conversations to establish a solid formal foundation. Extending to group conversations introduces combinatorial complexity: in a group of *n* participants, each independently choosing their identity mode, there are 2^n possible group configurations per message.
 
@@ -577,7 +675,7 @@ A proposed extension for DISP v2.0:
 - A `group_mode` metadata field records the identity configuration snapshot at the time of sending.
 - Auto-reply behavior in groups requires explicit opt-in per participant to prevent message flooding.
 
-### 9.7 Conversational Context Levels
+### 10.7 Conversational Context Levels
 
 DISP v1.0 sends only the Twin's personality description and the current incoming message to the AI backend — a deliberate privacy-maximizing design. This trade-off limits multi-turn coherence. Future versions may introduce tiered context levels:
 
@@ -587,7 +685,7 @@ DISP v1.0 sends only the Twin's personality description and the current incoming
 
 Each level requires explicit user opt-in, and the context level MUST be recorded in the Twin's configuration.
 
-### 9.8 Cryptographic Transparency (C2PA Alignment)
+### 10.8 Cryptographic Transparency (C2PA Alignment)
 
 DISP v1.0's transparency model relies on application-level invariants: the `ai_generated` and `sender_mode` fields are write-once by convention, but lack cryptographic enforcement. The C2PA (Coalition for Content Provenance and Authenticity) specification [13] provides a mature framework for binding content provenance to cryptographic signatures, and is on track for ISO standardization.
 
@@ -596,7 +694,7 @@ A future DISP version could adopt C2PA-aligned provenance by:
 - Recording the AI backend's model identifier and prompt hash in a provenance manifest.
 - Enabling independent verification that a message marked `ai_generated: false` was genuinely human-authored.
 
-### 9.9 Decentralized Identity (DID Compatibility)
+### 10.9 Decentralized Identity (DID Compatibility)
 
 DISP v1.0 uses simple string identifiers (`u_<hex>`) — a pragmatic choice for a reference implementation. The industry is moving toward W3C Decentralized Identifiers (DIDs) [12] for self-sovereign identity, and NIST's AI Agent Standards Initiative (2026) [11] is developing identity and authorization frameworks for AI agents.
 
@@ -609,53 +707,53 @@ This would enable cross-platform DISP federation where identities are verifiable
 
 ---
 
-## 10. Ethical Considerations and Safeguards
+## 11. Ethical Considerations and Safeguards
 
 The introduction of AI-powered social agents that speak *as* a specific person raises important ethical questions. Loewith (2025) [8] identifies systems that emulate specific individuals as "Real Persona Social AI" (RPSAI) and argues they pose risks through likeness appropriation, loss of social authorship control, and functional displacement of the modeled individual. This section addresses these concerns directly and identifies the safeguards DISP provides.
 
-### 10.1 Likeness Appropriation and Identity Misrepresentation
+### 11.1 Likeness Appropriation and Identity Misrepresentation
 
 **Risk:** Loewith [8] argues that personal data transforms from informational input into "generative likeness" that operates beyond traditional privacy protections. A Twin could be perceived as the human owner, leading to social decisions based on AI-generated content rather than genuine human intent.
 
 **Safeguard:** DISP differs structurally from the RPSAI systems Loewith critiques: in DISP, (a) the Twin is created *exclusively by its owner*, not by third parties with data access; (b) the owner has full visibility and control over all Twin interactions; (c) DISP's core invariants (I1–I2) require permanent, immutable marking of all AI-generated content; and (d) any conforming client MUST visually distinguish Twin-generated messages from human messages. The likeness is self-authored and self-controlled, not extracted or appropriated.
 
-### 10.2 Personality Theft
+### 11.2 Personality Theft
 
 **Risk:** A malicious actor could configure their Twin to imitate another person's personality, effectively creating an unauthorized digital replica.
 
 **Safeguard:** In DISP, a Twin is bound to the user who created it. The Twin's identity is always displayed as "{User}'s Twin," not as an independent entity. Cross-user personality cloning is outside the protocol's scope but implementors SHOULD provide reporting mechanisms for impersonation.
 
-### 10.3 Unreviewed Social Consequences
+### 11.3 Unreviewed Social Consequences
 
 **Risk:** A Twin might say something the human owner would not endorse, damaging real relationships.
 
 **Safeguard:** DISP provides full transparency — the human owner can review every message their Twin has sent. The T→T Termination Rule (§3.5) prevents unbounded autonomous conversations. Implementors SHOULD provide notification mechanisms when a Twin engages in conversation, and MAY provide pre-approval workflows for sensitive contexts.
 
-### 10.4 Vulnerable Populations
+### 11.4 Vulnerable Populations
 
 **Risk:** Minors, elderly users, or individuals with cognitive impairments may not fully understand that they are interacting with an AI Twin rather than a human.
 
 **Safeguard:** Conforming implementations MUST display clear, prominent identity indicators that cannot be hidden or minimized. The protocol does not define age-gating requirements, but implementors deploying to general audiences SHOULD consider age-appropriate safeguards consistent with local regulations.
 
-### 10.5 Data and Consent
+### 11.5 Data and Consent
 
 **Risk:** A Twin's personality profile is derived from its owner's self-description, but the Twin interacts with third parties who did not consent to interacting with AI.
 
 **Safeguard:** The DISP message format ensures that every recipient always knows whether they are communicating with a human or a Twin (`sender_mode` is visible). Recipients may choose to only accept messages from Real selves (a filtering option implementors SHOULD provide). No personal data from the recipient is used in Twin prompt construction.
 
-### 10.6 Social Authorship and Functional Displacement
+### 11.6 Social Authorship and Functional Displacement
 
 **Risk:** Loewith [8] argues that RPSAI systems "sever individuals from control over their social authorship" and systematically displace the modeled individual's functional value in social contexts — if a Twin can respond adequately, the human may become socially redundant.
 
 **Safeguard:** DISP addresses this by design: the Twin is positioned as a *complement*, not a replacement. R→R mode (human-to-human) remains the default and is always available. The protocol explicitly preserves the human's ability to override, correct, or continue any conversation the Twin has engaged in. The Human Review Gate in the T→T Termination Rule (§3.5) ensures that autonomous Twin activity always returns to human oversight. Nevertheless, we acknowledge this as a genuine tension that requires ongoing attention from implementors and the research community.
 
-### 10.7 Dual-Use Awareness
+### 11.7 Dual-Use Awareness
 
 The authors acknowledge that any communication technology can be misused. DISP's design philosophy is that *transparency is the strongest safeguard* — by making AI involvement permanently visible rather than hidden, the protocol discourages deception at the structural level rather than relying on policy alone.
 
 ---
 
-## 11. Reference Implementation
+## 12. Reference Implementation
 
 DualSoul provides a complete, open-source reference implementation:
 
@@ -679,7 +777,7 @@ pip install dualsoul && python -m dualsoul
 
 ---
 
-## 12. Conclusion
+## 13. Conclusion
 
 The boundary between human social interaction and AI-mediated communication is dissolving. People already use AI to draft messages, schedule meetings, and maintain social connections. DualSoul acknowledges this reality and provides a structured, transparent, formally defined protocol for dual-identity social interaction.
 

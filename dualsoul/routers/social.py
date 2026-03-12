@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from dualsoul.auth import get_current_user
 from dualsoul.database import gen_id, get_db
-from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest
+from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest
 from dualsoul.twin_engine.responder import TwinResponder
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
@@ -134,7 +134,8 @@ async def get_messages(friend_id: str = "", limit: int = 50, user=Depends(get_cu
         rows = db.execute(
             """
             SELECT msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
-                   content, msg_type, is_read, ai_generated, created_at
+                   content, original_content, original_lang, target_lang,
+                   translation_style, msg_type, is_read, ai_generated, created_at
             FROM social_messages
             WHERE (from_user_id=? AND to_user_id=?)
                OR (from_user_id=? AND to_user_id=?)
@@ -198,12 +199,39 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
                 from_user_id=uid,
                 incoming_msg=content,
                 sender_mode=req.sender_mode,
+                target_lang=req.target_lang,
             )
             result["ai_reply"] = reply
         except Exception:
             pass  # Twin reply is best-effort
 
     return result
+
+
+@router.post("/translate")
+async def translate(req: TranslateRequest, user=Depends(get_current_user)):
+    """Personality-preserving translation — translate as if you wrote it in another language.
+
+    Unlike generic machine translation, this preserves your humor, tone,
+    and characteristic expressions.
+    """
+    uid = user["user_id"]
+    content = req.content.strip()
+    target_lang = req.target_lang
+    if not content:
+        return {"success": False, "error": "Content cannot be empty"}
+    if not target_lang:
+        return {"success": False, "error": "target_lang required"}
+
+    result = await _twin.translate_message(
+        owner_id=uid,
+        content=content,
+        source_lang=req.source_lang,
+        target_lang=target_lang,
+    )
+    if not result:
+        return {"success": False, "error": "Translation unavailable (no AI backend)"}
+    return {"success": True, "data": result}
 
 
 @router.get("/unread")

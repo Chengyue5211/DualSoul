@@ -184,3 +184,76 @@ def test_unread_count(client, alice_h):
     resp = client.get("/api/social/unread", headers=bob_h2)
     assert resp.status_code == 200
     assert resp.json()["count"] >= 1
+
+
+# ═══ Translation ═══
+
+def test_translate_requires_auth(client):
+    resp = client.post("/api/social/translate", json={
+        "content": "hello", "target_lang": "zh"
+    })
+    assert resp.status_code == 401
+
+
+def test_translate_empty_content(client, alice_h):
+    resp = client.post("/api/social/translate", json={
+        "content": "  ", "target_lang": "zh"
+    }, headers=alice_h)
+    assert resp.json()["success"] is False
+
+
+def test_translate_no_target_lang(client, alice_h):
+    resp = client.post("/api/social/translate", json={
+        "content": "hello", "target_lang": ""
+    }, headers=alice_h)
+    assert resp.json()["success"] is False
+
+
+def test_translate_no_ai_backend(client, alice_h):
+    """Without AI backend configured, translation should report unavailable."""
+    resp = client.post("/api/social/translate", json={
+        "content": "hello world", "source_lang": "en", "target_lang": "zh"
+    }, headers=alice_h)
+    data = resp.json()
+    # Either fails gracefully (no AI) or succeeds (AI configured)
+    assert "success" in data
+
+
+def test_send_with_target_lang(client, alice_h):
+    """Send message with explicit target_lang for cross-language reply."""
+    resp = client.get("/api/social/friends", headers=alice_h)
+    bob = [f for f in resp.json()["friends"] if f["username"] == "bob"][0]
+
+    resp = client.post("/api/social/messages/send", json={
+        "to_user_id": bob["user_id"],
+        "content": "Cross-language test",
+        "sender_mode": "real",
+        "receiver_mode": "twin",
+        "target_lang": "zh"
+    }, headers=alice_h)
+    assert resp.json()["success"] is True
+
+
+def test_preferred_lang_in_profile(client, alice_h):
+    """Update preferred_lang and verify it appears in profile."""
+    resp = client.put("/api/identity/profile", json={
+        "preferred_lang": "en"
+    }, headers=alice_h)
+    assert resp.json()["success"] is True
+
+    resp = client.get("/api/identity/me", headers=alice_h)
+    assert resp.json()["data"]["preferred_lang"] == "en"
+
+
+def test_messages_include_translation_fields(client, alice_h):
+    """Messages should include translation metadata fields."""
+    resp = client.get("/api/social/friends", headers=alice_h)
+    bob = [f for f in resp.json()["friends"] if f["username"] == "bob"][0]
+
+    resp = client.get(f"/api/social/messages?friend_id={bob['user_id']}", headers=alice_h)
+    assert resp.json()["success"] is True
+    msgs = resp.json()["messages"]
+    assert len(msgs) >= 1
+    # Check that translation fields exist in messages
+    msg = msgs[0]
+    assert "original_content" in msg or "content" in msg

@@ -1,6 +1,6 @@
 # Dual Identity Social Protocol (DISP) — Technical Specification
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Status:** Stable
 **Author:** Chengyue5211
 **Date:** March 5, 2026
@@ -74,13 +74,18 @@ DISPMessage ::= {
     sender_mode   : IdentityMode,  -- Sender's identity mode
     receiver_mode : IdentityMode,  -- Intended receiver identity mode
     content       : String,        -- Message payload (non-empty)
+    original_content : String,     -- Original text before translation (empty if not translated)
+    original_lang    : String,     -- Source language ISO 639-1 code (empty if not translated)
+    target_lang      : String,     -- Target language ISO 639-1 code (empty if not translated)
+    translation_style: TranslationStyle,  -- Translation method used
     msg_type      : MessageType,   -- Content type
     ai_generated  : Boolean,       -- true if content was AI-produced
     is_read       : Integer,       -- 0 = unread, 1 = read
     created_at    : Timestamp      -- Creation time (ISO 8601)
 }
 
-MessageType ::= "text" | "image" | "voice" | "system"
+MessageType      ::= "text" | "image" | "voice" | "system"
+TranslationStyle ::= "" | "literal" | "personality_preserving"
 ```
 
 ### 3.2 JSON Wire Format
@@ -94,6 +99,10 @@ MessageType ::= "text" | "image" | "voice" | "system"
   "sender_mode":   "real",
   "receiver_mode": "twin",
   "content":       "What do you think about this idea?",
+  "original_content": "",
+  "original_lang":   "",
+  "target_lang":     "",
+  "translation_style": "",
   "msg_type":      "text",
   "ai_generated":  false,
   "is_read":       0,
@@ -391,10 +400,115 @@ CREATE TABLE social_messages (
 | GET | `/api/social/friends` | Yes | List friends with dual identity info |
 | GET | `/api/social/messages` | Yes | Get conversation history |
 | POST | `/api/social/messages/send` | Yes | Send message (triggers Twin auto-reply) |
+| POST | `/api/social/translate` | Yes | Personality-preserving translation |
 | GET | `/api/social/unread` | Yes | Get unread message count |
 | GET | `/api/health` | No | Health check |
 
 For detailed request/response formats, see [api.md](api.md).
+
+---
+
+## 10. Cross-Language Translation Protocol
+
+### 10.1 Overview
+
+DISP v1.1 introduces **personality-preserving translation** as a protocol-level feature. When users who speak different languages interact through their Digital Twins, the Twin does not merely translate words — it expresses the same intent as if the owner were natively fluent in the target language, preserving humor, tone, formality, and characteristic expressions.
+
+### 10.2 User Language Preference
+
+Each user record includes a `preferred_lang` field (ISO 639-1 code):
+
+```
+User (v1.1 addition) ::= {
+    ...
+    preferred_lang : String  -- ISO 639-1 code ("zh", "en", "ja", etc.) or ""
+}
+```
+
+Supported language codes: `zh`, `en`, `ja`, `ko`, `fr`, `de`, `es`, `pt`, `ru`, `ar`, `hi`, `th`, `vi`, `id`.
+
+### 10.3 Auto-Detection Rules
+
+Cross-language translation is triggered automatically during Twin auto-reply:
+
+```
+detect_cross_language(sender, receiver) ::=
+    IF receiver_mode ≠ "twin"
+        RETURN ""  -- No auto-reply, no translation
+    IF sender.preferred_lang = "" OR receiver.preferred_lang = ""
+        RETURN ""  -- Language preference not set
+    IF sender.preferred_lang = receiver.preferred_lang
+        RETURN ""  -- Same language, no translation needed
+    RETURN sender.preferred_lang  -- Reply in sender's language
+```
+
+### 10.4 Translation Sequence Diagram
+
+```
+ Client (Sender, lang=en)      DISP Server                    AI Backend
+       │                           │                              │
+       │  1. POST /messages/send   │                              │
+       │  {receiver_mode:"twin",   │                              │
+       │   content:"Hi there!"}    │                              │
+       │ ─────────────────────────►│                              │
+       │                           │                              │
+       │                           │  2. Detect sender.lang=en    │
+       │                           │     receiver.lang=zh         │
+       │                           │     → target_lang="en"       │
+       │                           │                              │
+       │                           │  3. Construct prompt:        │
+       │                           │     "Reply in English.       │
+       │                           │      Speak naturally as      │
+       │                           │      {name} would if fluent  │
+       │                           │      in English. Preserve    │
+       │                           │      personality."           │
+       │                           │                              │
+       │                           │  4. POST /chat/completions   │
+       │                           │ ─────────────────────────────►
+       │                           │                              │
+       │                           │  5. AI response (in English  │
+       │                           │     with owner's personality)│
+       │                           │ ◄─────────────────────────── │
+       │                           │                              │
+       │                           │  6. Store reply with:        │
+       │                           │     target_lang="en"         │
+       │                           │     original_lang="zh"       │
+       │                           │     translation_style=       │
+       │                           │      "personality_preserving"│
+       │                           │                              │
+       │  7. Response with         │                              │
+       │     translation metadata  │                              │
+       │ ◄─────────────────────────│                              │
+```
+
+### 10.5 Translation Invariants
+
+| # | Invariant | Rule |
+|---|-----------|------|
+| T1 | Provenance | `translation_style = "personality_preserving"` → `original_lang` MUST be non-empty |
+| T2 | Transparency | `original_content` SHOULD be preserved when translation occurs |
+| T3 | Personality Fidelity | Translation MUST use the Twin owner's personality profile, not generic translation |
+| T4 | Language Validity | `target_lang` and `original_lang` MUST be valid ISO 639-1 codes |
+| T5 | No Double Translation | A message already translated MUST NOT be translated again |
+
+### 10.6 Standalone Translation
+
+Users may request personality-preserving translation independently of messaging:
+
+```
+POST /api/social/translate
+{
+    "content": "要翻译的文本",
+    "source_lang": "zh",
+    "target_lang": "en"
+}
+```
+
+The translation uses the requesting user's own personality profile to preserve their characteristic tone and expressions.
+
+### 10.7 Fallback Behavior
+
+When no AI backend is configured, the Twin MUST return a template response in the appropriate language. The reference implementation provides templates for Chinese, Japanese, Korean, and English.
 
 ---
 

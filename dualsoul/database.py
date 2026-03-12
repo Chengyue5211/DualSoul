@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
     current_mode TEXT DEFAULT 'real' CHECK(current_mode IN ('real', 'twin')),
     twin_personality TEXT DEFAULT '',
     twin_speech_style TEXT DEFAULT '',
+    preferred_lang TEXT DEFAULT ''
+        CHECK(preferred_lang IN ('', 'zh', 'en', 'ja', 'ko', 'fr', 'de', 'es', 'pt', 'ru', 'ar', 'hi', 'th', 'vi', 'id', 'auto')),
     avatar TEXT DEFAULT '',
     twin_avatar TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now','localtime'))
@@ -42,6 +44,11 @@ CREATE TABLE IF NOT EXISTS social_messages (
     receiver_mode TEXT DEFAULT 'real'
         CHECK(receiver_mode IN ('real', 'twin')),
     content TEXT NOT NULL,
+    original_content TEXT DEFAULT '',
+    original_lang TEXT DEFAULT '',
+    target_lang TEXT DEFAULT '',
+    translation_style TEXT DEFAULT ''
+        CHECK(translation_style IN ('', 'literal', 'personality_preserving')),
     msg_type TEXT DEFAULT 'text'
         CHECK(msg_type IN ('text', 'image', 'voice', 'system')),
     is_read INTEGER DEFAULT 0,
