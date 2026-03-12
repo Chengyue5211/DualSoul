@@ -239,5 +239,5 @@ Get unread message count.
 ### GET /api/health
 
 ```json
-{ "status": "ok", "version": "0.1.0" }
+{ "status": "ok", "version": "0.3.0" }
 ```

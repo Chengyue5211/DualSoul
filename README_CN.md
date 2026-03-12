@@ -5,7 +5,7 @@
 [![CI](https://github.com/Chengyue5211/DualSoul/actions/workflows/ci.yml/badge.svg)](https://github.com/Chengyue5211/DualSoul/actions)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![白皮书](https://img.shields.io/badge/%E7%99%BD%E7%9A%AE%E4%B9%A6-v1.0-green.svg)](docs/whitepaper.md)
+[![白皮书](https://img.shields.io/badge/%E7%99%BD%E7%9A%AE%E4%B9%A6-v1.1-green.svg)](docs/whitepaper.md)
 
 ---
 

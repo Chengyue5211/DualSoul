@@ -67,7 +67,7 @@ switch(user, new_mode) ::=
 
 ```
 DISPMessage ::= {
-    disp_version  : String,        -- Protocol version (e.g. "1.0")
+    disp_version  : String,        -- Protocol version (e.g. "1.1")
     msg_id        : String,        -- Unique identifier (prefix: "sm_")
     from_user_id  : String,        -- Sender's user_id
     to_user_id    : String,        -- Receiver's user_id
@@ -92,7 +92,7 @@ TranslationStyle ::= "" | "literal" | "personality_preserving"
 
 ```json
 {
-  "disp_version":  "1.0",
+  "disp_version":  "1.1",
   "msg_id":        "sm_a1b2c3d4e5f6",
   "from_user_id":  "u_sender12345",
   "to_user_id":    "u_receiver6789",

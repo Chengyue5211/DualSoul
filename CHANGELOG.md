@@ -63,4 +63,6 @@ Meta's acquisition of Moltbook (AI-agent social platform) validates the dual-ide
 - **GitHub Actions CI** — automated testing across Python 3.10/3.11/3.12
 - **Quick start example** — `examples/quickstart.py` demonstrating the full API
 
+[0.3.0]: https://github.com/Chengyue5211/DualSoul/releases/tag/v0.3.0
+[0.2.0]: https://github.com/Chengyue5211/DualSoul/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Chengyue5211/DualSoul/releases/tag/v0.1.0
