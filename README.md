@@ -3,7 +3,7 @@
 > **Every person has two voices. DualSoul gives both of them a place to speak.**
 
 [![CI](https://github.com/Chengyue5211/DualSoul/actions/workflows/ci.yml/badge.svg)](https://github.com/Chengyue5211/DualSoul/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![White Paper](https://img.shields.io/badge/white%20paper-v1.0-green.svg)](docs/whitepaper.md)
 [![Gitee Mirror](https://img.shields.io/badge/Gitee-Mirror-red.svg)](https://gitee.com/chengyue5211/DualSoul)
@@ -234,9 +234,14 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+**Dual Licensed:**
+
+- **Open Source**: [AGPL-3.0](LICENSE) — Free for open-source projects. If you use DualSoul in a network service, you must release your source code under AGPL-3.0.
+- **Commercial**: [Commercial License](COMMERCIAL_LICENSE.md) — For proprietary/closed-source use. Contact the author for terms.
 
 White paper is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
+**Patent Notice**: The DualSoul protocol incorporates inventions that are the subject of pending patent applications. See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for details.
 
 ---
 
@@ -267,7 +272,7 @@ DualSoul（双魂）是一个开源的**双身份社交协议**（DISP）。核�
 - 用户始终掌控，可随时查看分身说了什么
 - 支持任意 OpenAI 兼容 API（通义千问/DeepSeek/Ollama）
 - 完整白皮书（形式化定义+8条不变式+伦理分析+18篇引用）
-- 35个自动化测试，MIT许可证
+- 35个自动化测试，AGPL-3.0许可证（商业使用需商业许可）
 
 ### 快速体验
 

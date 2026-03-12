@@ -3,7 +3,7 @@
 > **每个人都有两个声音。DualSoul 让它们都有说话的地方。**
 
 [![CI](https://github.com/Chengyue5211/DualSoul/actions/workflows/ci.yml/badge.svg)](https://github.com/Chengyue5211/DualSoul/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![白皮书](https://img.shields.io/badge/%E7%99%BD%E7%9A%AE%E4%B9%A6-v1.0-green.svg)](docs/whitepaper.md)
 
@@ -153,9 +153,14 @@ ruff check dualsoul/
 
 ## 许可证
 
-代码：MIT 许可证。详见 [LICENSE](LICENSE)。
+**双许可证模式：**
+
+- **开源版**：[AGPL-3.0](LICENSE) — 开源项目免费使用。如果你基于 DualSoul 提供网络服务，必须同样开源你的代码。
+- **商业版**：[商业许可证](COMMERCIAL_LICENSE.md) — 闭源/商业使用需获取商业许可。联系作者获取条款。
 
 白皮书：[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。
+
+**专利声明**：DualSoul 协议包含已申请专利的发明。详见 [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)。
 
 ---
 
