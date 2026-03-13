@@ -104,10 +104,10 @@ nav .ni.on .nc{transform:scale(1.15)}
 .id-img::after{content:'+';position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;background:var(--ac);color:#fff;border-radius:50%;font-size:12px;line-height:18px;text-align:center;opacity:0;transition:opacity .15s}
 .id-img:hover::after,.id-img:active::after{opacity:1}
 .id-name{font-size:10px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px}
-.id-chat-entry{flex:1;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:linear-gradient(135deg,rgba(124,92,252,.12),rgba(92,200,250,.08));border:1px solid rgba(124,92,252,.2);cursor:pointer;transition:background .15s;min-width:0}
-.id-chat-entry:active{background:rgba(124,92,252,.2)}
-.id-chat-text{font-size:13px;font-weight:600;color:var(--ac2)}
-.id-chat-arrow{font-size:14px;color:var(--ac2);flex-shrink:0;margin-left:8px}
+.id-chat-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;border-radius:12px;background:linear-gradient(135deg,rgba(124,92,252,.1),rgba(92,200,250,.06));border:1px solid rgba(124,92,252,.18);cursor:pointer;transition:background .15s;text-align:center;min-height:52px}
+.id-chat-center:active{background:rgba(124,92,252,.2)}
+.id-chat-text{font-size:11px;font-weight:600;color:var(--ac2);line-height:1.4}
+.id-chat-arrow{font-size:16px;margin-top:2px}
 
 /* Friend List */
 .section-title{font-size:10px;color:var(--tx2);font-weight:600;margin:14px 0 6px 4px}
@@ -416,19 +416,19 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div class="section-title">Friend Requests</div>
       <div class="friend-list" id="pendingList"></div>
     </div>
-    <!-- My dual identity display -->
+    <!-- My dual identity display: real | chat button | twin -->
     <div class="my-identity-bar" id="myIdentityBar">
       <div class="id-card" onclick="pickAvatar('real')">
         <div class="id-img real" id="idRealImg"><img></div>
         <div class="id-name" id="idRealName">真身</div>
       </div>
+      <div class="id-chat-center" onclick="openTwinChat()">
+        <div class="id-chat-text" id="twinChatHint">和你的数字分身聊天</div>
+        <div class="id-chat-arrow">💬 ›</div>
+      </div>
       <div class="id-card" onclick="pickAvatar('twin')">
         <div class="id-img cyber" id="idTwinImg"><img></div>
         <div class="id-name" id="idTwinName">分身</div>
-      </div>
-      <div class="id-chat-entry" onclick="openTwinChat()">
-        <div class="id-chat-text" id="twinChatHint">和你的数字分身聊天</div>
-        <div class="id-chat-arrow">💬 ›</div>
       </div>
     </div>
     <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="handleAvatarPick(this)">
