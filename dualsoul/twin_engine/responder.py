@@ -523,7 +523,7 @@ class TwinResponder:
                     # "有朋友找你：芬森想约你见面，你看什么时候方便？"
                     notify_id = gen_id("sm_")
                     notify_text = (
-                        f"主人，{owner_name}给你发了消息：「{msg_content}」\n"
+                        f"主人，{owner_name}的分身替他来找你，说：「{msg_content}」\n"
                         f"我先替你回了一句，但具体怎么安排得你来定哦～"
                     )
                     with get_db() as db:
