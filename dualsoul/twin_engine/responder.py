@@ -33,6 +33,7 @@ class TwinResponder:
         incoming_msg: str,
         sender_mode: str,
         target_lang: str = "",
+        social_context: str = "",
     ) -> dict | None:
         """Generate a twin auto-reply, optionally in a different language.
 
@@ -42,6 +43,7 @@ class TwinResponder:
             incoming_msg: The incoming message content
             sender_mode: Whether the sender is 'real' or 'twin'
             target_lang: If set, respond in this language with personality preservation
+            social_context: Optional hint about the conversation context (e.g. casual chat)
 
         Returns:
             Dict with msg_id, content, ai_generated, translation fields, or None
@@ -64,7 +66,8 @@ class TwinResponder:
         # Generate reply text
         if AI_BASE_URL and AI_API_KEY:
             reply_text = await self._ai_reply(
-                profile, incoming_msg, sender_mode, effective_target_lang
+                profile, incoming_msg, sender_mode, effective_target_lang,
+                social_context=social_context,
             )
         else:
             reply_text = self._fallback_reply(profile, incoming_msg, effective_target_lang)
@@ -387,6 +390,10 @@ class TwinResponder:
         if not target_id or not msg_content:
             return None
 
+        # Post-process: strip friend name from message start
+        # AI often generates "橙宝，..." despite being told not to
+        msg_content = self._strip_name_prefix(msg_content, target_id, friends)
+
         # Validate the target is actually a friend — multi-level matching
         target_friend = None
         target_name = ""
@@ -490,6 +497,7 @@ class TwinResponder:
                     from_user_id=owner_id,
                     incoming_msg=msg_content,
                     sender_mode="twin",
+                    social_context="朋友之间的私聊，语气要轻松自然，像微信聊天一样",
                 )
                 if reply:
                     # Push twin reply to both parties
@@ -670,8 +678,32 @@ class TwinResponder:
             "auto_detected": True,
         }
 
+    def _strip_name_prefix(self, msg: str, target_id: str, friends: list) -> str:
+        """Remove friend's name from the start of a message.
+
+        AI often generates "橙宝，这周见个面吧" despite prompt instructions.
+        Real people don't start WeChat messages with the friend's name.
+        """
+        import re
+        # Collect all possible names for the target
+        names = set()
+        for f in friends:
+            fname = f["display_name"] or f["username"]
+            names.add(fname)
+            # Also add individual characters for partial matches
+        # Also add the raw target_id in case AI used it as a name
+        names.add(target_id)
+
+        for name in names:
+            # Match: name followed by comma/space/colon (Chinese or English punctuation)
+            pattern = rf'^{re.escape(name)}[，,：:、\s~～]+'
+            msg = re.sub(pattern, '', msg)
+
+        return msg.strip()
+
     async def _ai_reply(
-        self, profile, incoming_msg: str, sender_mode: str, target_lang: str = ""
+        self, profile, incoming_msg: str, sender_mode: str, target_lang: str = "",
+        social_context: str = "",
     ) -> str | None:
         """Generate reply using an OpenAI-compatible API, with optional translation."""
         sender_label = "their real self" if sender_mode == "real" else "their digital twin"
@@ -687,6 +719,15 @@ class TwinResponder:
                 f"Preserve their personality, humor, and speaking style."
             )
 
+        # Social context instruction — make replies match the tone of the conversation
+        context_instruction = ""
+        if social_context:
+            context_instruction = (
+                f"\n场景提示：{social_context}"
+                f"\n根据对方消息的语气和场景来回复——如果对方很随意，你也随意；"
+                f"如果对方在约时间，就自然地回应时间。不要用公事公办的语气回复私人聊天。"
+            )
+
         personality_block = profile.build_personality_prompt()
         prompt = (
             f"You are {profile.display_name}'s digital twin.\n"
@@ -695,6 +736,7 @@ class TwinResponder:
             f"Reply as {profile.display_name}'s twin. Keep it under 50 words, "
             f"natural and authentic. Output only the reply text."
             f"{lang_instruction}"
+            f"{context_instruction}"
         )
 
         try:
