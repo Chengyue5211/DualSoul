@@ -40,7 +40,7 @@ async def get_profile(user=Depends(get_current_user)):
         row = db.execute(
             "SELECT user_id, username, display_name, current_mode, "
             "twin_personality, twin_speech_style, preferred_lang, avatar, twin_avatar, "
-            "twin_auto_reply, gender FROM users WHERE user_id=?",
+            "twin_auto_reply, gender, reg_source FROM users WHERE user_id=?",
             (uid,),
         ).fetchone()
     if not row:
@@ -59,6 +59,7 @@ async def get_profile(user=Depends(get_current_user)):
             "twin_avatar": row["twin_avatar"] or "",
             "twin_auto_reply": row["twin_auto_reply"] if "twin_auto_reply" in row.keys() else 0,
             "gender": row["gender"] if "gender" in row.keys() else "",
+            "reg_source": row["reg_source"] if "reg_source" in row.keys() else "dualsoul",
         },
     }
 

@@ -93,7 +93,7 @@ async def list_friends(user=Depends(get_current_user)):
             SELECT sc.conn_id, sc.status, sc.created_at, sc.accepted_at,
                    sc.user_id AS req_from, sc.friend_id AS req_to,
                    u.user_id, u.username, u.display_name, u.avatar,
-                   u.current_mode, u.twin_avatar
+                   u.current_mode, u.twin_avatar, u.reg_source
             FROM social_connections sc
             JOIN users u ON u.user_id = CASE
                 WHEN sc.user_id=? THEN sc.friend_id
@@ -118,6 +118,7 @@ async def list_friends(user=Depends(get_current_user)):
             "twin_avatar": r["twin_avatar"] or "",
             "current_mode": r["current_mode"] or "real",
             "accepted_at": r["accepted_at"] or "",
+            "reg_source": r["reg_source"] if "reg_source" in r.keys() else "dualsoul",
         })
     return {"success": True, "friends": friends}
 

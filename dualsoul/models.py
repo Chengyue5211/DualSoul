@@ -8,6 +8,7 @@ class RegisterRequest(BaseModel):
     username: str
     password: str
     display_name: str = ""
+    reg_source: str = "dualsoul"  # Registration source: dualsoul, nianlun, openclaw, etc.
 
 
 class LoginRequest(BaseModel):

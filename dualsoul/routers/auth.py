@@ -27,9 +27,10 @@ async def register(req: RegisterRequest):
 
         user_id = gen_id("u_")
         db.execute(
-            "INSERT INTO users (user_id, username, password_hash, display_name) "
-            "VALUES (?, ?, ?, ?)",
-            (user_id, username, hash_password(req.password), req.display_name or username),
+            "INSERT INTO users (user_id, username, password_hash, display_name, reg_source) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (user_id, username, hash_password(req.password), req.display_name or username,
+             req.reg_source or "dualsoul"),
         )
 
     token = create_token(user_id, username)

@@ -575,6 +575,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px" id="inviteDesc">分享链接给朋友，对方打开注册后自动加你为好友</p>
     <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="inviteLink"></div>
     <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
+    <a href="/guide" target="_blank" style="display:block;text-align:center;margin-top:8px;font-size:11px;color:var(--ac)">查看分身接入指南 (开发者/平台对接)</a>
   </div>
   <button id="langBtn2" onclick="setLang(LANG==='zh'?'en':'zh')" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px">Language / 语言切换</button>
   <button class="profile-logout" onclick="logout()">Logout</button>
@@ -826,7 +827,7 @@ function authSubmit(){
   if(!u||!p){toast(t('fillAll'));return}
   var url=isRegister?DS_BASE+'/api/auth/register':DS_BASE+'/api/auth/login';
   var body={username:u,password:p};
-  if(isRegister){_regDisplayName=g('authName').value.trim()||u;body.display_name=_regDisplayName}
+  if(isRegister){_regDisplayName=g('authName').value.trim()||u;body.display_name=_regDisplayName;body.reg_source=_regSource||'dualsoul'}
   fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){toast(d.error||'Failed');return}
@@ -1322,6 +1323,7 @@ function loadUnread(){
   // Show invite banner if ?invite= is in URL
   var _inviteParams=new URLSearchParams(location.search);
   var _inviter=_inviteParams.get('invite');
+  var _regSource=_inviteParams.get('source')||'dualsoul';
   if(_inviter){
     var ib=g('inviteBanner');
     if(ib){ib.style.display='block';ib.textContent=LANG==='zh'?_inviter+' 邀请你加入 DualSoul！注册后自动成为好友':''+_inviter+' invited you to DualSoul! Register to become friends';
@@ -1399,9 +1401,15 @@ function loadFriends(){
     if(accepted.length){
       fl.innerHTML=accepted.map(function(f){
         var ml=f.current_mode==='twin'?'Twin online':'Online';
+        var srcBadge='';
+        if(f.reg_source&&f.reg_source!=='dualsoul'){
+          var sc={'nianlun':'#4caf50','openclaw':'#ff9800','guide':'#2196f3'};
+          var sn={'nianlun':'年轮','openclaw':'OpenClaw','guide':'Guide'};
+          srcBadge='<span style="font-size:8px;padding:1px 5px;border-radius:6px;background:'+(sc[f.reg_source]||'#666')+';color:#fff;margin-left:4px">'+(sn[f.reg_source]||f.reg_source)+'</span>';
+        }
         return '<div class="friend-item" onclick="openChat(\''+esc(f.user_id)+'\',\''+esc(f.display_name)+'\',\''+esc(f.current_mode)+'\')">'+
           buildAvatar(f.display_name,44,f.current_mode)+
-          '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+'</div><div class="fi-mode">'+ml+'</div></div>'+
+          '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+srcBadge+'</div><div class="fi-mode">'+ml+'</div></div>'+
           '<div class="fi-time">'+esc(f.accepted_at||'').slice(5,16)+'</div></div>';
       }).join('');
     }else{fl.innerHTML='<div class="empty">'+t('noFriends').replace('\n','<br>')+'</div>'}

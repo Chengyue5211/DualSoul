@@ -68,6 +68,7 @@ MIGRATIONS = [
     "ALTER TABLE users ADD COLUMN voice_sample TEXT DEFAULT ''",
     "ALTER TABLE users ADD COLUMN twin_source TEXT DEFAULT 'local'",
     "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN reg_source TEXT DEFAULT 'dualsoul'",
 ]
 
 
