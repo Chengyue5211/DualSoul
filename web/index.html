@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DualSoul">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" id="manifestLink" href="/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
 <title>DualSoul — The Fourth Kind of Social</title>
 <style>
@@ -361,6 +361,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 </div>
 
 <script>
+var DS_BASE=location.pathname.indexOf('/ds')===0?'/ds':'';
 var API='';
 var token='';
 var myId='';
@@ -397,7 +398,7 @@ function authSubmit(){
   var u=g('authUser').value.trim();
   var p=g('authPass').value;
   if(!u||!p){toast('Please fill in all fields');return}
-  var url=isRegister?'/api/auth/register':'/api/auth/login';
+  var url=isRegister?DS_BASE+'/api/auth/register':DS_BASE+'/api/auth/login';
   var body={username:u,password:p};
   if(isRegister){_regDisplayName=g('authName').value.trim()||u;body.display_name=_regDisplayName}
   fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
@@ -493,11 +494,11 @@ function tsRunStep(){
     inp.style.display='none';
     tsAddMsg('system','Creating your twin...');
     // Save profile
-    fetch('/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+    fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
       twin_personality:tsPersonality,twin_speech_style:tsStyle,preferred_lang:tsLang
     })}).catch(function(){});
     // Generate preview
-    fetch('/api/identity/twin/preview',{method:'POST',headers:headers(),body:JSON.stringify({
+    fetch(DS_BASE+'/api/identity/twin/preview',{method:'POST',headers:headers(),body:JSON.stringify({
       display_name:_regDisplayName,personality:tsPersonality,speech_style:tsStyle
     })}).then(function(r){return r.json()}).then(function(d){
       var reply=d.reply||'Hey! I\'m here when '+(_regDisplayName||'they')+' can\'t be!';
@@ -567,7 +568,7 @@ function wsConnect(){
   if(!token)return;
   if(ws){try{ws.close()}catch(e){}}
   var proto=location.protocol==='https:'?'wss:':'ws:';
-  var url=proto+'//'+location.host+'/ws?token='+encodeURIComponent(token);
+  var url=proto+'//'+location.host+DS_BASE+'/ws?token='+encodeURIComponent(token);
   ws=new WebSocket(url);
   ws.onopen=function(){wsRetry=0};
   ws.onmessage=function(ev){
@@ -613,7 +614,7 @@ function appendIncoming(m){
 }
 
 function loadUnread(){
-  fetch('/api/social/unread',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetch(DS_BASE+'/api/social/unread',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     var c=d.count||0;
     g('unreadLabel').textContent=c?c+' unread':'';
     var b=g('navBadge');b.style.display=c?'inline':'none';b.textContent=c>99?'99+':c;
@@ -645,7 +646,7 @@ function switchMode(mode,el){
   g('modeHint').textContent=mode==='real'?'Real mode':'Twin mode';
   document.querySelectorAll('.dual-av').forEach(function(a){a.classList.toggle('mode-twin',mode==='twin')});
   if(chatFriend)updateModeTag();
-  fetch('/api/identity/switch',{method:'POST',headers:headers(),body:JSON.stringify({mode:mode})}).catch(function(){});
+  fetch(DS_BASE+'/api/identity/switch',{method:'POST',headers:headers(),body:JSON.stringify({mode:mode})}).catch(function(){});
 }
 
 function buildAvatar(name,size){
@@ -658,7 +659,7 @@ function buildAvatar(name,size){
 
 // Friends
 function loadFriends(){
-  fetch('/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetch(DS_BASE+'/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var pending=[],accepted=[];
     d.friends.forEach(function(f){
@@ -693,7 +694,7 @@ function loadFriends(){
 function addFriend(){
   var u=g('addInput').value.trim();
   if(!u){toast('Enter a username');return}
-  fetch('/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
+  fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){toast('Friend request sent!');g('addInput').value='';loadFriends()}
     else toast(d.error||'Failed');
@@ -701,7 +702,7 @@ function addFriend(){
 }
 
 function respondFriend(id,action){
-  fetch('/api/social/friends/respond',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:id,action:action})})
+  fetch(DS_BASE+'/api/social/friends/respond',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:id,action:action})})
   .then(function(r){return r.json()}).then(function(d){if(d.success)loadFriends();else toast(d.error||'Failed')})
   .catch(function(){toast('Network error')});
 }
@@ -713,7 +714,7 @@ function openChat(userId,name,friendMode){
   g('chatView').style.display='flex';
   g('chatName').textContent=name;
   updateModeTag();
-  fetch('/api/social/messages?friend_id='+userId+'&limit=50',{headers:headers()})
+  fetch(DS_BASE+'/api/social/messages?friend_id='+userId+'&limit=50',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){g('chatMsgs').innerHTML='<div class="empty">'+esc(d.error)+'</div>';return}
     var box=g('chatMsgs');
@@ -756,7 +757,7 @@ function sendMsg(){
   var tw=myMode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
   box.innerHTML+='<div class="msg mine"><div><div class="bubble">'+tw+esc(text)+'</div><div class="msg-time">now</div></div></div>';
   box.scrollTop=box.scrollHeight;
-  fetch('/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
+  fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
     to_user_id:chatFriend.user_id,content:text,sender_mode:myMode,receiver_mode:rm
   })}).then(function(r){return r.json()}).then(function(d){
     if(!d.success){toast(d.error||'Send failed');return}
@@ -773,7 +774,7 @@ function sendMsg(){
 
 // Profile
 function loadProfile(){
-  fetch('/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetch(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var p=d.data;
     g('profileName').textContent=p.display_name||p.username;
@@ -800,7 +801,7 @@ function updateArToggle(on){
 
 function toggleAutoReply(cb){
   updateArToggle(cb.checked);
-  fetch('/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
     twin_auto_reply:cb.checked?1:0
   })}).then(function(r){return r.json()}).then(function(d){
     if(d.success)toast(cb.checked?'Offline twin activated!':'Offline twin disabled');
@@ -814,7 +815,7 @@ function saveProfile(){
   var s=g('profStyle').value.trim();
   if(p)body.twin_personality=p;
   if(s)body.twin_speech_style=s;
-  fetch('/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify(body)})
+  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify(body)})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)toast('Twin settings saved!');else toast(d.error||'Failed');
   }).catch(function(){toast('Network error')});
@@ -825,9 +826,12 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&!e.shiftKey&&document.activeElement===g('chatInput')){e.preventDefault();sendMsg()}
 });
 
+// Fix manifest link to respect path prefix
+(function(){var ml=document.getElementById('manifestLink');if(ml)ml.href=DS_BASE+'/manifest.json'})();
+
 // Register Service Worker for PWA
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js').catch(function(){});
+  navigator.serviceWorker.register(DS_BASE+'/sw.js').catch(function(){});
 }
 </script>
 </body>
