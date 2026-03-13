@@ -25,6 +25,13 @@ class UpdateProfileRequest(BaseModel):
     twin_personality: str = ""
     twin_speech_style: str = ""
     preferred_lang: str = ""  # ISO 639-1: zh, en, ja, ko, fr, de, es, etc.
+    twin_auto_reply: int | None = None  # 0=off, 1=on (None=no change)
+
+
+class TwinPreviewRequest(BaseModel):
+    display_name: str = ""
+    personality: str = ""
+    speech_style: str = ""
 
 
 # Social

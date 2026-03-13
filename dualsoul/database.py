@@ -61,12 +61,25 @@ CREATE INDEX IF NOT EXISTS idx_sm_conv ON social_messages(from_user_id, to_user_
 """
 
 
+MIGRATIONS = [
+    "ALTER TABLE users ADD COLUMN twin_auto_reply INTEGER DEFAULT 0",
+    "ALTER TABLE social_messages ADD COLUMN auto_reply INTEGER DEFAULT 0",
+    "ALTER TABLE social_messages ADD COLUMN metadata TEXT DEFAULT ''",
+]
+
+
 def init_db():
-    """Initialize database with schema."""
+    """Initialize database with schema and run migrations."""
     conn = sqlite3.connect(DATABASE_PATH)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(SCHEMA)
+    # Run migrations (idempotent — skip if column already exists)
+    for sql in MIGRATIONS:
+        try:
+            conn.execute(sql)
+        except sqlite3.OperationalError:
+            pass  # Column already exists
     conn.commit()
     conn.close()
 

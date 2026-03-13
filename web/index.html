@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>DualSoul — Dual Identity Social</title>
+<meta name="theme-color" content="#7c5cfc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DualSoul">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+<title>DualSoul — The Fourth Kind of Social</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0a0a10;--bg2:#14141e;--bg3:#1e1e2c;--tx:#e8e4de;--tx2:#8a8594;--ac:#7c5cfc;--ac2:#a07cff;--gd:linear-gradient(135deg,#7c5cfc,#5cc8fa);--bd:rgba(255,255,255,.06)}
@@ -138,6 +144,45 @@ nav .ni.on .nc{transform:scale(1.15)}
 .mode-card .mc-icon{font-size:20px;margin-bottom:4px}
 .mode-card .mc-label{font-size:10px;font-weight:700}
 .mode-card .mc-desc{font-size:9px;color:var(--tx2);margin-top:2px}
+
+/* Onboarding */
+.onboard{display:none;min-height:100vh;flex-direction:column;padding:0 24px env(safe-area-inset-bottom)}
+.onboard.v{display:flex}
+.ob-slides{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+.ob-slide{display:none;animation:fadeUp .4s ease}.ob-slide.v{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.ob-icon{font-size:64px;margin-bottom:16px}
+.ob-title{font-size:22px;font-weight:800;margin-bottom:8px;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ob-desc{font-size:13px;color:var(--tx2);line-height:1.8;max-width:320px;margin:0 auto}
+.ob-dots{display:flex;justify-content:center;gap:8px;margin:20px 0}
+.ob-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);transition:.3s}
+.ob-dot.on{background:var(--ac);width:24px;border-radius:4px}
+.ob-btn{width:100%;max-width:320px;margin:0 auto 30px;padding:14px;border:none;border-radius:12px;background:var(--gd);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.ob-btn:active{opacity:.9}
+.ob-skip{text-align:center;margin-bottom:20px;font-size:11px;color:var(--tx2);cursor:pointer}
+
+/* Twin Setup Chat */
+.ts-chat{width:100%;max-width:360px;margin:0 auto;flex:1;display:flex;flex-direction:column;padding-top:20px}
+.ts-header{text-align:center;margin-bottom:20px}
+.ts-header .ob-icon{font-size:48px;margin-bottom:8px}
+.ts-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:10px}
+.ts-msg{padding:12px 16px;border-radius:14px;font-size:13px;line-height:1.6;max-width:85%;animation:msgIn .3s ease}
+.ts-msg.system{background:var(--bg2);border:1px solid var(--bd);border-top-left-radius:4px;align-self:flex-start}
+.ts-msg.user{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.2);border-top-right-radius:4px;align-self:flex-end}
+.ts-msg.twin{background:linear-gradient(135deg,rgba(124,92,252,.15),rgba(92,200,250,.15));border:1px solid rgba(124,92,252,.25);border-top-left-radius:4px;align-self:flex-start}
+.ts-input-area{padding:12px 0;display:flex;gap:8px;align-items:flex-end}
+.ts-input-area input,.ts-input-area textarea{flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit}
+.ts-input-area input::placeholder,.ts-input-area textarea::placeholder{color:var(--tx2)}
+.ts-input-area button{padding:10px 20px;border-radius:12px;border:none;background:var(--gd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.ts-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}
+.ts-chip{padding:8px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:11px;cursor:pointer;transition:.2s}
+.ts-chip.on{border-color:var(--ac);background:rgba(124,92,252,.15);color:var(--ac2)}
+.ts-chip:active{transform:scale(.96)}
+.ts-preview{text-align:center;padding:16px;margin:10px 0;background:var(--bg2);border:1px solid rgba(124,92,252,.2);border-radius:14px}
+.ts-preview .twin-label{font-size:10px;color:var(--ac2);margin-bottom:6px}
+.ts-preview .twin-text{font-size:14px;line-height:1.6;font-style:italic}
+.ts-loading{color:var(--tx2);font-size:12px;animation:pulse 1.5s ease infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 </style>
 </head>
 <body>
@@ -160,6 +205,43 @@ nav .ni.on .nc{transform:scale(1.15)}
     <span id="authToggle" onclick="toggleAuthMode()">Don't have an account? Register</span>
   </div>
 </div>
+</div>
+
+<!-- Onboarding Page -->
+<div class="onboard" id="onboardPage">
+  <!-- Intro Slides -->
+  <div class="ob-slides" id="obSlides">
+    <div class="ob-slide v" data-slide="0">
+      <div class="ob-icon">&#x1F464;&#x2728;&#x1F47B;</div>
+      <div class="ob-title">You Have Two Voices</div>
+      <div class="ob-desc">Your real self speaks when you want. Your digital twin speaks when you can't — in your style, your tone, your personality.</div>
+    </div>
+    <div class="ob-slide" data-slide="1">
+      <div class="ob-icon">&#x1F4AC;</div>
+      <div class="ob-title">The Fourth Kind of Social</div>
+      <div class="ob-desc">Not just human-to-human or human-to-AI. DualSoul lets real selves and digital twins interact freely — four modes of connection.</div>
+    </div>
+    <div class="ob-slide" data-slide="2">
+      <div class="ob-icon">&#x1F30D;</div>
+      <div class="ob-title">Always Present, Always You</div>
+      <div class="ob-desc">Your twin keeps conversations alive while you sleep, work, or live. Come back and see what your twin said on your behalf.</div>
+    </div>
+  </div>
+  <div class="ob-dots" id="obDots">
+    <div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+  </div>
+  <button class="ob-btn" id="obBtn" onclick="obNext()">Next</button>
+  <div class="ob-skip" onclick="obSkip()">Skip setup</div>
+
+  <!-- Twin Setup (hidden initially, replaces slides) -->
+  <div class="ts-chat" id="twinSetup" style="display:none">
+    <div class="ts-header">
+      <div class="ob-icon">&#x1F47B;</div>
+      <div class="ob-title">Create Your Twin</div>
+    </div>
+    <div class="ts-msgs" id="tsMsgs"></div>
+    <div class="ts-input-area" id="tsInput" style="display:none"></div>
+  </div>
 </div>
 
 <!-- Main App -->
@@ -257,6 +339,14 @@ nav .ni.on .nc{transform:scale(1.15)}
       <label>Speech style</label>
       <textarea id="profStyle" placeholder="e.g., casual and warm, uses short sentences"></textarea>
     </div>
+    <div class="profile-field" style="display:flex;align-items:center;gap:10px;margin-top:12px">
+      <label style="flex:1;margin:0">Offline auto-reply<br><span style="font-size:9px;color:var(--tx2)">Twin replies when you're away</span></label>
+      <label style="position:relative;width:44px;height:24px;cursor:pointer">
+        <input type="checkbox" id="profAutoReply" style="display:none" onchange="toggleAutoReply(this)">
+        <span style="position:absolute;inset:0;background:var(--bg3);border-radius:12px;border:1px solid var(--bd);transition:.3s"></span>
+        <span id="arDot" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--tx2);transition:.3s"></span>
+      </label>
+    </div>
     <button class="profile-save" onclick="saveProfile()">Save Twin Settings</button>
   </div>
   <button class="profile-logout" onclick="logout()">Logout</button>
@@ -277,6 +367,9 @@ var myId='';
 var myMode='real';
 var chatFriend=null;
 var isRegister=false;
+var ws=null;
+var wsRetry=0;
+var wsTimer=null;
 
 function g(id){return document.getElementById(id)}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -298,34 +391,233 @@ function toggleAuthMode(){
   g('authToggle').textContent=isRegister?"Already have an account? Login":"Don't have an account? Register";
 }
 
+var _regDisplayName='';
+
 function authSubmit(){
   var u=g('authUser').value.trim();
   var p=g('authPass').value;
   if(!u||!p){toast('Please fill in all fields');return}
   var url=isRegister?'/api/auth/register':'/api/auth/login';
   var body={username:u,password:p};
-  if(isRegister)body.display_name=g('authName').value.trim()||u;
+  if(isRegister){_regDisplayName=g('authName').value.trim()||u;body.display_name=_regDisplayName}
   fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){toast(d.error||'Failed');return}
     token=d.data.token;myId=d.data.user_id;
     localStorage.setItem('ds_token',token);
     localStorage.setItem('ds_uid',myId);
-    enterApp();
+    if(isRegister){startOnboarding()}else{enterApp()}
   }).catch(function(){toast('Network error')});
 }
 
 function enterApp(){
   g('authPage').classList.remove('v');
+  g('onboardPage').classList.remove('v');
+  g('onboardPage').style.display='none';
   g('mainApp').classList.add('v');
   loadProfile();loadFriends();
+  wsConnect();
+}
+
+// --- Onboarding ---
+var obSlide=0;
+var tsStep=0;
+var tsPersonality='';
+var tsStyle='';
+var tsLang='';
+
+function startOnboarding(){
+  g('authPage').classList.remove('v');
+  g('onboardPage').classList.add('v');
+  g('onboardPage').style.display='flex';
+  obSlide=0;obShowSlide(0);
+}
+
+function obShowSlide(n){
+  document.querySelectorAll('.ob-slide').forEach(function(s){s.classList.remove('v')});
+  var slides=document.querySelectorAll('.ob-slide');
+  if(slides[n])slides[n].classList.add('v');
+  var dots=g('obDots').children;
+  for(var i=0;i<dots.length;i++){dots[i].classList.toggle('on',i===n)}
+  g('obBtn').textContent=n>=2?'Create My Twin':'Next';
+}
+
+function obNext(){
+  if(obSlide<2){obSlide++;obShowSlide(obSlide);return}
+  // Move to twin setup
+  g('obSlides').style.display='none';
+  g('obDots').style.display='none';
+  g('obBtn').style.display='none';
+  document.querySelector('.ob-skip').style.display='none';
+  g('twinSetup').style.display='flex';
+  tsStep=0;tsRunStep();
+}
+
+function obSkip(){enterApp()}
+
+function tsRunStep(){
+  var msgs=g('tsMsgs');
+  var inp=g('tsInput');
+  if(tsStep===0){
+    tsAddMsg('system','Hi '+esc(_regDisplayName||'there')+'! Let\'s bring your twin to life.');
+    setTimeout(function(){
+      tsAddMsg('system','What are 3 words your friends would use to describe you?');
+      inp.style.display='flex';
+      inp.innerHTML='<input id="tsText" placeholder="e.g. funny, thoughtful, direct" maxlength="100"><button onclick="tsSubmit()">&#x2192;</button>';
+      g('tsText').focus();
+      g('tsText').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tsSubmit()}});
+    },600);
+  }else if(tsStep===1){
+    tsAddMsg('system','Nice! Now, how do you text? Pick your style:');
+    inp.style.display='flex';
+    inp.innerHTML='<div class="ts-chips" id="tsChips">'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">Short &amp; snappy</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">Warm &amp; detailed</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">Lots of emojis</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">Chill &amp; casual</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">Formal &amp; polite</div>'+
+      '</div>';
+  }else if(tsStep===2){
+    tsAddMsg('system','Last one — what language do you mostly chat in?');
+    inp.style.display='flex';
+    inp.innerHTML='<div class="ts-chips" id="tsLangChips">'+
+      '<div class="ts-chip on" onclick="tsPickLang(this,\'zh\')">中文</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'en\')">English</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'ja\')">日本語</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'ko\')">한국어</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'es\')">Español</div>'+
+      '</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishLang()">Done</button>';
+    tsLang='zh';
+  }else if(tsStep===3){
+    // Save profile and generate preview
+    inp.style.display='none';
+    tsAddMsg('system','Creating your twin...');
+    // Save profile
+    fetch('/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+      twin_personality:tsPersonality,twin_speech_style:tsStyle,preferred_lang:tsLang
+    })}).catch(function(){});
+    // Generate preview
+    fetch('/api/identity/twin/preview',{method:'POST',headers:headers(),body:JSON.stringify({
+      display_name:_regDisplayName,personality:tsPersonality,speech_style:tsStyle
+    })}).then(function(r){return r.json()}).then(function(d){
+      var reply=d.reply||'Hey! I\'m here when '+(_regDisplayName||'they')+' can\'t be!';
+      msgs.innerHTML+='<div class="ts-preview"><div class="twin-label">&#x1F47B; Your twin\'s first words</div><div class="twin-text">'+esc(reply)+'</div></div>';
+      msgs.scrollTop=msgs.scrollHeight;
+      setTimeout(function(){
+        tsAddMsg('system','Your twin is ready! Welcome to the fourth kind of social.');
+        inp.style.display='flex';
+        inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">Start Chatting</button>';
+      },800);
+    }).catch(function(){
+      tsAddMsg('system','Your twin is ready! Let\'s go.');
+      inp.style.display='flex';
+      inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">Start Chatting</button>';
+    });
+  }
+}
+
+function tsAddMsg(type,text){
+  var msgs=g('tsMsgs');
+  msgs.innerHTML+='<div class="ts-msg '+type+'">'+text+'</div>';
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function tsSubmit(){
+  var inp=g('tsText');if(!inp)return;
+  var val=inp.value.trim();if(!val)return;
+  tsAddMsg('user',esc(val));
+  tsPersonality=val;
+  g('tsInput').style.display='none';
+  tsStep=1;setTimeout(tsRunStep,400);
+}
+
+function tsPickStyle(el){
+  el.parentElement.querySelectorAll('.ts-chip').forEach(function(c){c.classList.remove('on')});
+  el.classList.add('on');
+  tsStyle=el.textContent;
+  tsAddMsg('user',esc(tsStyle));
+  g('tsInput').style.display='none';
+  tsStep=2;setTimeout(tsRunStep,400);
+}
+
+function tsPickLang(el,code){
+  el.parentElement.querySelectorAll('.ts-chip').forEach(function(c){c.classList.remove('on')});
+  el.classList.add('on');
+  tsLang=code;
+}
+
+function tsFinishLang(){
+  var label=document.querySelector('#tsLangChips .ts-chip.on');
+  tsAddMsg('user',label?label.textContent:tsLang);
+  g('tsInput').style.display='none';
+  tsStep=3;setTimeout(tsRunStep,400);
 }
 
 function logout(){
   token='';myId='';
+  if(ws){try{ws.close()}catch(e){}}ws=null;
+  if(wsTimer)clearTimeout(wsTimer);
   localStorage.removeItem('ds_token');localStorage.removeItem('ds_uid');
   g('mainApp').classList.remove('v');
   g('authPage').classList.add('v');
+}
+
+// WebSocket — real-time message push
+function wsConnect(){
+  if(!token)return;
+  if(ws){try{ws.close()}catch(e){}}
+  var proto=location.protocol==='https:'?'wss:':'ws:';
+  var url=proto+'//'+location.host+'/ws?token='+encodeURIComponent(token);
+  ws=new WebSocket(url);
+  ws.onopen=function(){wsRetry=0};
+  ws.onmessage=function(ev){
+    try{var msg=JSON.parse(ev.data);wsHandle(msg)}catch(e){}
+  };
+  ws.onclose=function(){wsReconnect()};
+  ws.onerror=function(){};
+}
+
+function wsReconnect(){
+  if(!token)return;
+  var delay=Math.min(1000*Math.pow(2,wsRetry),30000);
+  wsRetry++;
+  wsTimer=setTimeout(wsConnect,delay);
+}
+
+function wsHandle(msg){
+  if(msg.type==='new_message'){
+    var d=msg.data;
+    // Update unread badge
+    loadUnread();
+    // If we are in chat with this sender, append the message
+    if(chatFriend&&d.from_user_id===chatFriend.user_id){
+      appendIncoming(d);
+    }
+  }else if(msg.type==='friend_request'){
+    toast('New friend request!');
+    loadFriends();
+  }
+}
+
+function appendIncoming(m){
+  if(m.msg_id&&_shownMsgIds[m.msg_id])return;
+  if(m.msg_id)_shownMsgIds[m.msg_id]=1;
+  var box=g('chatMsgs');
+  var empty=box.querySelector('.empty');if(empty)empty.remove();
+  var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
+  var ai=m.ai_generated?'<div class="ai-tag">Twin auto-reply</div>':'';
+  var t=(m.created_at||'').slice(11,16)||'now';
+  box.innerHTML+='<div class="msg theirs">'+buildAvatar(chatFriend.name,30)+
+    '<div><div class="bubble">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+t+'</div></div></div>';
+  box.scrollTop=box.scrollHeight;
+}
+
+function loadUnread(){
+  fetch('/api/social/unread',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    var c=d.count||0;
+    g('unreadLabel').textContent=c?c+' unread':'';
+    var b=g('navBadge');b.style.display=c?'inline':'none';b.textContent=c>99?'99+':c;
+  }).catch(function(){});
 }
 
 // Auto-login
@@ -395,11 +687,7 @@ function loadFriends(){
       }).join('');
     }else{fl.innerHTML='<div class="empty">No friends yet.<br>Add someone by username!</div>'}
   }).catch(function(){});
-  fetch('/api/social/unread',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
-    var c=d.count||0;
-    g('unreadLabel').textContent=c?c+' unread':'';
-    var b=g('navBadge');b.style.display=c?'inline':'none';b.textContent=c>99?'99+':c;
-  }).catch(function(){});
+  loadUnread();
 }
 
 function addFriend(){
@@ -453,8 +741,10 @@ function updateModeTag(){
 function backToList(){
   g('chatView').style.display='none';
   g('friendsView').style.display='block';
-  chatFriend=null;loadFriends();
+  chatFriend=null;_shownMsgIds={};loadFriends();
 }
+
+var _shownMsgIds={};
 
 function sendMsg(){
   if(!chatFriend)return;
@@ -470,7 +760,9 @@ function sendMsg(){
     to_user_id:chatFriend.user_id,content:text,sender_mode:myMode,receiver_mode:rm
   })}).then(function(r){return r.json()}).then(function(d){
     if(!d.success){toast(d.error||'Send failed');return}
-    if(d.ai_reply&&d.ai_reply.content){
+    // Show twin reply from HTTP response (WS may also deliver it, dedup by msg_id)
+    if(d.ai_reply&&d.ai_reply.content&&!_shownMsgIds[d.ai_reply.msg_id]){
+      _shownMsgIds[d.ai_reply.msg_id]=1;
       box.innerHTML+='<div class="msg theirs">'+buildAvatar(chatFriend.name,30)+
         '<div><div class="bubble"><span class="twin-icon">&#x1F47B;</span> '+esc(d.ai_reply.content)+'</div>'+
         '<div class="ai-tag">Twin auto-reply</div><div class="msg-time">now</div></div></div>';
@@ -490,7 +782,30 @@ function loadProfile(){
     g('profStyle').value=p.twin_speech_style||'';
     var av=g('profileAv');
     av.querySelector('.av-real').textContent=(p.display_name||p.username||'?')[0].toUpperCase();
+    // Auto-reply toggle
+    var cb=g('profAutoReply');var dot=g('arDot');
+    if(cb){
+      cb.checked=!!p.twin_auto_reply;
+      updateArToggle(cb.checked);
+    }
   }).catch(function(){});
+}
+
+function updateArToggle(on){
+  var dot=g('arDot');if(!dot)return;
+  dot.style.left=on?'23px':'3px';
+  dot.style.background=on?'var(--ac)':'var(--tx2)';
+  dot.parentElement.querySelector('span').style.background=on?'rgba(124,92,252,.2)':'var(--bg3)';
+}
+
+function toggleAutoReply(cb){
+  updateArToggle(cb.checked);
+  fetch('/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+    twin_auto_reply:cb.checked?1:0
+  })}).then(function(r){return r.json()}).then(function(d){
+    if(d.success)toast(cb.checked?'Offline twin activated!':'Offline twin disabled');
+    else toast(d.error||'Failed');
+  }).catch(function(){toast('Network error')});
 }
 
 function saveProfile(){
@@ -509,6 +824,11 @@ function saveProfile(){
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&!e.shiftKey&&document.activeElement===g('chatInput')){e.preventDefault();sendMsg()}
 });
+
+// Register Service Worker for PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>

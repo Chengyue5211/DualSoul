@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from dualsoul import __version__
 from dualsoul.config import CORS_ORIGINS, HOST, PORT
 from dualsoul.database import init_db
-from dualsoul.routers import auth, identity, social
+from dualsoul.routers import auth, identity, social, ws
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(identity.router)
 app.include_router(social.router)
+app.include_router(ws.router)
 
 # Serve demo web client
 _web_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web")
@@ -50,6 +51,19 @@ if os.path.isdir(_web_dir):
     @app.get("/")
     async def serve_index():
         return FileResponse(os.path.join(_web_dir, "index.html"))
+
+    @app.get("/sw.js")
+    async def serve_sw():
+        return FileResponse(
+            os.path.join(_web_dir, "sw.js"), media_type="application/javascript"
+        )
+
+    @app.get("/manifest.json")
+    async def serve_manifest():
+        return FileResponse(
+            os.path.join(_web_dir, "manifest.json"),
+            media_type="application/manifest+json",
+        )
 
 
 @app.get("/api/health")

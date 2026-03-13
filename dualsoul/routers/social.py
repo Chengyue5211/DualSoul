@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends
 
 from dualsoul.auth import get_current_user
+from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
 from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest
 from dualsoul.twin_engine.responder import TwinResponder
@@ -44,6 +45,12 @@ async def add_friend(req: AddFriendRequest, user=Depends(get_current_user)):
             "VALUES (?, ?, ?, 'pending')",
             (conn_id, uid, fid),
         )
+
+    # Notify the recipient via WebSocket
+    await manager.send_to(fid, {
+        "type": "friend_request",
+        "data": {"conn_id": conn_id, "from_user_id": uid, "username": username},
+    })
     return {"success": True, "conn_id": conn_id}
 
 
@@ -191,8 +198,31 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
 
     result = {"success": True, "msg_id": msg_id, "ai_reply": None}
 
-    # Twin auto-reply when receiver_mode is 'twin'
-    if req.receiver_mode == "twin":
+    # Push the new message to the recipient via WebSocket
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    await manager.send_to(req.to_user_id, {
+        "type": "new_message",
+        "data": {
+            "msg_id": msg_id, "from_user_id": uid, "to_user_id": req.to_user_id,
+            "sender_mode": req.sender_mode, "receiver_mode": req.receiver_mode,
+            "content": content, "msg_type": req.msg_type,
+            "ai_generated": 0, "created_at": now,
+        },
+    })
+
+    # Determine if twin should auto-reply:
+    # 1. Explicit: receiver_mode is 'twin'
+    # 2. Offline auto-reply: recipient is offline + has twin_auto_reply enabled
+    should_twin_reply = req.receiver_mode == "twin"
+    if not should_twin_reply and req.receiver_mode == "real" and not manager.is_online(req.to_user_id):
+        with get_db() as db:
+            row = db.execute(
+                "SELECT twin_auto_reply FROM users WHERE user_id=?", (req.to_user_id,)
+            ).fetchone()
+            if row and row["twin_auto_reply"]:
+                should_twin_reply = True
+
+    if should_twin_reply:
         try:
             reply = await _twin.generate_reply(
                 twin_owner_id=req.to_user_id,
@@ -202,6 +232,20 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
                 target_lang=req.target_lang,
             )
             result["ai_reply"] = reply
+            # Push twin reply to both sender and recipient
+            if reply:
+                twin_msg = {
+                    "type": "new_message",
+                    "data": {
+                        "msg_id": reply["msg_id"], "from_user_id": req.to_user_id,
+                        "to_user_id": uid, "sender_mode": "twin",
+                        "receiver_mode": req.sender_mode,
+                        "content": reply["content"], "msg_type": "text",
+                        "ai_generated": 1, "created_at": now,
+                    },
+                }
+                await manager.send_to(uid, twin_msg)
+                await manager.send_to(req.to_user_id, twin_msg)
         except Exception:
             pass  # Twin reply is best-effort
 
