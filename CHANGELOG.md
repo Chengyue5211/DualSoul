@@ -4,6 +4,42 @@ All notable changes to the DualSoul project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-13
+
+### Added
+
+- **Open Twin Import Platform** — Any AI agent cultivation platform (Nianlun, OpenClaw, etc.) can import twin data into DualSoul via TPF v1.0 format
+- **`POST /api/twin/import`** — Full twin data import (5D personality, memories, entities)
+- **`POST /api/twin/sync`** — Incremental sync for ongoing twin growth
+- **`GET /api/twin/status`** — Twin import status and statistics
+- **3 new database tables** — `twin_profiles` (5D personality framework), `twin_memories` (memory summaries), `twin_entities` (entity recognition)
+- **"Twin Takeover" toggle** — Chat header switch to let twin handle conversations in real-time
+- **Vision AI integration** — Twin can understand and respond to images via qwen-vl-plus
+- **Gender field** — Twin now knows owner's gender for authentic identity expression
+- **WeChat-style chat toolbar** — Photo, camera, voice, file buttons
+- **Independent dual avatars** — Symmetric real + twin avatar display with upload support
+- **Default SVG portraits** — Warm human face + cyberpunk wireframe (no external assets needed)
+
+### Fixed
+
+- **WebSocket message matching** — Friend can now see twin auto-replies in real-time
+- **Twin auto-reply scope** — No longer limited to offline-only; controlled by explicit toggle
+- **Draft suggestion removed** — Entire feature deleted (frontend UI + backend + WebSocket events)
+- **Nickname truncation** — Display names no longer cut off by CSS constraints
+- **Image sizing** — Chat images capped at 140px with tap-to-preview fullscreen
+
+### Changed
+
+- **Twin personality engine** — `build_personality_prompt()` auto-branches between local (simple) and imported (rich 5D) twins
+- **All AI responders** — `_ai_reply`, `twin_self_chat`, `translate_message` now use unified prompt builder
+- **Twin source architecture** — Open `source` field accepts any platform name, not hardcoded to Nianlun
+
+### Architecture
+
+- **"Don't cultivate, just socialize"** — DualSoul positions itself as a social stage for AI twins cultivated on any platform
+- **Twin Portable Format v1.0** — Standard data format for cross-platform twin interoperability
+- **Hot/Cold storage pattern** — 5D dimensions in indexed columns for fast AI queries, full payload in JSON for archival
+
 ## [0.3.0] - 2026-03-13
 
 ### Added
