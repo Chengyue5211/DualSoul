@@ -71,20 +71,26 @@ nav .ni.on .nc{transform:scale(1.15)}
 .tab{display:none;padding:0 14px 80px}.tab.v{display:block}
 
 /* Dual Avatar Component — stacked: front avatar overlaps back avatar */
-.dual-av{position:relative;flex-shrink:0}
-.dual-av .av-front,.dual-av .av-back{border-radius:50%;position:absolute;display:flex;align-items:center;justify-content:center;font-weight:700;transition:.3s;overflow:hidden}
-.dual-av .av-front{bottom:0;left:0;z-index:2;border:2px solid var(--bg2)}
-.dual-av .av-back{top:0;right:0;z-index:1;border:1.5px solid rgba(255,255,255,.1);opacity:.6}
-/* Real avatar: warm, solid, human */
-.dual-av .av-front.is-real{background:linear-gradient(145deg,#2a2a3a,#3a3a4a);color:var(--tx);box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.dual-av .av-back.is-real{background:linear-gradient(145deg,#2a2a3a,#3a3a4a);color:var(--tx)}
-/* Twin avatar: cyber, glowing, digital */
-.dual-av .av-front.is-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;animation:twinShimmer 3s ease infinite;box-shadow:0 0 12px rgba(124,92,252,.3)}
-.dual-av .av-back.is-twin{background:linear-gradient(135deg,rgba(124,92,252,.6),rgba(92,200,250,.6));color:#fff}
-/* Cyber ring effect on twin front avatar */
-.dual-av .av-front.is-twin::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:1.5px solid rgba(92,200,250,.4);animation:twinRing 2s ease infinite}
-@keyframes twinShimmer{0%,100%{box-shadow:0 0 8px rgba(124,92,252,.3)}50%{box-shadow:0 0 18px rgba(92,200,250,.45)}}
-@keyframes twinRing{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.08);opacity:.2}}
+/* Dual Avatar — side-by-side real+twin composite */
+.dual-av{display:inline-flex;flex-shrink:0;border-radius:6px;overflow:hidden;background:#0a0e1a;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.dual-av .av-half{display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;position:relative}
+.dual-av .av-half.is-real{background:linear-gradient(145deg,#1a1e2e,#2a2e3e);color:var(--tx)}
+.dual-av .av-half.is-twin{background:linear-gradient(135deg,#06101e,#0a1828);color:#5cc8fa}
+/* Holographic wireframe glow on twin side */
+.dual-av .av-half.is-twin::before{content:'';position:absolute;inset:0;border:1px solid rgba(92,200,250,.3);z-index:3;pointer-events:none}
+.dual-av .av-half.is-twin::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(92,200,250,.08) 0%,transparent 40%,transparent 60%,rgba(92,200,250,.05) 100%);z-index:2;pointer-events:none;animation:holoScan 3s linear infinite}
+@keyframes holoScan{0%{background-position:0 -100%}100%{background-position:0 100%}}
+/* Twin image filter: holographic blue wireframe look */
+.dual-av .av-half.is-twin img{filter:saturate(0.15) brightness(1.4) contrast(1.4) sepia(1) hue-rotate(170deg);mix-blend-mode:screen}
+.dual-av .av-half.is-twin .av-init{color:#5cc8fa;text-shadow:0 0 8px rgba(92,200,250,.6),0 0 16px rgba(92,200,250,.3);position:relative;z-index:2}
+/* Glow divider between halves */
+.dual-av .av-divider{width:1px;background:linear-gradient(180deg,transparent,rgba(92,200,250,.5),transparent);flex-shrink:0;z-index:3}
+/* Active mode indicator — brighter/larger feel */
+.dual-av .av-half.active{flex:1.15}
+.dual-av .av-half:not(.active){flex:0.85;opacity:.75}
+/* Shimmer on twin */
+.dual-av .av-half.is-twin.active{box-shadow:inset 0 0 15px rgba(92,200,250,.12)}
+@keyframes twinShimmer{0%,100%{box-shadow:inset 0 0 10px rgba(92,200,250,.08)}50%{box-shadow:inset 0 0 20px rgba(92,200,250,.18)}}
 
 
 /* Add Friend */
@@ -152,9 +158,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 
 /* Profile Tab */
 .profile-card{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:20px;margin:14px 0;text-align:center}
-.profile-card .dual-av{margin:0 auto 12px;width:64px;height:64px}
-.profile-card .dual-av .av-front{width:48px;height:48px;font-size:20px}
-.profile-card .dual-av .av-back{width:34px;height:34px;font-size:14px}
+.profile-card .dual-av{margin:0 auto 12px}
 .profile-name{font-size:18px;font-weight:800;margin-bottom:4px}
 .profile-username{font-size:11px;color:var(--tx2)}
 .profile-section{margin:14px 0}
@@ -381,9 +385,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     <div class="section-title" id="myTwinLabel">我的分身</div>
     <div class="friend-list">
       <div class="friend-item" id="twinChatItem" onclick="openTwinChat()" style="border:1px solid rgba(124,92,252,.2);background:rgba(124,92,252,.04)">
-        <div class="dual-av" style="width:44px;height:44px">
-          <div class="av-front is-twin" style="width:32px;height:32px;font-size:14px">&#x1F47B;</div>
-          <div class="av-back is-real" style="width:22px;height:22px;font-size:10px" id="twinChatInitial">?</div>
+        <div class="dual-av" style="width:70px;height:44px">
+          <div class="av-half is-real" style="height:44px"><span class="av-init" style="font-size:16px" id="twinChatInitial">?</span></div>
+          <div class="av-divider"></div>
+          <div class="av-half is-twin active" style="height:44px"><span class="av-init" style="font-size:16px">?</span></div>
         </div>
         <div class="fi-info">
           <div class="fi-name" id="twinChatName">我的分身</div>
@@ -402,9 +407,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   <div class="chat-view" id="chatView">
     <div class="chat-header">
       <span class="chat-back" onclick="backToList()">&#8249;</span>
-      <div class="dual-av" id="chatAvatar" style="width:36px;height:36px">
-        <div class="av-front is-real" style="width:28px;height:28px;font-size:12px">?</div>
-        <div class="av-back is-twin" style="width:20px;height:20px;font-size:10px">&#x1F47B;</div>
+      <div class="dual-av" id="chatAvatar" style="width:58px;height:36px">
+        <div class="av-half is-real active" style="height:36px"><span class="av-init" style="font-size:13px">?</span></div>
+        <div class="av-divider"></div>
+        <div class="av-half is-twin" style="height:36px"><span class="av-init" style="font-size:13px">?</span></div>
       </div>
       <span class="chat-name" id="chatName">Friend</span>
       <span class="chat-mode-tag" id="chatModeTag">Real &rarr; Real</span>
@@ -454,9 +460,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 <div class="tab" id="tabProfile">
   <div class="tab-header"><h2>Profile</h2></div>
   <div class="profile-card">
-    <div class="dual-av" id="profileAv" style="width:64px;height:64px">
-      <div class="av-front is-real" style="width:48px;height:48px;font-size:20px">?</div>
-      <div class="av-back is-twin" style="width:34px;height:34px;font-size:14px">&#x1F47B;</div>
+    <div class="dual-av" id="profileAv" style="width:102px;height:64px">
+      <div class="av-half is-real active" style="height:64px"><span class="av-init" style="font-size:24px">?</span></div>
+      <div class="av-divider"></div>
+      <div class="av-half is-twin" style="height:64px"><span class="av-init" style="font-size:24px">?</span></div>
     </div>
     <div class="profile-name" id="profileName">User</div>
     <div class="profile-username" id="profileUsername">@username</div>
@@ -1273,24 +1280,28 @@ function swTab(name,el){
 
 
 function buildAvatar(name,size,mode,avatarUrl,twinAvatarUrl){
-  // mode: 'real' (default) = real in front, 'twin' = twin in front
-  // avatarUrl/twinAvatarUrl: optional image URLs for real/twin avatars
+  // Side-by-side dual avatar: real half + twin half
+  // mode: 'real' = real side active, 'twin' = twin side active
   size=size||48;mode=mode||'real';
-  var front=Math.round(size*0.72);
-  var back=Math.round(size*0.50);
+  var w=Math.round(size*1.6);  // wider than tall for side-by-side
+  var halfW=Math.round(w/2);
+  var fs=Math.round(size*0.38);
   var initial=esc((name||'?')[0].toUpperCase());
   var isTwin=mode==='twin';
-  var frontCls=isTwin?'is-twin':'is-real';
-  var backCls=isTwin?'is-real':'is-twin';
-  // Determine content: use image if available, otherwise initial/ghost
-  var realContent=avatarUrl?'<img src="'+DS_BASE+avatarUrl+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">':initial;
-  var tf=localStorage.getItem('ds_twin_filter')||'';
-  var twinContent=twinAvatarUrl?'<img src="'+DS_BASE+twinAvatarUrl+'" class="twin-filter '+tf+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">':'&#x1F47B;';
-  var frontContent=isTwin?twinContent:realContent;
-  var backContent=isTwin?realContent:twinContent;
-  return '<div class="dual-av" style="width:'+size+'px;height:'+size+'px">'+
-    '<div class="av-front '+frontCls+'" style="width:'+front+'px;height:'+front+'px;font-size:'+Math.round(front*0.44)+'px">'+frontContent+'</div>'+
-    '<div class="av-back '+backCls+'" style="width:'+back+'px;height:'+back+'px;font-size:'+Math.round(back*0.44)+'px">'+backContent+'</div></div>';
+  // Real side content
+  var realImg=avatarUrl?'<img src="'+DS_BASE+avatarUrl+'" style="width:100%;height:100%;object-fit:cover">':
+    '<span class="av-init" style="font-size:'+fs+'px">'+initial+'</span>';
+  // Twin side content — use same photo with holographic filter, or ghost icon
+  var twinSrc=twinAvatarUrl||avatarUrl;
+  var twinImg=twinSrc?'<img src="'+DS_BASE+twinSrc+'" style="width:100%;height:100%;object-fit:cover">':
+    '<span class="av-init" style="font-size:'+fs+'px">'+initial+'</span>';
+  // Layout: real on left, twin on right
+  var realActive=!isTwin?' active':'';
+  var twinActive=isTwin?' active':'';
+  return '<div class="dual-av" style="width:'+w+'px;height:'+size+'px">'+
+    '<div class="av-half is-real'+realActive+'" style="height:'+size+'px">'+realImg+'</div>'+
+    '<div class="av-divider"></div>'+
+    '<div class="av-half is-twin'+twinActive+'" style="height:'+size+'px">'+twinImg+'</div></div>';
 }
 
 // Friends
@@ -1535,6 +1546,8 @@ function loadProfile(){
     updateInviteUI();
     // Update twin chat entry
     var tci=g('twinChatInitial');if(tci)tci.textContent=(_profileName||'?')[0].toUpperCase();
+    // Also update twin side initial in the twin chat entry
+    var twinEntry=g('twinChatItem');if(twinEntry){var twinInits=twinEntry.querySelectorAll('.av-half.is-twin .av-init');twinInits.forEach(function(el){el.textContent=(_profileName||'?')[0].toUpperCase()});}
     var tcn=g('twinChatName');if(tcn)tcn.textContent=LANG==='zh'?_profileName+'的分身':_profileName+"'s Twin";
     g('profPersonality').value=p.twin_personality||'';
     g('profStyle').value=p.twin_speech_style||'';
