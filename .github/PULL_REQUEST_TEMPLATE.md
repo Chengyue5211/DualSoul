@@ -27,3 +27,7 @@ Brief description of what this PR does.
 - [ ] Linter passes (`ruff check dualsoul/`)
 - [ ] Documentation updated (if applicable)
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
+
+## CLA (first-time contributors only)
+
+- [ ] I have read and agree to the [DualSoul Contributor License Agreement](CLA.md)
