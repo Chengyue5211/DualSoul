@@ -217,6 +217,14 @@ nav .ni.on .nc{transform:scale(1.15)}
 .ts-preview{text-align:center;padding:16px;margin:10px 0;background:var(--bg2);border:1px solid rgba(124,92,252,.2);border-radius:14px}
 .ts-preview .twin-label{font-size:10px;color:var(--ac2);margin-bottom:6px}
 .ts-preview .twin-text{font-size:14px;line-height:1.6;font-style:italic}
+/* Style template cards */
+.style-cards{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.style-card{padding:12px;border-radius:12px;border:1.5px solid var(--bd);background:var(--bg3);cursor:pointer;transition:.2s}
+.style-card:active{transform:scale(.98)}
+.style-card.on{border-color:var(--ac);background:rgba(124,92,252,.1);box-shadow:0 0 12px rgba(124,92,252,.15)}
+.style-card .sc-name{font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.style-card .sc-example{font-size:11px;color:var(--tx2);font-style:italic;line-height:1.4}
+.style-card .sc-tags{font-size:9px;color:var(--ac2);margin-top:4px}
 .ts-loading{color:var(--tx2);font-size:12px;animation:pulse 1.5s ease infinite}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
@@ -433,6 +441,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   </div>
   <div class="profile-section">
     <h3>Twin Personality</h3>
+    <div id="profStyleCards" style="margin-bottom:12px">
+      <label id="labelQuickStyle" style="font-size:11px;color:var(--tx2);margin-bottom:6px;display:block">快速选择风格模板</label>
+      <div class="style-cards" id="profileStyleCards" style="gap:6px"></div>
+    </div>
     <div class="profile-field">
       <label id="labelPersonality">How would you describe your twin's personality?</label>
       <textarea id="profPersonality" placeholder="e.g., friendly and thoughtful, a bit humorous"></textarea>
@@ -643,7 +655,9 @@ function applyLang(){
   var ps=document.querySelector('.profile-section h3');if(ps)ps.textContent=t('twinPersonality');
   var pp=g('profPersonality');if(pp)pp.placeholder=t('personalityPh');
   var pst=g('profStyle');if(pst)pst.placeholder=t('stylePh');
+  var lqs=g('labelQuickStyle');if(lqs)lqs.textContent=LANG==='zh'?'快速选择风格模板':'Quick style template';
   var lp=g('labelPersonality');if(lp)lp.textContent=t('personalityLabel');
+  populateProfileStyleCards();
   var lst=g('labelStyle');if(lst)lst.textContent=t('speechStyle');
   var lar=g('labelAutoReply');if(lar)lar.innerHTML=t('twinAutoReply')+'<br><span style="font-size:9px;color:var(--tx2)">'+t('twinAutoDesc')+'</span>';
   var psb=document.querySelector('.profile-save');if(psb)psb.textContent=t('saveTwin');
@@ -777,27 +791,51 @@ function tsRunStep(){
         '<button class="cam-skip" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button></div></div>';
     },600);
   }else if(tsStep===1){
-    tsAddMsg('system',LANG==='zh'?'朋友会用哪3个词形容你？':'What are 3 words your friends would use to describe you?');
+    // Step 1: Choose a base personality template
+    tsAddMsg('system',LANG==='zh'?'选一个最像你的风格，作为分身的基础人设：':'Pick the style that\'s most like you — this becomes your twin\'s base personality:');
     inp.style.display='flex';
-    inp.innerHTML='<input id="tsText" placeholder="'+(LANG==='zh'?'例如：有趣、贴心、直率':'e.g. funny, thoughtful, direct')+'" maxlength="100"><button onclick="tsSubmit()">&#x2192;</button>';
-    g('tsText').focus();
-    g('tsText').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tsSubmit()}});
+    var cards=LANG==='zh'?[
+      {id:'warm',name:'温暖贴心',personality:'温暖、体贴、善于倾听',style:'语气柔和，常关心对方，用词温暖',example:'"辛苦啦，记得喝水，别太累了"'},
+      {id:'sharp',name:'理性干练',personality:'理性、高效、逻辑清晰',style:'言简意赅，直奔主题，不说废话',example:'"收到，明天下午三点处理完"'},
+      {id:'humor',name:'幽默随性',personality:'幽默、乐观、善于调侃',style:'轻松随意，偶尔开玩笑，氛围轻松',example:'"这事儿我熟，包在我身上，放心躺好"'},
+      {id:'creative',name:'有想象力的创造者',personality:'有想象力但严谨，善于创造，情绪稳定',style:'简洁有力，偶尔用比喻，不矫情不浮夸',example:'"这个方向对了，再往深挖一层就通了"'},
+      {id:'gentle',name:'文艺细腻',personality:'敏感、细腻、审美力强',style:'措辞讲究，注重感受，表达有画面感',example:'"窗外下雨了，突然想到你说的那句话"'}
+    ]:[
+      {id:'warm',name:'Warm & Caring',personality:'warm, empathetic, good listener',style:'gentle tone, often checks on others, caring words',example:'"Take care of yourself, don\'t overwork it"'},
+      {id:'sharp',name:'Sharp & Efficient',personality:'rational, efficient, clear-headed',style:'concise, to the point, no fluff',example:'"Got it. Will handle by 3pm tomorrow"'},
+      {id:'humor',name:'Funny & Chill',personality:'humorous, optimistic, playful',style:'relaxed, occasional jokes, light vibe',example:'"I got this, just sit back and relax"'},
+      {id:'creative',name:'Creative Thinker',personality:'imaginative yet rigorous, creative, emotionally stable',style:'concise and clear, occasional metaphors, no pretense',example:'"Right direction — dig one layer deeper and it clicks"'},
+      {id:'gentle',name:'Artistic & Sensitive',personality:'sensitive, detail-oriented, strong aesthetic sense',style:'careful wording, expressive, vivid imagery',example:'"It\'s raining outside — suddenly reminded me of what you said"'}
+    ];
+    var html='<div class="style-cards" id="styleCards">';
+    cards.forEach(function(c){
+      html+='<div class="style-card" data-id="'+c.id+'" data-personality="'+esc(c.personality)+'" data-style="'+esc(c.style)+'" onclick="tsPickCard(this)">'+
+        '<div class="sc-name">'+esc(c.name)+'</div>'+
+        '<div class="sc-example">'+esc(c.example)+'</div>'+
+        '<div class="sc-tags">'+esc(c.personality)+'</div></div>';
+    });
+    html+='</div>';
+    inp.innerHTML=html;
   }else if(tsStep===2){
-    tsAddMsg('system',LANG==='zh'?'很好！你发消息的风格是？':'Nice! How do you text? Pick your style:');
+    // Step 2: Fine-tune with tags (multi-select)
+    tsAddMsg('system',LANG==='zh'?'想微调一下吗？选几个标签加到你的风格里（可多选，也可直接跳过）：':'Want to fine-tune? Pick some tags to add to your style (multi-select, or skip):');
     inp.style.display='flex';
-    inp.innerHTML='<div class="ts-chips" id="tsChips">'+
-      (LANG==='zh'?
-      '<div class="ts-chip" onclick="tsPickStyle(this)">简短利落</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">温暖细腻</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">表情包达人</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">随性自然</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">正式礼貌</div>':
-      '<div class="ts-chip" onclick="tsPickStyle(this)">Short &amp; snappy</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">Warm &amp; detailed</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">Lots of emojis</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">Chill &amp; casual</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">Formal &amp; polite</div>')+
-      '</div>';
+    var tags=LANG==='zh'?[
+      '偶尔用emoji','喜欢用短句','说话带点幽默','认真严谨',
+      '不用感叹号','喜欢反问','常说"哈哈"','用词简单直白',
+      '爱用省略号...','语气温柔','说话干脆','偶尔文艺'
+    ]:[
+      'Uses emojis sometimes','Prefers short sentences','A bit humorous','Serious & precise',
+      'Avoids exclamation marks','Likes rhetorical questions','Keeps it simple','Very direct',
+      'Uses ellipsis...','Gentle tone','Snappy replies','Occasionally poetic'
+    ];
+    var html='<div class="ts-chips" id="tsFineTune">';
+    tags.forEach(function(tag){
+      html+='<div class="ts-chip" onclick="tsToggleTag(this)">'+esc(tag)+'</div>';
+    });
+    html+='</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishTags()">'+(LANG==='zh'?'确定':'Done')+'</button>'+
+      '<div style="text-align:center;margin-top:6px"><span style="font-size:10px;color:var(--tx2);cursor:pointer" onclick="tsFinishTags()">'+(LANG==='zh'?'跳过微调':'Skip fine-tuning')+'</span></div>';
+    inp.innerHTML=html;
   }else if(tsStep===3){
     tsAddMsg('system',LANG==='zh'?'最后一步——你主要用什么语言聊天？':'Last one — what language do you mostly chat in?');
     inp.style.display='flex';
@@ -919,20 +957,32 @@ function tsAddMsg(type,text){
   msgs.scrollTop=msgs.scrollHeight;
 }
 
-function tsSubmit(){
-  var inp=g('tsText');if(!inp)return;
-  var val=inp.value.trim();if(!val)return;
-  tsAddMsg('user',esc(val));
-  tsPersonality=val;
+function tsPickCard(el){
+  // Select a style template card
+  el.parentElement.querySelectorAll('.style-card').forEach(function(c){c.classList.remove('on')});
+  el.classList.add('on');
+  tsPersonality=el.getAttribute('data-personality');
+  tsStyle=el.getAttribute('data-style');
+  var name=el.querySelector('.sc-name').textContent;
+  tsAddMsg('user',esc(name));
   g('tsInput').style.display='none';
   tsStep=2;setTimeout(tsRunStep,400);
 }
 
-function tsPickStyle(el){
-  el.parentElement.querySelectorAll('.ts-chip').forEach(function(c){c.classList.remove('on')});
-  el.classList.add('on');
-  tsStyle=el.textContent;
-  tsAddMsg('user',esc(tsStyle));
+function tsToggleTag(el){
+  el.classList.toggle('on');
+}
+
+function tsFinishTags(){
+  var selected=[];
+  var chips=document.querySelectorAll('#tsFineTune .ts-chip.on');
+  chips.forEach(function(c){selected.push(c.textContent)});
+  if(selected.length){
+    tsStyle=tsStyle+'，'+selected.join('，');
+    tsAddMsg('user',selected.join('、'));
+  }else{
+    tsAddMsg('user',LANG==='zh'?'不微调，直接用':'No fine-tuning, use as is');
+  }
   g('tsInput').style.display='none';
   tsStep=3;setTimeout(tsRunStep,400);
 }
@@ -1347,7 +1397,43 @@ function loadProfile(){
     }
     // Check style learning status
     checkLearnStatus();
+    // Populate style template cards in profile
+    populateProfileStyleCards();
   }).catch(function(){});
+}
+
+var _styleTemplates={
+  zh:[
+    {id:'warm',name:'温暖贴心',personality:'温暖、体贴、善于倾听',style:'语气柔和，常关心对方，用词温暖',example:'"辛苦啦，记得喝水"'},
+    {id:'sharp',name:'理性干练',personality:'理性、高效、逻辑清晰',style:'言简意赅，直奔主题，不说废话',example:'"收到，明天下午处理"'},
+    {id:'humor',name:'幽默随性',personality:'幽默、乐观、善于调侃',style:'轻松随意，偶尔开玩笑',example:'"这事儿我熟，包在我身上"'},
+    {id:'creative',name:'创造型思考者',personality:'有想象力但严谨，善于创造，情绪稳定',style:'简洁有力，偶尔用比喻，不矫情',example:'"方向对了，再深挖一层"'},
+    {id:'gentle',name:'文艺细腻',personality:'敏感、细腻、审美力强',style:'措辞讲究，注重感受，有画面感',example:'"窗外下雨了，想到你说的话"'}
+  ],
+  en:[
+    {id:'warm',name:'Warm & Caring',personality:'warm, empathetic, good listener',style:'gentle tone, checks on others, caring',example:'"Take care, don\'t overwork"'},
+    {id:'sharp',name:'Sharp & Efficient',personality:'rational, efficient, clear-headed',style:'concise, to the point, no fluff',example:'"Got it. Done by 3pm"'},
+    {id:'humor',name:'Funny & Chill',personality:'humorous, optimistic, playful',style:'relaxed, occasional jokes',example:'"I got this, sit back and relax"'},
+    {id:'creative',name:'Creative Thinker',personality:'imaginative yet rigorous, creative, stable',style:'concise, occasional metaphors, no pretense',example:'"Right direction — dig deeper"'},
+    {id:'gentle',name:'Artistic & Sensitive',personality:'sensitive, detail-oriented, aesthetic',style:'careful wording, expressive, vivid',example:'"It\'s raining — reminded me of you"'}
+  ]
+};
+
+function populateProfileStyleCards(){
+  var container=g('profileStyleCards');if(!container)return;
+  var cards=_styleTemplates[LANG]||_styleTemplates.en;
+  container.innerHTML=cards.map(function(c){
+    return '<div class="style-card" data-personality="'+esc(c.personality)+'" data-style="'+esc(c.style)+'" onclick="profPickCard(this)" style="padding:8px 10px">'+
+      '<div class="sc-name" style="font-size:11px">'+esc(c.name)+'</div>'+
+      '<div class="sc-example" style="font-size:10px">'+esc(c.example)+'</div></div>';
+  }).join('');
+}
+
+function profPickCard(el){
+  el.parentElement.querySelectorAll('.style-card').forEach(function(c){c.classList.remove('on')});
+  el.classList.add('on');
+  g('profPersonality').value=el.getAttribute('data-personality');
+  g('profStyle').value=el.getAttribute('data-style');
 }
 
 function updateArToggle(on){
