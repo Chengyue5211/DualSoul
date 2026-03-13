@@ -187,6 +187,24 @@ nav .ni.on .nc{transform:scale(1.15)}
 .ts-preview .twin-text{font-size:14px;line-height:1.6;font-style:italic}
 .ts-loading{color:var(--tx2);font-size:12px;animation:pulse 1.5s ease infinite}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* Camera Capture */
+.cam-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
+.cam-preview{position:relative;width:180px;height:180px;border-radius:50%;overflow:hidden;border:3px solid var(--ac);background:var(--bg3)}
+.cam-preview video,.cam-preview canvas,.cam-preview img{width:100%;height:100%;object-fit:cover}
+.cam-preview .cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px;background:rgba(10,10,16,.5);z-index:1;cursor:pointer}
+.cam-result{display:flex;gap:16px;align-items:center;justify-content:center;margin-top:10px}
+.cam-result .av-box{position:relative;width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid var(--bd)}
+.cam-result .av-box.twin-box{border-color:var(--ac);box-shadow:0 0 20px rgba(124,92,252,.3)}
+.cam-result .av-box img{width:100%;height:100%;object-fit:cover}
+.cam-result .av-label{font-size:10px;color:var(--tx2);text-align:center;margin-top:6px}
+.cam-arrow{font-size:24px;color:var(--ac);animation:pulse 1.5s ease infinite}
+.cam-btns{display:flex;gap:8px}
+.cam-btns button{padding:8px 20px;border-radius:10px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.cam-btns .cam-take{background:var(--gd);color:#fff}
+.cam-btns .cam-retake{background:var(--bg3);color:var(--tx);border:1px solid var(--bd)}
+.cam-btns .cam-skip{background:transparent;color:var(--tx2)}
+.twin-filter{filter:saturate(1.3) contrast(1.1) hue-rotate(20deg) brightness(1.05)}
 </style>
 </head>
 <body>
@@ -384,6 +402,8 @@ var myId='';
 var myMode='real';
 var chatFriend=null;
 var _profileName='';
+var _myAvatar='';
+var _myTwinAvatar='';
 var isRegister=false;
 var ws=null;
 var wsRetry=0;
@@ -636,30 +656,48 @@ function obNext(){
 
 function obSkip(){enterApp()}
 
+var _camStream=null;
+var _capturedPhoto=null;
+
 function tsRunStep(){
   var msgs=g('tsMsgs');
   var inp=g('tsInput');
   if(tsStep===0){
-    tsAddMsg('system','Hi '+esc(_regDisplayName||'there')+'! Let\'s bring your twin to life.');
+    // Step 0: Camera capture for avatar
+    var greeting=LANG==='zh'?'嗨 '+esc(_regDisplayName||'')+' ！让我们创造你的数字分身。首先，拍张照作为你的头像吧！':
+      'Hi '+esc(_regDisplayName||'there')+'! Let\'s create your twin. First, take a photo for your avatar!';
+    tsAddMsg('system',greeting);
     setTimeout(function(){
-      tsAddMsg('system','What are 3 words your friends would use to describe you?');
       inp.style.display='flex';
-      inp.innerHTML='<input id="tsText" placeholder="e.g. funny, thoughtful, direct" maxlength="100"><button onclick="tsSubmit()">&#x2192;</button>';
-      g('tsText').focus();
-      g('tsText').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tsSubmit()}});
+      inp.innerHTML='<div class="cam-wrap">'+
+        '<div class="cam-preview" id="camPreview"><div class="cam-overlay" id="camOverlay" onclick="startCamera()">📷</div><video id="camVideo" autoplay playsinline muted style="display:none"></video><canvas id="camCanvas" style="display:none"></canvas><img id="camPhoto" style="display:none"></div>'+
+        '<div class="cam-btns" id="camBtns"><button class="cam-take" onclick="startCamera()" id="camStartBtn">'+(LANG==='zh'?'打开摄像头':'Open Camera')+'</button>'+
+        '<button class="cam-skip" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button></div></div>';
     },600);
   }else if(tsStep===1){
-    tsAddMsg('system','Nice! Now, how do you text? Pick your style:');
+    tsAddMsg('system',LANG==='zh'?'朋友会用哪3个词形容你？':'What are 3 words your friends would use to describe you?');
+    inp.style.display='flex';
+    inp.innerHTML='<input id="tsText" placeholder="'+(LANG==='zh'?'例如：有趣、贴心、直率':'e.g. funny, thoughtful, direct')+'" maxlength="100"><button onclick="tsSubmit()">&#x2192;</button>';
+    g('tsText').focus();
+    g('tsText').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tsSubmit()}});
+  }else if(tsStep===2){
+    tsAddMsg('system',LANG==='zh'?'很好！你发消息的风格是？':'Nice! How do you text? Pick your style:');
     inp.style.display='flex';
     inp.innerHTML='<div class="ts-chips" id="tsChips">'+
+      (LANG==='zh'?
+      '<div class="ts-chip" onclick="tsPickStyle(this)">简短利落</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">温暖细腻</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">表情包达人</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">随性自然</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">正式礼貌</div>':
       '<div class="ts-chip" onclick="tsPickStyle(this)">Short &amp; snappy</div>'+
       '<div class="ts-chip" onclick="tsPickStyle(this)">Warm &amp; detailed</div>'+
       '<div class="ts-chip" onclick="tsPickStyle(this)">Lots of emojis</div>'+
       '<div class="ts-chip" onclick="tsPickStyle(this)">Chill &amp; casual</div>'+
-      '<div class="ts-chip" onclick="tsPickStyle(this)">Formal &amp; polite</div>'+
+      '<div class="ts-chip" onclick="tsPickStyle(this)">Formal &amp; polite</div>')+
       '</div>';
-  }else if(tsStep===2){
-    tsAddMsg('system','Last one — what language do you mostly chat in?');
+  }else if(tsStep===3){
+    tsAddMsg('system',LANG==='zh'?'最后一步——你主要用什么语言聊天？':'Last one — what language do you mostly chat in?');
     inp.style.display='flex';
     inp.innerHTML='<div class="ts-chips" id="tsLangChips">'+
       '<div class="ts-chip on" onclick="tsPickLang(this,\'zh\')">中文</div>'+
@@ -667,34 +705,110 @@ function tsRunStep(){
       '<div class="ts-chip" onclick="tsPickLang(this,\'ja\')">日本語</div>'+
       '<div class="ts-chip" onclick="tsPickLang(this,\'ko\')">한국어</div>'+
       '<div class="ts-chip" onclick="tsPickLang(this,\'es\')">Español</div>'+
-      '</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishLang()">Done</button>';
+      '</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishLang()">'+(LANG==='zh'?'完成':'Done')+'</button>';
     tsLang='zh';
-  }else if(tsStep===3){
+  }else if(tsStep===4){
     // Save profile and generate preview
     inp.style.display='none';
-    tsAddMsg('system','Creating your twin...');
+    tsAddMsg('system',LANG==='zh'?'正在创建你的分身...':'Creating your twin...');
     // Save profile
     fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
       twin_personality:tsPersonality,twin_speech_style:tsStyle,preferred_lang:tsLang
     })}).catch(function(){});
+    // Upload avatar if captured
+    if(_capturedPhoto){
+      fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'real'})}).catch(function(){});
+      fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'twin'})}).catch(function(){});
+    }
     // Generate preview
     fetch(DS_BASE+'/api/identity/twin/preview',{method:'POST',headers:headers(),body:JSON.stringify({
       display_name:_regDisplayName,personality:tsPersonality,speech_style:tsStyle
     })}).then(function(r){return r.json()}).then(function(d){
-      var reply=d.reply||'Hey! I\'m here when '+(_regDisplayName||'they')+' can\'t be!';
-      msgs.innerHTML+='<div class="ts-preview"><div class="twin-label">&#x1F47B; Your twin\'s first words</div><div class="twin-text">'+esc(reply)+'</div></div>';
+      var reply=d.reply||(LANG==='zh'?'嘿！'+(_regDisplayName||'')+'不在的时候，我来！':'Hey! I\'m here when '+(_regDisplayName||'they')+' can\'t be!');
+      msgs.innerHTML+='<div class="ts-preview"><div class="twin-label">&#x1F47B; '+(LANG==='zh'?'你的分身说的第一句话':'Your twin\'s first words')+'</div><div class="twin-text">'+esc(reply)+'</div></div>';
       msgs.scrollTop=msgs.scrollHeight;
       setTimeout(function(){
-        tsAddMsg('system','Your twin is ready! Welcome to the fourth kind of social.');
+        tsAddMsg('system',LANG==='zh'?'你的分身已就绪！欢迎来到第四种社交。':'Your twin is ready! Welcome to the fourth kind of social.');
         inp.style.display='flex';
-        inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">Start Chatting</button>';
+        inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">'+(LANG==='zh'?'开始聊天':'Start Chatting')+'</button>';
       },800);
     }).catch(function(){
-      tsAddMsg('system','Your twin is ready! Let\'s go.');
+      tsAddMsg('system',LANG==='zh'?'你的分身已就绪！出发吧。':'Your twin is ready! Let\'s go.');
       inp.style.display='flex';
-      inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">Start Chatting</button>';
+      inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">'+(LANG==='zh'?'开始聊天':'Start Chatting')+'</button>';
     });
   }
+}
+
+// Camera functions
+function startCamera(){
+  var video=g('camVideo');var overlay=g('camOverlay');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast(LANG==='zh'?'此浏览器不支持摄像头':'Camera not supported in this browser');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:480},height:{ideal:480}}})
+  .then(function(stream){
+    _camStream=stream;
+    video.srcObject=stream;video.style.display='block';
+    if(overlay)overlay.style.display='none';
+    var btns=g('camBtns');
+    btns.innerHTML='<button class="cam-take" onclick="takePhoto()">'+(LANG==='zh'?'📸 拍照':'📸 Capture')+'</button>'+
+      '<button class="cam-skip" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button>';
+  }).catch(function(err){
+    toast(LANG==='zh'?'无法访问摄像头：'+err.message:'Camera access denied: '+err.message);
+  });
+}
+
+function takePhoto(){
+  var video=g('camVideo');var canvas=g('camCanvas');var photo=g('camPhoto');
+  canvas.width=480;canvas.height=480;
+  var ctx=canvas.getContext('2d');
+  // Center-crop the video frame into a square
+  var vw=video.videoWidth,vh=video.videoHeight;
+  var size=Math.min(vw,vh);
+  var sx=(vw-size)/2,sy=(vh-size)/2;
+  ctx.drawImage(video,sx,sy,size,size,0,0,480,480);
+  _capturedPhoto=canvas.toDataURL('image/png');
+  photo.src=_capturedPhoto;photo.style.display='block';
+  video.style.display='none';
+  // Stop camera
+  if(_camStream){_camStream.getTracks().forEach(function(t){t.stop()});_camStream=null}
+  // Show result: real photo + twin version side by side
+  var inp=g('tsInput');
+  inp.innerHTML='<div class="cam-wrap">'+
+    '<div class="cam-result">'+
+    '<div><div class="av-box"><img src="'+_capturedPhoto+'"></div><div class="av-label">'+(LANG==='zh'?'真人':'Real')+'</div></div>'+
+    '<div class="cam-arrow">→</div>'+
+    '<div><div class="av-box twin-box"><img src="'+_capturedPhoto+'" class="twin-filter"></div><div class="av-label" style="color:var(--ac2)">'+(LANG==='zh'?'数字分身':'Twin')+'</div></div>'+
+    '</div>'+
+    '<div class="cam-btns"><button class="cam-take" onclick="confirmPhoto()">'+(LANG==='zh'?'✓ 使用这张':'✓ Use this')+'</button>'+
+    '<button class="cam-retake" onclick="retakePhoto()">'+(LANG==='zh'?'重拍':'Retake')+'</button></div></div>';
+  tsAddMsg('system',LANG==='zh'?'左边是你，右边是你的数字分身！':'Left is you, right is your digital twin!');
+}
+
+function retakePhoto(){
+  _capturedPhoto=null;
+  var photo=g('camPhoto');if(photo)photo.style.display='none';
+  var inp=g('tsInput');
+  inp.innerHTML='<div class="cam-wrap">'+
+    '<div class="cam-preview" id="camPreview"><div class="cam-overlay" id="camOverlay" onclick="startCamera()">📷</div><video id="camVideo" autoplay playsinline muted style="display:none"></video><canvas id="camCanvas" style="display:none"></canvas><img id="camPhoto" style="display:none"></div>'+
+    '<div class="cam-btns" id="camBtns"><button class="cam-take" onclick="startCamera()">'+(LANG==='zh'?'打开摄像头':'Open Camera')+'</button>'+
+    '<button class="cam-skip" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button></div></div>';
+}
+
+function confirmPhoto(){
+  tsAddMsg('user',LANG==='zh'?'📸 照片已设置':'📸 Photo set');
+  g('tsInput').style.display='none';
+  tsStep=1;setTimeout(tsRunStep,400);
+}
+
+function skipCamera(){
+  if(_camStream){_camStream.getTracks().forEach(function(t){t.stop()});_camStream=null}
+  _capturedPhoto=null;
+  tsAddMsg('user',LANG==='zh'?'跳过拍照':'Skipped photo');
+  g('tsInput').style.display='none';
+  tsStep=1;setTimeout(tsRunStep,400);
 }
 
 function tsAddMsg(type,text){
@@ -709,7 +823,7 @@ function tsSubmit(){
   tsAddMsg('user',esc(val));
   tsPersonality=val;
   g('tsInput').style.display='none';
-  tsStep=1;setTimeout(tsRunStep,400);
+  tsStep=2;setTimeout(tsRunStep,400);
 }
 
 function tsPickStyle(el){
@@ -718,7 +832,7 @@ function tsPickStyle(el){
   tsStyle=el.textContent;
   tsAddMsg('user',esc(tsStyle));
   g('tsInput').style.display='none';
-  tsStep=2;setTimeout(tsRunStep,400);
+  tsStep=3;setTimeout(tsRunStep,400);
 }
 
 function tsPickLang(el,code){
@@ -731,7 +845,7 @@ function tsFinishLang(){
   var label=document.querySelector('#tsLangChips .ts-chip.on');
   tsAddMsg('user',label?label.textContent:tsLang);
   g('tsInput').style.display='none';
-  tsStep=3;setTimeout(tsRunStep,400);
+  tsStep=4;setTimeout(tsRunStep,400);
 }
 
 function logout(){
@@ -843,17 +957,21 @@ function switchMode(mode,el){
   fetch(DS_BASE+'/api/identity/switch',{method:'POST',headers:headers(),body:JSON.stringify({mode:mode})}).catch(function(){});
 }
 
-function buildAvatar(name,size,mode){
+function buildAvatar(name,size,mode,avatarUrl,twinAvatarUrl){
   // mode: 'real' (default) = real in front, 'twin' = twin in front
+  // avatarUrl/twinAvatarUrl: optional image URLs for real/twin avatars
   size=size||48;mode=mode||'real';
-  var front=Math.round(size*0.72);  // front avatar: ~72% of container
-  var back=Math.round(size*0.50);   // back avatar: ~50% (shows ~1/3 peeking out)
+  var front=Math.round(size*0.72);
+  var back=Math.round(size*0.50);
   var initial=esc((name||'?')[0].toUpperCase());
   var isTwin=mode==='twin';
   var frontCls=isTwin?'is-twin':'is-real';
   var backCls=isTwin?'is-real':'is-twin';
-  var frontContent=isTwin?'&#x1F47B;':initial;
-  var backContent=isTwin?initial:'&#x1F47B;';
+  // Determine content: use image if available, otherwise initial/ghost
+  var realContent=avatarUrl?'<img src="'+DS_BASE+avatarUrl+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">':initial;
+  var twinContent=twinAvatarUrl?'<img src="'+DS_BASE+twinAvatarUrl+'" class="twin-filter" style="width:100%;height:100%;border-radius:50%;object-fit:cover">':'&#x1F47B;';
+  var frontContent=isTwin?twinContent:realContent;
+  var backContent=isTwin?realContent:twinContent;
   return '<div class="dual-av" style="width:'+size+'px;height:'+size+'px">'+
     '<div class="av-front '+frontCls+'" style="width:'+front+'px;height:'+front+'px;font-size:'+Math.round(front*0.44)+'px">'+frontContent+'</div>'+
     '<div class="av-back '+backCls+'" style="width:'+back+'px;height:'+back+'px;font-size:'+Math.round(back*0.44)+'px">'+backContent+'</div></div>';
@@ -993,11 +1111,15 @@ function loadProfile(){
     g('profileName').textContent=_profileName;
     g('profileUsername').textContent='@'+p.username;
     _profileUsername=p.username;
+    _myAvatar=p.avatar||'';
+    _myTwinAvatar=p.twin_avatar||'';
     updateInviteUI();
     g('profPersonality').value=p.twin_personality||'';
     g('profStyle').value=p.twin_speech_style||'';
-    var av=g('profileAv');
-    av.querySelector('.av-front').textContent=(_profileName||'?')[0].toUpperCase();
+    // Update profile page avatar
+    var pav=g('profileAv');
+    var tmpD2=document.createElement('div');tmpD2.innerHTML=buildAvatar(_profileName||'?',64,myMode,_myAvatar,_myTwinAvatar);
+    var nAv2=tmpD2.firstChild;nAv2.id='profileAv';pav.parentNode.replaceChild(nAv2,pav);
     // Auto-reply toggle
     var cb=g('profAutoReply');var dot=g('arDot');
     if(cb){

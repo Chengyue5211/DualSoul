@@ -1,4 +1,8 @@
-"""Identity router — switch mode, profile management, twin preview."""
+"""Identity router — switch mode, profile management, twin preview, avatar upload."""
+
+import base64
+import hashlib
+import os
 
 import httpx
 from fastapi import APIRouter, Depends
@@ -6,7 +10,10 @@ from fastapi import APIRouter, Depends
 from dualsoul.auth import get_current_user
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from dualsoul.database import get_db
-from dualsoul.models import SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest
+from dualsoul.models import AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest
+
+_AVATAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "avatars")
+os.makedirs(_AVATAR_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/api/identity", tags=["Identity"])
 
@@ -79,6 +86,40 @@ async def update_profile(req: UpdateProfileRequest, user=Depends(get_current_use
     with get_db() as db:
         db.execute(f"UPDATE users SET {','.join(updates)} WHERE user_id=?", params)
     return {"success": True}
+
+
+@router.post("/avatar")
+async def upload_avatar(req: AvatarUploadRequest, user=Depends(get_current_user)):
+    """Upload a base64-encoded avatar image. Saves to web/avatars/ and updates DB."""
+    uid = user["user_id"]
+    if req.type not in ("real", "twin"):
+        return {"success": False, "error": "type must be 'real' or 'twin'"}
+
+    # Strip data URI prefix if present
+    img_data = req.image
+    if "," in img_data:
+        img_data = img_data.split(",", 1)[1]
+    try:
+        raw = base64.b64decode(img_data)
+    except Exception:
+        return {"success": False, "error": "Invalid base64 image"}
+
+    if len(raw) > 2 * 1024 * 1024:  # 2MB limit
+        return {"success": False, "error": "Image too large (max 2MB)"}
+
+    # Save file
+    name_hash = hashlib.md5(f"{uid}_{req.type}".encode()).hexdigest()[:12]
+    filename = f"{name_hash}.png"
+    filepath = os.path.join(_AVATAR_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(raw)
+
+    url = f"/static/avatars/{filename}"
+    col = "avatar" if req.type == "real" else "twin_avatar"
+    with get_db() as db:
+        db.execute(f"UPDATE users SET {col}=? WHERE user_id=?", (url, uid))
+
+    return {"success": True, "url": url}
 
 
 @router.post("/twin/preview")

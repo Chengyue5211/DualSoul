@@ -34,6 +34,11 @@ class TwinPreviewRequest(BaseModel):
     speech_style: str = ""
 
 
+class AvatarUploadRequest(BaseModel):
+    image: str  # base64 encoded image data (data:image/png;base64,... or raw base64)
+    type: str = "real"  # 'real' or 'twin'
+
+
 # Social
 class AddFriendRequest(BaseModel):
     friend_username: str
