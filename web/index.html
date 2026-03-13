@@ -103,7 +103,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .id-img.cyber img{filter:saturate(0.1) brightness(1.3) contrast(1.5) sepia(1) hue-rotate(170deg)}
 .id-img::after{content:'+';position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;background:var(--ac);color:#fff;border-radius:50%;font-size:12px;line-height:18px;text-align:center;opacity:0;transition:opacity .15s}
 .id-img:hover::after,.id-img:active::after{opacity:1}
-.id-name{font-size:10px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px}
+.id-name{font-size:10px;color:var(--tx2);text-align:center;line-height:1.3;word-break:keep-all}
 .id-chat-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;border-radius:12px;background:linear-gradient(135deg,rgba(124,92,252,.1),rgba(92,200,250,.06));border:1px solid rgba(124,92,252,.18);cursor:pointer;transition:background .15s;text-align:center;min-height:52px}
 .id-chat-center:active{background:rgba(124,92,252,.2)}
 .id-chat-text{font-size:11px;font-weight:600;color:var(--ac2);line-height:1.4}
@@ -1366,6 +1366,8 @@ function buildAvatar(name,size,mode,avatarUrl,twinAvatarUrl){
 
 // Friends
 function loadFriends(){
+  // Ensure identity bar always shows current user's name
+  if(_profileName)refreshIdentityBar();
   fetch(DS_BASE+'/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var pending=[],accepted=[];
