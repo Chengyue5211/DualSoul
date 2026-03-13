@@ -235,6 +235,13 @@ nav .ni.on .nc{transform:scale(1.15)}
 .wx-overlay .wx-text{font-size:16px;line-height:2;margin-top:60px}
 
 /* Camera Capture */
+.voice-wrap{text-align:center;padding:12px}
+.voice-sample-text{font-style:italic;color:var(--ac2);font-size:14px;margin:8px 0 16px;line-height:1.6}
+.voice-btn{width:64px;height:64px;border-radius:50%;border:none;font-size:28px;cursor:pointer;transition:all .2s}
+.voice-btn.idle{background:var(--ac);color:#fff}
+.voice-btn.recording{background:#e74c3c;color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.voice-timer{font-size:12px;color:var(--tx2);margin-top:6px}
 .cam-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
 .cam-preview{position:relative;width:180px;height:180px;border-radius:50%;overflow:hidden;border:3px solid var(--ac);background:var(--bg3)}
 .cam-preview video,.cam-preview canvas,.cam-preview img{width:100%;height:100%;object-fit:cover}
@@ -794,6 +801,11 @@ function obSkip(){enterApp()}
 var _camStream=null;
 var _capturedPhoto=null;
 var _selectedTwinFilter='';
+var _voiceBlob=null;
+var _mediaRecorder=null;
+var _voiceChunks=[];
+var _voiceTimer=null;
+var _voiceSeconds=0;
 
 var _twinFilterStyles=[
   {cls:'',name:{zh:'原版',en:'Original'}},
@@ -829,7 +841,27 @@ function tsRunStep(){
         '<button class="cam-skip" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button></div></div>';
     },600);
   }else if(tsStep===1){
-    // Step 1: Choose a base personality template
+    // Step 1: Voice recording
+    tsAddMsg('system',LANG==='zh'?'拍得不错！现在录一段你的声音，让分身学习你说话的方式。\n\n点击录音按钮，读出下面这句话：':'Great photo! Now record your voice so your twin can learn how you talk.\n\nTap the record button and read this aloud:');
+    setTimeout(function(){
+      inp.style.display='flex';
+      var sampleText=LANG==='zh'?'"嗨，我是'+esc(_regDisplayName||'我')+'，很高兴认识你！有什么事随时找我。"':'"Hi, I\'m '+esc(_regDisplayName||'me')+', nice to meet you! Feel free to reach out anytime."';
+      inp.innerHTML='<div class="voice-wrap">'+
+        '<div class="voice-sample-text">'+sampleText+'</div>'+
+        '<div id="voiceStatus" style="font-size:11px;color:var(--tx2);margin-bottom:8px"></div>'+
+        '<button class="voice-btn idle" id="voiceBtn" onclick="toggleVoiceRecord()">🎤</button>'+
+        '<div class="voice-timer" id="voiceTimerDisplay"></div>'+
+        '<div id="voicePlayback" style="margin-top:10px"></div>'+
+        '<div id="voiceBtns" style="margin-top:10px">'+
+        '<button class="cam-skip" onclick="skipVoice()">'+(LANG==='zh'?'跳过':'Skip')+'</button></div></div>';
+      // Check MediaRecorder support
+      if(!window.MediaRecorder||!navigator.mediaDevices){
+        g('voiceBtn').style.display='none';
+        g('voiceStatus').textContent=LANG==='zh'?'此浏览器不支持录音，请跳过':'Voice recording not supported, please skip';
+      }
+    },600);
+  }else if(tsStep===2){
+    // Step 2: Choose a base personality template
     tsAddMsg('system',LANG==='zh'?'选一个最像你的风格，作为分身的基础人设：':'Pick the style that\'s most like you — this becomes your twin\'s base personality:');
     inp.style.display='flex';
     var cards=LANG==='zh'?[
@@ -854,8 +886,8 @@ function tsRunStep(){
     });
     html+='</div>';
     inp.innerHTML=html;
-  }else if(tsStep===2){
-    // Step 2: Fine-tune with tags (multi-select)
+  }else if(tsStep===3){
+    // Step 3: Fine-tune with tags (multi-select)
     tsAddMsg('system',LANG==='zh'?'想微调一下吗？选几个标签加到你的风格里（可多选，也可直接跳过）：':'Want to fine-tune? Pick some tags to add to your style (multi-select, or skip):');
     inp.style.display='flex';
     var tags=LANG==='zh'?[
@@ -874,7 +906,7 @@ function tsRunStep(){
     html+='</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishTags()">'+(LANG==='zh'?'确定':'Done')+'</button>'+
       '<div style="text-align:center;margin-top:6px"><span style="font-size:10px;color:var(--tx2);cursor:pointer" onclick="tsFinishTags()">'+(LANG==='zh'?'跳过微调':'Skip fine-tuning')+'</span></div>';
     inp.innerHTML=html;
-  }else if(tsStep===3){
+  }else if(tsStep===4){
     tsAddMsg('system',LANG==='zh'?'最后一步——你主要用什么语言聊天？':'Last one — what language do you mostly chat in?');
     inp.style.display='flex';
     inp.innerHTML='<div class="ts-chips" id="tsLangChips">'+
@@ -885,7 +917,7 @@ function tsRunStep(){
       '<div class="ts-chip" onclick="tsPickLang(this,\'es\')">Español</div>'+
       '</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishLang()">'+(LANG==='zh'?'完成':'Done')+'</button>';
     tsLang='zh';
-  }else if(tsStep===4){
+  }else if(tsStep===5){
     // Save profile and generate preview
     inp.style.display='none';
     tsAddMsg('system',LANG==='zh'?'正在创建你的分身...':'Creating your twin...');
@@ -897,6 +929,12 @@ function tsRunStep(){
     if(_capturedPhoto){
       fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'real'})}).catch(function(){});
       fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'twin'})}).catch(function(){});
+    }
+    // Upload voice if recorded
+    if(_voiceBlob){
+      var reader=new FileReader();
+      reader.onloadend=function(){fetch(DS_BASE+'/api/identity/voice',{method:'POST',headers:headers(),body:JSON.stringify({audio:reader.result})}).catch(function(){})};
+      reader.readAsDataURL(_voiceBlob);
     }
     // Generate preview
     fetch(DS_BASE+'/api/identity/twin/preview',{method:'POST',headers:headers(),body:JSON.stringify({
@@ -1005,6 +1043,66 @@ function skipCamera(){
   tsStep=1;setTimeout(tsRunStep,400);
 }
 
+function toggleVoiceRecord(){
+  if(_mediaRecorder&&_mediaRecorder.state==='recording'){stopVoiceRecord();return}
+  _voiceChunks=[];_voiceBlob=null;_voiceSeconds=0;
+  var btn=g('voiceBtn');var status=g('voiceStatus');var timer=g('voiceTimerDisplay');
+  var playback=g('voicePlayback');playback.innerHTML='';
+  var mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':
+    MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/mp4';
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    _mediaRecorder=new MediaRecorder(stream,{mimeType:mimeType});
+    _mediaRecorder.ondataavailable=function(e){if(e.data.size>0)_voiceChunks.push(e.data)};
+    _mediaRecorder.onstop=function(){
+      stream.getTracks().forEach(function(t){t.stop()});
+      _voiceBlob=new Blob(_voiceChunks,{type:mimeType});
+      btn.className='voice-btn idle';btn.textContent='🎤';
+      timer.textContent='';
+      if(_voiceTimer){clearInterval(_voiceTimer);_voiceTimer=null}
+      if(_voiceSeconds>=3){
+        var url=URL.createObjectURL(_voiceBlob);
+        playback.innerHTML='<audio controls src="'+url+'" style="width:100%;height:32px"></audio>';
+        g('voiceBtns').innerHTML='<button class="cam-take" onclick="confirmVoice()">'+(LANG==='zh'?'✓ 使用这段录音':'✓ Use this recording')+'</button>'+
+          '<button class="cam-skip" onclick="toggleVoiceRecord()" style="margin-left:6px">'+(LANG==='zh'?'重录':'Re-record')+'</button>'+
+          '<button class="cam-skip" onclick="skipVoice()" style="margin-left:6px">'+(LANG==='zh'?'跳过':'Skip')+'</button>';
+      }else{
+        status.textContent=LANG==='zh'?'录音太短了，至少3秒':'Too short, at least 3 seconds';
+        playback.innerHTML='';
+      }
+    };
+    _mediaRecorder.start();
+    btn.className='voice-btn recording';btn.textContent='⏹';
+    status.textContent=LANG==='zh'?'正在录音...':'Recording...';
+    _voiceTimer=setInterval(function(){
+      _voiceSeconds++;
+      timer.textContent=_voiceSeconds+'s / 15s';
+      if(_voiceSeconds>=15)stopVoiceRecord();
+    },1000);
+  }).catch(function(){
+    status.textContent=LANG==='zh'?'无法访问麦克风':'Cannot access microphone';
+  });
+}
+
+function stopVoiceRecord(){
+  if(_mediaRecorder&&_mediaRecorder.state==='recording'){_mediaRecorder.stop()}
+  if(_voiceTimer){clearInterval(_voiceTimer);_voiceTimer=null}
+}
+
+function confirmVoice(){
+  tsAddMsg('user',LANG==='zh'?'🎤 声音已录制 ('+_voiceSeconds+'秒)':'🎤 Voice recorded ('+_voiceSeconds+'s)');
+  g('tsInput').style.display='none';
+  tsStep=2;setTimeout(tsRunStep,400);
+}
+
+function skipVoice(){
+  if(_mediaRecorder&&_mediaRecorder.state==='recording'){_mediaRecorder.stop()}
+  if(_voiceTimer){clearInterval(_voiceTimer);_voiceTimer=null}
+  _voiceBlob=null;
+  tsAddMsg('user',LANG==='zh'?'跳过声音录制':'Skipped voice recording');
+  g('tsInput').style.display='none';
+  tsStep=2;setTimeout(tsRunStep,400);
+}
+
 function tsAddMsg(type,text){
   var msgs=g('tsMsgs');
   msgs.innerHTML+='<div class="ts-msg '+type+'">'+text+'</div>';
@@ -1020,7 +1118,7 @@ function tsPickCard(el){
   var name=el.querySelector('.sc-name').textContent;
   tsAddMsg('user',esc(name));
   g('tsInput').style.display='none';
-  tsStep=2;setTimeout(tsRunStep,400);
+  tsStep=3;setTimeout(tsRunStep,400);
 }
 
 function tsToggleTag(el){
@@ -1038,7 +1136,7 @@ function tsFinishTags(){
     tsAddMsg('user',LANG==='zh'?'不微调，直接用':'No fine-tuning, use as is');
   }
   g('tsInput').style.display='none';
-  tsStep=3;setTimeout(tsRunStep,400);
+  tsStep=4;setTimeout(tsRunStep,400);
 }
 
 function tsPickLang(el,code){
@@ -1051,7 +1149,7 @@ function tsFinishLang(){
   var label=document.querySelector('#tsLangChips .ts-chip.on');
   tsAddMsg('user',label?label.textContent:tsLang);
   g('tsInput').style.display='none';
-  tsStep=4;setTimeout(tsRunStep,400);
+  tsStep=5;setTimeout(tsRunStep,400);
 }
 
 function logout(){

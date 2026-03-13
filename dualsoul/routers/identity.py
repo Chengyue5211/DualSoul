@@ -10,11 +10,13 @@ from fastapi import APIRouter, Depends
 from dualsoul.auth import get_current_user
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from dualsoul.database import get_db
-from dualsoul.models import AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest
+from dualsoul.models import AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest, VoiceUploadRequest
 from dualsoul.twin_engine.learner import analyze_style, get_message_count, learn_and_update
 
 _AVATAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "avatars")
 os.makedirs(_AVATAR_DIR, exist_ok=True)
+_VOICE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "voiceprints")
+os.makedirs(_VOICE_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/api/identity", tags=["Identity"])
 
@@ -120,6 +122,32 @@ async def upload_avatar(req: AvatarUploadRequest, user=Depends(get_current_user)
     with get_db() as db:
         db.execute(f"UPDATE users SET {col}=? WHERE user_id=?", (url, uid))
 
+    return {"success": True, "url": url}
+
+
+@router.post("/voice")
+async def upload_voice(req: VoiceUploadRequest, user=Depends(get_current_user)):
+    """Upload a base64-encoded voice sample. Saves to web/voiceprints/ and updates DB."""
+    uid = user["user_id"]
+    audio_data = req.audio
+    if "," in audio_data:
+        audio_data = audio_data.split(",", 1)[1]
+    try:
+        raw = base64.b64decode(audio_data)
+    except Exception:
+        return {"success": False, "error": "Invalid base64 audio"}
+    if len(raw) > 5 * 1024 * 1024:
+        return {"success": False, "error": "Audio too large (max 5MB)"}
+
+    name_hash = hashlib.md5(f"{uid}_voice".encode()).hexdigest()[:12]
+    filename = f"{name_hash}.webm"
+    filepath = os.path.join(_VOICE_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(raw)
+
+    url = f"/static/voiceprints/{filename}"
+    with get_db() as db:
+        db.execute("UPDATE users SET voice_sample=? WHERE user_id=?", (url, uid))
     return {"success": True, "url": url}
 
 

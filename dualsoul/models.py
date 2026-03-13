@@ -39,6 +39,10 @@ class AvatarUploadRequest(BaseModel):
     type: str = "real"  # 'real' or 'twin'
 
 
+class VoiceUploadRequest(BaseModel):
+    audio: str  # base64 encoded audio data (data:audio/webm;base64,... or raw base64)
+
+
 class TwinDraftRequest(BaseModel):
     friend_id: str
     incoming_msg: str

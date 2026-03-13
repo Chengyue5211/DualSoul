@@ -65,6 +65,7 @@ MIGRATIONS = [
     "ALTER TABLE users ADD COLUMN twin_auto_reply INTEGER DEFAULT 0",
     "ALTER TABLE social_messages ADD COLUMN auto_reply INTEGER DEFAULT 0",
     "ALTER TABLE social_messages ADD COLUMN metadata TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN voice_sample TEXT DEFAULT ''",
 ]
 
 
