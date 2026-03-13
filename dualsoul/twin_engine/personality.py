@@ -52,6 +52,11 @@ class TwinProfile:
         """Whether this twin was imported from Nianlun."""
         return self.twin_source == "nianlun"
 
+    @property
+    def is_imported(self) -> bool:
+        """Whether this twin was imported from any external platform (Nianlun, OpenClaw, etc.)."""
+        return self.twin_source not in ("local", "")
+
     def build_personality_prompt(self) -> str:
         """Build the personality section for AI prompts.
 
@@ -63,7 +68,7 @@ class TwinProfile:
             gender_label = {"male": "男性", "female": "女性"}.get(self.gender, self.gender)
             gender_line = f"Gender: {gender_label}\n"
 
-        if not self.is_nianlun:
+        if not self.is_imported:
             return (
                 f"{gender_line}"
                 f"Personality: {self.personality}\n"
@@ -184,14 +189,14 @@ def get_twin_profile(user_id: str) -> TwinProfile | None:
     )
 
     # For Nianlun twins, load rich data
-    if twin_source == "nianlun":
-        _load_nianlun_data(profile)
+    if twin_source not in ("local", ""):
+        _load_imported_data(profile)
 
     return profile
 
 
-def _load_nianlun_data(profile: TwinProfile):
-    """Load Nianlun 5D dimensions, recent memories, and key entities."""
+def _load_imported_data(profile: TwinProfile):
+    """Load imported twin data (5D dimensions, memories, entities) from any platform."""
     with get_db() as db:
         # Active twin profile
         tp = db.execute(

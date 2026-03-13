@@ -1,4 +1,4 @@
-"""Twin Import router — import and sync twin data from Nianlun (年轮)."""
+"""Twin Import router — import twin data from any cultivation platform (年轮, OpenClaw, etc.)."""
 
 from fastapi import APIRouter, Depends
 
@@ -11,13 +11,15 @@ router = APIRouter(prefix="/api/twin", tags=["Twin Import"])
 
 @router.post("/import")
 async def import_twin(req: TwinImportRequest, user=Depends(get_current_user)):
-    """Import a full twin data package from Nianlun (年轮).
+    """Import a full twin data package from any cultivation platform.
 
-    Accepts Twin Portable Format v1.0 payload, stores core personality data
-    in hot columns and full payload in cold storage.
+    Accepts Twin Portable Format v1.0 payload from Nianlun (年轮), OpenClaw,
+    or any platform that implements the TPF standard. Stores core personality
+    data in hot columns and full payload in cold storage.
     """
     uid = user["user_id"]
     data = req.data
+    source = req.source or "nianlun"
 
     if not data:
         return {"success": False, "error": "Empty data payload"}
@@ -52,14 +54,14 @@ async def import_twin(req: TwinImportRequest, user=Depends(get_current_user)):
              dim_judgement, dim_cognition, dim_expression, dim_relation, dim_sovereignty,
              value_order, behavior_patterns, speech_style, boundaries,
              certificate, raw_import)
-            VALUES (?, ?, 'nianlun', ?, 1,
+            VALUES (?, ?, ?, ?, 1,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?)
             """,
             (
-                profile_id, uid, next_version,
+                profile_id, uid, source, next_version,
                 twin.get("twin_name", cert.get("twin_name", "")),
                 twin.get("training_status", ""),
                 twin.get("quality_score", 0.0),
@@ -134,11 +136,11 @@ async def import_twin(req: TwinImportRequest, user=Depends(get_current_user)):
             style_text = style_text.get("description", str(style_text))
 
         db.execute(
-            "UPDATE users SET twin_source='nianlun', "
+            "UPDATE users SET twin_source=?, "
             "twin_personality=CASE WHEN ?!='' THEN ? ELSE twin_personality END, "
             "twin_speech_style=CASE WHEN ?!='' THEN ? ELSE twin_speech_style END "
             "WHERE user_id=?",
-            (personality_text, personality_text, style_text, style_text, uid),
+            (source, personality_text, personality_text, style_text, style_text, uid),
         )
 
     return {

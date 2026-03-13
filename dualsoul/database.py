@@ -76,8 +76,7 @@ SCHEMA_V2 = """
 CREATE TABLE IF NOT EXISTS twin_profiles (
     profile_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
-    source TEXT NOT NULL DEFAULT 'nianlun'
-        CHECK(source IN ('nianlun', 'local')),
+    source TEXT NOT NULL DEFAULT 'nianlun',
     version INTEGER NOT NULL DEFAULT 1,
     is_active INTEGER NOT NULL DEFAULT 1,
 

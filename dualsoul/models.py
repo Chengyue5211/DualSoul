@@ -84,7 +84,8 @@ class SendMessageRequest(BaseModel):
 # Twin Import (年轮分身导入)
 class TwinImportRequest(BaseModel):
     format: str = "tpf_v1"  # Twin Portable Format version
-    data: dict  # Full Nianlun export payload
+    source: str = "nianlun"  # Source platform: 'nianlun', 'openclaw', etc.
+    data: dict  # Full export payload (Twin Portable Format)
 
 
 class TwinSyncRequest(BaseModel):
