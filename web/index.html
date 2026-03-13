@@ -196,6 +196,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 <!-- Auth Page -->
 <div class="page v" id="authPage">
 <div class="auth">
+  <button id="langBtn" onclick="setLang(LANG==='zh'?'en':'zh')" style="position:absolute;top:16px;right:16px;padding:6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--bg2);color:var(--tx);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">EN</button>
   <div class="auth-logo">&#x1F47B;</div>
   <h1>DualSoul</h1>
   <div class="tagline">Every person has two voices</div>
@@ -375,6 +376,147 @@ var _profileName='';
 var isRegister=false;
 var ws=null;
 var wsRetry=0;
+
+// ========== i18n ==========
+var LANG=localStorage.getItem('ds_lang')||(navigator.language.startsWith('zh')?'zh':'en');
+var I18N={
+  zh:{
+    appTagline:'每个人都有两个声音',
+    login:'登录',register:'注册',
+    username:'用户名',password:'密码',displayName:'昵称（选填）',
+    toRegister:'没有账号？去注册',toLogin:'已有账号？去登录',
+    fillAll:'请填写所有字段',networkError:'网络错误',
+    social:'社交',about:'关于',profile:'个人',
+    identity:'身份',realMode:'真人模式',twinMode:'分身模式',
+    addFriendPh:'输入好友用户名...',add:'添加',
+    friendRequests:'好友请求',friends:'好友',
+    noFriends:'还没有好友\n输入用户名添加好友吧！',
+    accept:'接受',ignore:'忽略',
+    friendSent:'好友请求已发送！',enterUsername:'请输入用户名',
+    startConversation:'开始聊天吧！',
+    sayPlaceholder:'说点什么...',send:'发送',
+    twinAutoReply:'分身自动回复',twinAutoDesc:'你离线时分身替你回复',
+    unread:'条未读',
+    aboutTitle:'关于 DualSoul',aboutProto:'双身份社交协议',
+    aboutDesc1:'在AI时代，每个人都可以拥有一个数字分身——一个能代你说话、回复、互动的AI延伸。',
+    aboutDesc2:'DualSoul让你在社交对话中自由切换<b>真人身份</b>和<b>数字分身</b>。由此产生四种互动模式：',
+    aboutDesc3:'你的分身性格由你定义。在个人资料中设置它的特征，它就会用你的风格回复。',
+    mRR:'真人 → 真人',mRRd:'传统聊天',
+    mRT:'真人 → 分身',mRTd:'和对方的分身聊',
+    mTR:'分身 → 真人',mTRd:'你的分身去聊',
+    mTT:'分身 → 分身',mTTd:'分身对聊',
+    profileTitle:'个人资料',
+    twinPersonality:'分身性格',
+    personalityPh:'例如：友好体贴，有点幽默',
+    speechStyle:'说话风格',
+    stylePh:'例如：随性温暖，短句为主',
+    saveTwin:'保存分身设置',logout:'退出登录',
+    real:'真人',twin:'分身',
+    sendFailed:'发送失败',
+    twinAutoTag:'分身自动回复',now:'刚刚',
+    // Onboarding
+    obTitle1:'你有两个声音',obDesc1:'你的真身在你想说话时说话。你的数字分身在你不方便时替你说——用你的风格、你的语气、你的个性。',
+    obTitle2:'第四种社交',obDesc2:'不只是人对人，也不只是人对AI。DualSoul让真人和数字分身自由互动——四种连接模式。',
+    obTitle3:'永远在线，始终是你',obDesc3:'你睡觉、工作、生活时，分身替你保持对话。回来看看分身替你说了什么。',
+    obNext:'下一步',obSkip:'跳过设置',
+    obCreateTwin:'创建你的分身',
+    langSwitch:'EN'
+  },
+  en:{
+    appTagline:'Every person has two voices',
+    login:'Login',register:'Register',
+    username:'Username',password:'Password',displayName:'Display name (optional)',
+    toRegister:"Don't have an account? Register",toLogin:'Already have an account? Login',
+    fillAll:'Please fill in all fields',networkError:'Network error',
+    social:'Social',about:'About',profile:'Profile',
+    identity:'Identity',realMode:'Real mode',twinMode:'Twin mode',
+    addFriendPh:'Add friend by username...',add:'Add',
+    friendRequests:'Friend Requests',friends:'Friends',
+    noFriends:'No friends yet.\nAdd someone by username!',
+    accept:'Accept',ignore:'Ignore',
+    friendSent:'Friend request sent!',enterUsername:'Enter a username',
+    startConversation:'Start the conversation!',
+    sayPlaceholder:'Say something...',send:'Send',
+    twinAutoReply:'Offline auto-reply',twinAutoDesc:'Twin replies when you\'re away',
+    unread:' unread',
+    aboutTitle:'About DualSoul',aboutProto:'The Dual Identity Protocol',
+    aboutDesc1:'In the age of AI, every person can have a digital twin — an AI extension of themselves that can speak, respond, and interact on their behalf.',
+    aboutDesc2:'DualSoul lets you switch between your <b>real self</b> and your <b>digital twin</b> in social conversations. Four modes of interaction emerge:',
+    aboutDesc3:'Your twin\'s personality is shaped by you. Set its traits in your profile, and it will respond in your style when someone messages it.',
+    mRR:'Real → Real',mRRd:'Traditional messaging',
+    mRT:'Real → Twin',mRTd:'Talk to someone\'s twin',
+    mTR:'Twin → Real',mTRd:'Your twin reaches out',
+    mTT:'Twin → Twin',mTTd:'Twin-to-twin chat',
+    profileTitle:'Profile',
+    twinPersonality:'Twin Personality',
+    personalityPh:'e.g., friendly and thoughtful, a bit humorous',
+    speechStyle:'Speech style',
+    stylePh:'e.g., casual and warm, uses short sentences',
+    saveTwin:'Save Twin Settings',logout:'Logout',
+    real:'Real',twin:'Twin',
+    sendFailed:'Send failed',
+    twinAutoTag:'Twin auto-reply',now:'now',
+    // Onboarding
+    obTitle1:'You Have Two Voices',obDesc1:'Your real self speaks when you want. Your digital twin speaks when you can\'t — in your style, your tone, your personality.',
+    obTitle2:'The Fourth Kind of Social',obDesc2:'Not just human-to-human or human-to-AI. DualSoul lets real selves and digital twins interact freely — four modes of connection.',
+    obTitle3:'Always Present, Always You',obDesc3:'Your twin keeps conversations alive while you sleep, work, or live. Come back and see what your twin said on your behalf.',
+    obNext:'Next',obSkip:'Skip setup',
+    obCreateTwin:'Create Your Twin',
+    langSwitch:'中文'
+  }
+};
+function t(key){return (I18N[LANG]||I18N.en)[key]||key}
+function setLang(lang){LANG=lang;localStorage.setItem('ds_lang',lang);applyLang()}
+function applyLang(){
+  // Auth page
+  var tg=g('authToggle');if(tg)tg.textContent=isRegister?t('toLogin'):t('toRegister');
+  var ab=g('authBtn');if(ab)ab.textContent=isRegister?t('register'):t('login');
+  var au=g('authUser');if(au)au.placeholder=t('username');
+  var ap=g('authPass');if(ap)ap.placeholder=t('password');
+  var an=g('authName');if(an)an.placeholder=t('displayName');
+  var tl=document.querySelector('.tagline');if(tl)tl.textContent=t('appTagline');
+  var ls=g('langBtn');if(ls)ls.textContent=t('langSwitch');
+  // Nav
+  var nls=document.querySelectorAll('nav .nl');
+  if(nls.length>=3){nls[0].textContent=t('social');nls[1].textContent=t('about');nls[2].textContent=t('profile')}
+  // Identity switch
+  var il=document.querySelector('.id-label');if(il)il.textContent=t('identity');
+  var idts=document.querySelectorAll('.id-toggle .idt');
+  if(idts.length>=2){idts[0].textContent=t('real');idts[1].textContent=t('twin')}
+  var mh=g('modeHint');if(mh)mh.textContent=myMode==='real'?t('realMode'):t('twinMode');
+  // Add friend
+  var ai=g('addInput');if(ai)ai.placeholder=t('addFriendPh');
+  // Chat
+  var ci=g('chatInput');if(ci)ci.placeholder=t('sayPlaceholder');
+  // Profile
+  var pt=document.querySelector('#tabProfile .tab-header h2');if(pt)pt.textContent=t('profileTitle');
+  var ps=document.querySelector('.profile-section h3');if(ps)ps.textContent=t('twinPersonality');
+  var pp=g('profPersonality');if(pp)pp.placeholder=t('personalityPh');
+  var pst=g('profStyle');if(pst)pst.placeholder=t('stylePh');
+  var psb=document.querySelector('.profile-save');if(psb)psb.textContent=t('saveTwin');
+  var plo=document.querySelector('.profile-logout');if(plo)plo.textContent=t('logout');
+  // About
+  var abt=document.querySelector('#tabAbout .tab-header h2');if(abt)abt.textContent=t('aboutTitle');
+  var abh=document.querySelector('.about h3');if(abh)abh.textContent=t('aboutProto');
+  var abps=document.querySelectorAll('.about p');
+  if(abps.length>=3){abps[0].innerHTML=t('aboutDesc1');abps[1].innerHTML=t('aboutDesc2');abps[2].innerHTML=t('aboutDesc3')}
+  var mcs=document.querySelectorAll('.mode-card');
+  if(mcs.length>=4){
+    mcs[0].querySelector('.mc-label').innerHTML=t('mRR');mcs[0].querySelector('.mc-desc').textContent=t('mRRd');
+    mcs[1].querySelector('.mc-label').innerHTML=t('mRT');mcs[1].querySelector('.mc-desc').textContent=t('mRTd');
+    mcs[2].querySelector('.mc-label').innerHTML=t('mTR');mcs[2].querySelector('.mc-desc').textContent=t('mTRd');
+    mcs[3].querySelector('.mc-label').innerHTML=t('mTT');mcs[3].querySelector('.mc-desc').textContent=t('mTTd');
+  }
+  // Auto-reply label
+  var arl=document.querySelector('[for="profAutoReply"],.profile-field label');
+  // Onboarding
+  var obs=document.querySelectorAll('.ob-title');
+  if(obs.length>=3){obs[0].textContent=t('obTitle1');obs[1].textContent=t('obTitle2');obs[2].textContent=t('obTitle3')}
+  var obd=document.querySelectorAll('.ob-desc');
+  if(obd.length>=3){obd[0].textContent=t('obDesc1');obd[1].textContent=t('obDesc2');obd[2].textContent=t('obDesc3')}
+  var obb=g('obBtn');if(obb)obb.textContent=t('obNext');
+  var obs2=document.querySelector('.ob-skip');if(obs2)obs2.textContent=t('obSkip');
+}
 var wsTimer=null;
 
 function g(id){return document.getElementById(id)}
@@ -393,8 +535,8 @@ function headers(){return{'Content-Type':'application/json','Authorization':'Bea
 function toggleAuthMode(){
   isRegister=!isRegister;
   g('authName').style.display=isRegister?'block':'none';
-  g('authBtn').textContent=isRegister?'Register':'Login';
-  g('authToggle').textContent=isRegister?"Already have an account? Login":"Don't have an account? Register";
+  g('authBtn').textContent=isRegister?t('register'):t('login');
+  g('authToggle').textContent=isRegister?t('toLogin'):t('toRegister');
 }
 
 var _regDisplayName='';
@@ -402,7 +544,7 @@ var _regDisplayName='';
 function authSubmit(){
   var u=g('authUser').value.trim();
   var p=g('authPass').value;
-  if(!u||!p){toast('Please fill in all fields');return}
+  if(!u||!p){toast(t('fillAll'));return}
   var url=isRegister?DS_BASE+'/api/auth/register':DS_BASE+'/api/auth/login';
   var body={username:u,password:p};
   if(isRegister){_regDisplayName=g('authName').value.trim()||u;body.display_name=_regDisplayName}
@@ -413,7 +555,7 @@ function authSubmit(){
     localStorage.setItem('ds_token',token);
     localStorage.setItem('ds_uid',myId);
     if(isRegister){startOnboarding()}else{enterApp()}
-  }).catch(function(){toast('Network error')});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function enterApp(){
@@ -611,7 +753,7 @@ function appendIncoming(m){
   var box=g('chatMsgs');
   var empty=box.querySelector('.empty');if(empty)empty.remove();
   var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
-  var ai=m.ai_generated?'<div class="ai-tag">Twin auto-reply</div>':'';
+  var ai=m.ai_generated?'<div class="ai-tag">'+t('twinAutoTag')+'</div>':'';
   var t=(m.created_at||'').slice(11,16)||'now';
   var incAv='<div class="msg-av">'+buildAvatar(chatFriend.name,34,m.sender_mode||'real')+'</div>';
   box.innerHTML+='<div class="msg theirs">'+incAv+
@@ -627,8 +769,9 @@ function loadUnread(){
   }).catch(function(){});
 }
 
-// Auto-login
+// Auto-login + apply language
 (function(){
+  applyLang();
   var t=localStorage.getItem('ds_token');
   var u=localStorage.getItem('ds_uid');
   if(t&&u){token=t;myId=u;enterApp()}
@@ -649,7 +792,7 @@ function switchMode(mode,el){
   myMode=mode;
   el.parentElement.querySelectorAll('.idt').forEach(function(b){b.classList.remove('on')});
   el.classList.add('on');
-  g('modeHint').textContent=mode==='real'?'Real mode':'Twin mode';
+  g('modeHint').textContent=mode==='real'?t('realMode'):t('twinMode');
   // Update profile avatar to reflect current mode
   var pav=g('profileAv');
   if(pav){var tmpD=document.createElement('div');tmpD.innerHTML=buildAvatar(_profileName||'?',64,mode);var nAv=tmpD.firstChild;nAv.id='profileAv';pav.parentNode.replaceChild(nAv,pav)}
@@ -702,25 +845,25 @@ function loadFriends(){
           '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+'</div><div class="fi-mode">'+ml+'</div></div>'+
           '<div class="fi-time">'+esc(f.accepted_at||'').slice(5,16)+'</div></div>';
       }).join('');
-    }else{fl.innerHTML='<div class="empty">No friends yet.<br>Add someone by username!</div>'}
+    }else{fl.innerHTML='<div class="empty">'+t('noFriends').replace('\n','<br>')+'</div>'}
   }).catch(function(){});
   loadUnread();
 }
 
 function addFriend(){
   var u=g('addInput').value.trim();
-  if(!u){toast('Enter a username');return}
+  if(!u){toast(t('enterUsername'));return}
   fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
   .then(function(r){return r.json()}).then(function(d){
-    if(d.success){toast('Friend request sent!');g('addInput').value='';loadFriends()}
+    if(d.success){toast(t('friendSent'));g('addInput').value='';loadFriends()}
     else toast(d.error||'Failed');
-  }).catch(function(){toast('Network error')});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function respondFriend(id,action){
   fetch(DS_BASE+'/api/social/friends/respond',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:id,action:action})})
   .then(function(r){return r.json()}).then(function(d){if(d.success)loadFriends();else toast(d.error||'Failed')})
-  .catch(function(){toast('Network error')});
+  .catch(function(){toast(t('networkError'))});
 }
 
 // Chat
@@ -740,11 +883,11 @@ function openChat(userId,name,friendMode){
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){g('chatMsgs').innerHTML='<div class="empty">'+esc(d.error)+'</div>';return}
     var box=g('chatMsgs');
-    if(!d.messages.length){box.innerHTML='<div class="empty">Start the conversation!</div>';return}
+    if(!d.messages.length){box.innerHTML='<div class="empty">'+t('startConversation')+'</div>';return}
     box.innerHTML=d.messages.map(function(m){
       var mine=m.from_user_id===myId;
       var cls='msg '+(mine?'mine':'theirs');
-      var ai=m.ai_generated?'<div class="ai-tag">Twin auto-reply</div>':'';
+      var ai=m.ai_generated?'<div class="ai-tag">'+t('twinAutoTag')+'</div>':'';
       var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
       var t=(m.created_at||'').slice(11,16);
       var avName=mine?(_profileName||'Me'):name;
@@ -758,9 +901,9 @@ function openChat(userId,name,friendMode){
 
 function updateModeTag(){
   if(!chatFriend)return;
-  var m=myMode==='twin'?'Twin':'Real';
-  var t=chatFriend.current_mode==='twin'?'Twin':'Real';
-  g('chatModeTag').innerHTML=m+' &rarr; '+t;
+  var m=myMode==='twin'?t('twin'):t('real');
+  var ft=chatFriend.current_mode==='twin'?t('twin'):t('real');
+  g('chatModeTag').innerHTML=m+' &rarr; '+ft;
 }
 
 function backToList(){
@@ -785,7 +928,7 @@ function sendMsg(){
   fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
     to_user_id:chatFriend.user_id,content:text,sender_mode:myMode,receiver_mode:rm
   })}).then(function(r){return r.json()}).then(function(d){
-    if(!d.success){toast(d.error||'Send failed');return}
+    if(!d.success){toast(d.error||t('sendFailed'));return}
     // Show twin reply from HTTP response (WS may also deliver it, dedup by msg_id)
     if(d.ai_reply&&d.ai_reply.content&&!_shownMsgIds[d.ai_reply.msg_id]){
       _shownMsgIds[d.ai_reply.msg_id]=1;
@@ -795,7 +938,7 @@ function sendMsg(){
         '<div class="ai-tag">Twin auto-reply</div><div class="msg-time">now</div></div></div>';
       box.scrollTop=box.scrollHeight;
     }
-  }).catch(function(){toast('Network error')});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 // Profile
@@ -833,7 +976,7 @@ function toggleAutoReply(cb){
   })}).then(function(r){return r.json()}).then(function(d){
     if(d.success)toast(cb.checked?'Offline twin activated!':'Offline twin disabled');
     else toast(d.error||'Failed');
-  }).catch(function(){toast('Network error')});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function saveProfile(){
@@ -845,7 +988,7 @@ function saveProfile(){
   fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify(body)})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)toast('Twin settings saved!');else toast(d.error||'Failed');
-  }).catch(function(){toast('Network error')});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 // Enter key to send
