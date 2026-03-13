@@ -162,20 +162,6 @@ nav .ni.on .nc{transform:scale(1.15)}
 .ct-item:active{background:var(--bg3)}
 .ct-item .ct-icon{width:44px;height:44px;border-radius:12px;background:var(--bg3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:22px}
 .ct-item .ct-label{font-size:9px;color:var(--tx2)}
-/* Draft suggestion */
-.draft-area{padding:8px 0;border-top:1px solid rgba(124,92,252,.1)}
-.draft-thinking{text-align:center;padding:8px}
-.draft-dots{font-size:11px;color:var(--ac2);animation:pulse 1.5s ease infinite}
-.draft-bubble{background:rgba(124,92,252,.06);border:1px solid rgba(124,92,252,.15);border-radius:12px;padding:10px 14px;position:relative;animation:draftIn .3s ease}
-@keyframes draftIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.draft-label{font-size:9px;color:var(--ac2);margin-bottom:4px}
-.draft-text{font-size:13px;line-height:1.6;color:rgba(232,228,222,.7);font-style:italic}
-.draft-actions{display:flex;gap:6px;margin-top:8px}
-.draft-actions button{padding:5px 14px;border-radius:8px;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
-.da-send{background:var(--gd);color:#fff}
-.da-edit{background:var(--bg3);color:var(--tx);border:1px solid var(--bd) !important}
-.da-dismiss{background:transparent;color:var(--tx2);font-size:14px;padding:5px 8px}
-.draft-timer{text-align:center;font-size:9px;color:var(--tx2);padding:4px 0}
 /* Twin-sent message glow */
 .msg.twin-sent .bubble{box-shadow:0 0 12px rgba(124,92,252,.15);border-color:rgba(124,92,252,.25) !important}
 .empty{text-align:center;padding:40px 20px;color:var(--tx2);font-size:13px;line-height:1.8}
@@ -456,19 +442,6 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
     <div class="chat-msgs" id="chatMsgs">
       <div class="empty">Start the conversation!</div>
-    </div>
-    <div class="draft-area" id="draftArea" style="display:none">
-      <div class="draft-thinking" id="draftThinking" style="display:none"><span class="draft-dots">分身正在想...</span></div>
-      <div class="draft-bubble" id="draftBubble" style="display:none">
-        <div class="draft-label">👻 分身建议</div>
-        <div class="draft-text" id="draftText"></div>
-        <div class="draft-actions">
-          <button class="da-send" onclick="sendDraft()">发送</button>
-          <button class="da-edit" onclick="editDraft()">编辑</button>
-          <button class="da-dismiss" onclick="dismissDraft()">×</button>
-        </div>
-      </div>
-      <div class="draft-timer" id="draftTimer" style="display:none"></div>
     </div>
     <div class="chat-input">
       <button class="ci-plus" id="ciPlusBtn" onclick="toggleChatToolbar()">+</button>
@@ -1260,10 +1233,6 @@ function wsHandle(msg){
   }else if(msg.type==='friend_request'){
     toast('New friend request!');
     loadFriends();
-  }else if(msg.type==='twin_draft_pending'){
-    if(chatFriend&&msg.data.friend_id===chatFriend.user_id){showDraftPending()}
-  }else if(msg.type==='twin_draft'){
-    if(chatFriend&&msg.data.friend_id===chatFriend.user_id){showDraft(msg.data.draft,msg.data.for_msg_id)}
   }else if(msg.type==='auto_translation'){
     // Auto-detected foreign language/dialect — show translation below the message
     var atd=msg.data;
@@ -1427,7 +1396,6 @@ function respondFriend(id,action){
 var _twinChatHistory=[];
 
 function openTwinChat(){
-  hideDraft();clearAutoSendTimer();
   chatFriend={user_id:'__my_twin__',name:(_profileName||'')+(LANG==='zh'?' 的分身':"'s Twin"),current_mode:'twin',is_twin_chat:true};
   g('friendsView').style.display='none';
   g('chatView').style.display='flex';
@@ -1493,7 +1461,6 @@ function sendTwinChat(text,imageDataUrl){
 }
 
 function openChat(userId,name,friendMode){
-  hideDraft();clearAutoSendTimer();
   chatFriend={user_id:userId,name:name,current_mode:friendMode};
   g('friendsView').style.display='none';
   g('chatView').style.display='flex';
@@ -1565,7 +1532,6 @@ function translateMsg(el,msgId){
 }
 
 function backToList(){
-  hideDraft();clearAutoSendTimer();
   g('chatView').style.display='none';
   g('friendsView').style.display='block';
   chatFriend=null;_shownMsgIds={};loadFriends();
@@ -1683,23 +1649,19 @@ function sendFileMsg(file,type){
   reader.readAsDataURL(file);
 }
 
-function sendMsg(isTwinDraft){
+function sendMsg(){
   if(!chatFriend)return;
   var inp=g('chatInput');var text=inp.value.trim();
   if(!text)return;inp.value='';inp.style.height='36px';
-  hideDraft();
   // Route to twin chat if talking to own twin
   if(chatFriend.is_twin_chat){sendTwinChat(text);return}
-  var senderMode=isTwinDraft?'twin':'real';
   var box=g('chatMsgs');
   var empty=box.querySelector('.empty');if(empty)empty.remove();
-  var tw=isTwinDraft?'<span class="twin-icon">&#x1F47B;</span> ':'';
-  var myAv='<div class="msg-av">'+buildAvatar(_profileName||'Me',34,senderMode)+'</div>';
-  var twinSentCls=isTwinDraft?' twin-sent':'';
-  box.innerHTML+='<div class="msg mine'+twinSentCls+'">'+myAv+'<div><div class="bubble">'+tw+esc(text)+'</div><div class="msg-time">now</div></div></div>';
+  var myAv='<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>';
+  box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble">'+esc(text)+'</div><div class="msg-time">now</div></div></div>';
   box.scrollTop=box.scrollHeight;
   fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
-    to_user_id:chatFriend.user_id,content:text,sender_mode:senderMode,receiver_mode:'real'
+    to_user_id:chatFriend.user_id,content:text,sender_mode:'real',receiver_mode:'real'
   })}).then(function(r){return r.json()}).then(function(d){
     if(!d.success){toast(d.error||t('sendFailed'));return}
     // Show twin reply from HTTP response (WS may also deliver it, dedup by msg_id)
@@ -1935,76 +1897,6 @@ function checkInviteParam(){
   }
 }
 
-// Twin Draft System
-var currentDraft=null;
-var autoSendTimer=null;
-var AUTO_SEND_DELAY=5*60*1000; // 5 minutes
-
-function showDraftPending(){
-  var da=g('draftArea');var dt=g('draftThinking');var db=g('draftBubble');
-  if(!da)return;
-  da.style.display='block';dt.style.display='block';db.style.display='none';
-  dt.querySelector('.draft-dots').textContent=LANG==='zh'?'分身正在想...':'Twin is thinking...';
-}
-
-function showDraft(draft,forMsgId){
-  var da=g('draftArea');var dt=g('draftThinking');var db=g('draftBubble');var dtx=g('draftText');
-  if(!da||!draft)return;
-  currentDraft=draft;
-  da.style.display='block';dt.style.display='none';db.style.display='block';
-  dtx.textContent=draft;
-  g('draftBubble').querySelector('.draft-label').textContent=LANG==='zh'?'👻 分身建议':'👻 Twin suggests';
-  // Start auto-send timer
-  clearAutoSendTimer();
-  var remaining=AUTO_SEND_DELAY/1000;
-  var timerEl=g('draftTimer');timerEl.style.display='block';
-  updateTimerDisplay(remaining,timerEl);
-  autoSendTimer=setInterval(function(){
-    remaining--;
-    updateTimerDisplay(remaining,timerEl);
-    if(remaining<=0){sendDraft();clearAutoSendTimer()}
-  },1000);
-}
-
-function updateTimerDisplay(sec,el){
-  var m=Math.floor(sec/60);var s=sec%60;
-  el.textContent=(LANG==='zh'?'分身将在 ':'Twin auto-sends in ')+m+':'+(s<10?'0':'')+s;
-}
-
-function sendDraft(){
-  if(!currentDraft||!chatFriend)return;
-  clearAutoSendTimer();
-  // Put draft in input and send
-  var inp=g('chatInput');inp.value=currentDraft;
-  hideDraft();
-  sendMsg(true); // true = is_twin_draft
-}
-
-function editDraft(){
-  if(!currentDraft)return;
-  clearAutoSendTimer();
-  var inp=g('chatInput');inp.value=currentDraft;inp.focus();
-  inp.style.height='36px';inp.style.height=Math.min(inp.scrollHeight,80)+'px';
-  hideDraft();
-}
-
-function dismissDraft(){
-  clearAutoSendTimer();
-  currentDraft=null;
-  hideDraft();
-}
-
-function hideDraft(){
-  var da=g('draftArea');if(da)da.style.display='none';
-  var db=g('draftBubble');if(db)db.style.display='none';
-  var dt=g('draftThinking');if(dt)dt.style.display='none';
-  currentDraft=null;
-}
-
-function clearAutoSendTimer(){
-  if(autoSendTimer){clearInterval(autoSendTimer);autoSendTimer=null}
-  var timerEl=g('draftTimer');if(timerEl)timerEl.style.display='none';
-}
 
 // Enter key to send
 document.addEventListener('keydown',function(e){

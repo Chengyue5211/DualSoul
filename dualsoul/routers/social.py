@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from dualsoul.auth import get_current_user
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
-from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinChatRequest, TwinDraftRequest
+from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinChatRequest
 from dualsoul.twin_engine.responder import TwinResponder
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
@@ -324,21 +324,6 @@ async def twin_chat(req: TwinChatRequest, user=Depends(get_current_user)):
     return {"success": True, "reply": reply}
 
 
-@router.post("/twin/draft")
-async def twin_draft(req: TwinDraftRequest, user=Depends(get_current_user)):
-    """Generate a draft reply suggestion from the user's twin (not saved to DB)."""
-    uid = user["user_id"]
-    draft = await _twin.generate_draft(
-        twin_owner_id=uid,
-        from_user_id=req.friend_id,
-        incoming_msg=req.incoming_msg,
-        context=req.context,
-    )
-    if not draft:
-        return {"success": False, "error": "Draft unavailable"}
-    return {"success": True, "draft": draft}
-
-
 @router.get("/unread")
 async def unread_count(user=Depends(get_current_user)):
     """Get unread message count."""
@@ -350,27 +335,6 @@ async def unread_count(user=Depends(get_current_user)):
         ).fetchone()
     return {"count": row["cnt"] if row else 0}
 
-
-async def _generate_and_push_draft(recipient_id: str, sender_id: str, incoming_msg: str, for_msg_id: str):
-    """Background task: generate a twin draft and push to recipient via WebSocket."""
-    # Notify recipient that draft is being generated
-    await manager.send_to(recipient_id, {
-        "type": "twin_draft_pending",
-        "data": {"friend_id": sender_id, "for_msg_id": for_msg_id},
-    })
-    try:
-        draft = await _twin.generate_draft(
-            twin_owner_id=recipient_id,
-            from_user_id=sender_id,
-            incoming_msg=incoming_msg,
-        )
-        if draft:
-            await manager.send_to(recipient_id, {
-                "type": "twin_draft",
-                "data": {"friend_id": sender_id, "draft": draft, "for_msg_id": for_msg_id},
-            })
-    except Exception:
-        pass  # Draft generation is best-effort
 
 
 async def _auto_detect_and_push_translation(recipient_id: str, content: str, for_msg_id: str):
