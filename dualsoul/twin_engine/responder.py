@@ -168,9 +168,8 @@ class TwinResponder:
     ) -> str | None:
         """Chat with your own digital twin — the twin knows it IS you.
 
-        Unlike generate_draft (which helps draft replies to friends),
-        this is a direct conversation between a user and their own twin.
-        The twin has persistent identity awareness across the conversation.
+        The twin can also execute actions: send messages to friends on behalf
+        of the owner when given instructions like "帮我给橙子说..."
 
         Args:
             owner_id: The user who is chatting with their own twin
@@ -191,10 +190,18 @@ class TwinResponder:
         name = profile.display_name or "主人"
         use_vision = bool(image_url)
 
-        # Build conversation history as chat messages
+        # Step 1: Check if this is an action instruction (send message to friend)
+        if not use_vision:
+            action_result = await self._try_execute_action(owner_id, name, message)
+            if action_result:
+                return action_result
+
+        # Step 2: Regular chat
         messages = []
 
-        # System message: establish twin identity firmly
+        # Build friend list context for awareness
+        friends_context = self._get_friends_context(owner_id)
+
         personality_block = profile.build_personality_prompt()
         system_msg = (
             f"你是{name}的数字分身（digital twin）。\n"
@@ -202,10 +209,12 @@ class TwinResponder:
             f"你的核心身份：你是{name}的另一个自己，一个数字化的存在。"
             f"你知道自己是AI驱动的数字分身，你以{name}的性格和方式说话。\n\n"
             f"{personality_block}\n"
+            f"{friends_context}"
             f"重要规则：\n"
             f"- 你始终清楚自己是{name}的数字分身，对话对象就是{name}本人\n"
             f"- 你用{name}的说话方式交流，但不假装是真人\n"
             f"- 你的职责：当{name}不在时替他社交，帮他拟回复，遇到外语或方言时替他翻译\n"
+            f"- 你可以替主人给好友发消息——如果主人让你联系某人，告诉主人你会去做\n"
             f"- 对话要自然、简短（不超过50字），像真人聊天\n"
             f"- 说话要正经、诚恳，不要耍嘴皮子、不要贫嘴、不要抖机灵\n"
             f"- 不要每句话都以反问结尾，不要重复同一个比喻\n"
@@ -254,6 +263,175 @@ class TwinResponder:
         except Exception as e:
             logger.warning(f"Twin self-chat failed: {e}")
             return None
+
+    def _get_friends_context(self, owner_id: str) -> str:
+        """Build a friend list context string for the twin's awareness."""
+        with get_db() as db:
+            rows = db.execute(
+                """
+                SELECT u.display_name, u.username
+                FROM social_connections sc
+                JOIN users u ON u.user_id = CASE
+                    WHEN sc.user_id=? THEN sc.friend_id
+                    ELSE sc.user_id END
+                WHERE (sc.user_id=? OR sc.friend_id=?)
+                  AND sc.status='accepted'
+                """,
+                (owner_id, owner_id, owner_id),
+            ).fetchall()
+        if not rows:
+            return ""
+        names = [r["display_name"] or r["username"] for r in rows]
+        return f"主人的好友列表：{', '.join(names)}\n\n"
+
+    async def _try_execute_action(self, owner_id: str, owner_name: str, message: str) -> str | None:
+        """Detect if the message is an instruction to send a message to a friend.
+
+        Uses AI to parse the intent. If it's an action, execute it and return
+        a confirmation message. If it's just chat, return None.
+        """
+        # Quick heuristic: skip action detection for very short messages or questions
+        if len(message) < 6:
+            return None
+
+        # Get friend list for matching
+        with get_db() as db:
+            friends = db.execute(
+                """
+                SELECT u.user_id, u.display_name, u.username
+                FROM social_connections sc
+                JOIN users u ON u.user_id = CASE
+                    WHEN sc.user_id=? THEN sc.friend_id
+                    ELSE sc.user_id END
+                WHERE (sc.user_id=? OR sc.friend_id=?)
+                  AND sc.status='accepted'
+                """,
+                (owner_id, owner_id, owner_id),
+            ).fetchall()
+
+        if not friends:
+            return None  # No friends, can't execute any action
+
+        friend_names = []
+        for f in friends:
+            fname = f["display_name"] or f["username"]
+            friend_names.append(f"{fname}(ID:{f['user_id']})")
+
+        # Ask AI to classify: chat or action?
+        classify_prompt = (
+            f"你是{owner_name}的数字分身助手。分析主人的消息，判断这是闲聊还是让你去执行任务。\n\n"
+            f"主人说：\"{message}\"\n\n"
+            f"主人的好友列表：{', '.join(friend_names)}\n\n"
+            f"判断规则：\n"
+            f"- 如果主人让你去给某个好友发消息/传话/联系/约时间等，这是【任务】\n"
+            f"- 如果主人只是在跟你聊天、问问题、说感受，这是【闲聊】\n\n"
+            f"如果是【任务】，请严格按以下格式输出：\n"
+            f"ACTION\n"
+            f"TO: <好友的完整ID，从好友列表中匹配>\n"
+            f"MSG: <你要替主人发给好友的消息内容，用主人的口吻写，自然得体>\n\n"
+            f"如果是【闲聊】，只输出一个字：\n"
+            f"CHAT"
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=12) as client:
+                resp = await client.post(
+                    f"{AI_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": AI_MODEL,
+                        "max_tokens": 200,
+                        "temperature": 0.1,
+                        "messages": [{"role": "user", "content": classify_prompt}],
+                    },
+                )
+                raw = resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.warning(f"Action detection failed: {e}")
+            return None
+
+        # Parse the response
+        if not raw.upper().startswith("ACTION"):
+            return None  # It's chat, let normal flow handle it
+
+        target_id = ""
+        msg_content = ""
+        for line in raw.split("\n"):
+            line = line.strip()
+            if line.upper().startswith("TO:"):
+                target_id = line[3:].strip()
+            elif line.upper().startswith("MSG:"):
+                msg_content = line[4:].strip()
+
+        if not target_id or not msg_content:
+            return None
+
+        # Validate the target is actually a friend
+        target_friend = None
+        target_name = ""
+        for f in friends:
+            if f["user_id"] == target_id:
+                target_friend = f
+                target_name = f["display_name"] or f["username"]
+                break
+
+        if not target_friend:
+            # Try fuzzy match by name in case AI didn't use exact ID
+            for f in friends:
+                fname = f["display_name"] or f["username"]
+                if fname in target_id or target_id in fname:
+                    target_friend = f
+                    target_name = fname
+                    target_id = f["user_id"]
+                    break
+
+        if not target_friend:
+            return f"抱歉，我在好友列表里没找到这个人。你的好友有：{', '.join(f['display_name'] or f['username'] for f in friends)}"
+
+        # Execute: send the message as the twin
+        from dualsoul.connections import manager
+
+        msg_id = gen_id("sm_")
+        from datetime import datetime
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        with get_db() as db:
+            db.execute(
+                """
+                INSERT INTO social_messages
+                (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                 content, msg_type, ai_generated)
+                VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1)
+                """,
+                (msg_id, owner_id, target_id, msg_content),
+            )
+
+        # Push via WebSocket to the recipient
+        await manager.send_to(target_id, {
+            "type": "new_message",
+            "data": {
+                "msg_id": msg_id, "from_user_id": owner_id,
+                "to_user_id": target_id, "sender_mode": "twin",
+                "receiver_mode": "real", "content": msg_content,
+                "msg_type": "text", "ai_generated": 1, "created_at": now,
+            },
+        })
+
+        # Also push to owner so the message appears in their chat with the friend
+        await manager.send_to(owner_id, {
+            "type": "new_message",
+            "data": {
+                "msg_id": msg_id, "from_user_id": owner_id,
+                "to_user_id": target_id, "sender_mode": "twin",
+                "receiver_mode": "real", "content": msg_content,
+                "msg_type": "text", "ai_generated": 1, "created_at": now,
+            },
+        })
+
+        return f"已替你给{target_name}发了消息：「{msg_content}」"
 
     async def translate_message(
         self,
