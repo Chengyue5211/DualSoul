@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from dualsoul.auth import get_current_user
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
-from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinDraftRequest
+from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinChatRequest, TwinDraftRequest
 from dualsoul.twin_engine.responder import TwinResponder
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
@@ -286,6 +286,20 @@ async def translate(req: TranslateRequest, user=Depends(get_current_user)):
     if not result:
         return {"success": False, "error": "Translation unavailable (no AI backend)"}
     return {"success": True, "data": result}
+
+
+@router.post("/twin/chat")
+async def twin_chat(req: TwinChatRequest, user=Depends(get_current_user)):
+    """Chat with your own digital twin — the twin knows it IS you."""
+    uid = user["user_id"]
+    reply = await _twin.twin_self_chat(
+        owner_id=uid,
+        message=req.message,
+        history=req.history,
+    )
+    if not reply:
+        return {"success": False, "error": "Twin chat unavailable"}
+    return {"success": True, "reply": reply}
 
 
 @router.post("/twin/draft")

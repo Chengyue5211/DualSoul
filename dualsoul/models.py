@@ -45,6 +45,11 @@ class TwinDraftRequest(BaseModel):
     context: list[dict] = []  # [{role: "me"/"friend", content: "..."}]
 
 
+class TwinChatRequest(BaseModel):
+    message: str
+    history: list[dict] = []  # [{role: "me"/"twin", content: "..."}]
+
+
 # Social
 class AddFriendRequest(BaseModel):
     friend_username: str

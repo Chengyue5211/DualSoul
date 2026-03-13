@@ -1164,12 +1164,12 @@ function sendTwinChat(text){
   // Show typing indicator
   box.innerHTML+='<div class="msg theirs" id="twinTyping"><div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div><div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)"><span class="draft-dots">'+(LANG==='zh'?'分身正在想...':'Thinking...')+'</span></div></div></div>';
   box.scrollTop=box.scrollHeight;
-  // Call twin draft API
-  fetch(DS_BASE+'/api/social/twin/draft',{method:'POST',headers:headers(),body:JSON.stringify({
-    friend_id:myId,incoming_msg:text,context:_twinChatHistory.slice(-6).map(function(m){return{role:m.mine?'me':'twin',content:m.text}})
+  // Call twin self-chat API (dedicated endpoint with identity awareness)
+  fetch(DS_BASE+'/api/social/twin/chat',{method:'POST',headers:headers(),body:JSON.stringify({
+    message:text,history:_twinChatHistory.slice(-8).map(function(m){return{role:m.mine?'me':'twin',content:m.text}})
   })}).then(function(r){return r.json()}).then(function(d){
     var typing=g('twinTyping');if(typing)typing.remove();
-    var reply=d.draft||(LANG==='zh'?'嗯，我还在学习你的风格，多聊几句我就更懂你了！':'Hmm, I\'m still learning your style. Chat more and I\'ll get better!');
+    var reply=d.reply||(LANG==='zh'?'嗯，我还在学习你的风格，多聊几句我就更懂你了！':'Hmm, I\'m still learning your style. Chat more and I\'ll get better!');
     _twinChatHistory.push({mine:false,text:reply});
     var twinAv='<div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div>';
     box.innerHTML+='<div class="msg theirs">'+twinAv+'<div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(reply).replace(/\n/g,'<br>')+'</div></div></div>';

@@ -159,6 +159,82 @@ class TwinResponder:
             logger.warning(f"Draft generation failed: {e}")
             return None
 
+    async def twin_self_chat(
+        self,
+        owner_id: str,
+        message: str,
+        history: list[dict] | None = None,
+    ) -> str | None:
+        """Chat with your own digital twin — the twin knows it IS you.
+
+        Unlike generate_draft (which helps draft replies to friends),
+        this is a direct conversation between a user and their own twin.
+        The twin has persistent identity awareness across the conversation.
+
+        Args:
+            owner_id: The user who is chatting with their own twin
+            message: The user's latest message
+            history: Recent conversation history [{role: 'me'/'twin', content: '...'}]
+
+        Returns:
+            The twin's reply text, or None
+        """
+        if not AI_BASE_URL or not AI_API_KEY:
+            return None
+
+        profile = get_twin_profile(owner_id)
+        if not profile:
+            return None
+
+        name = profile.display_name or "主人"
+
+        # Build conversation history as chat messages
+        messages = []
+
+        # System message: establish twin identity firmly
+        system_msg = (
+            f"你是{name}的数字分身（digital twin）。\n"
+            f"你的核心身份：你是{name}的另一个自己，一个数字化的存在。"
+            f"你知道自己是AI驱动的数字分身，但你以{name}的性格和方式说话。\n\n"
+            f"性格：{profile.personality}\n"
+            f"说话风格：{profile.speech_style}\n\n"
+            f"重要规则：\n"
+            f"- 你始终清楚自己是{name}的数字分身，无论对方怎么问\n"
+            f"- 你用{name}的说话方式交流，但不假装是真人\n"
+            f"- 你的存在意义：当{name}不在时替他社交，帮他拟回复，学习他的风格\n"
+            f"- 对话要自然、简短（不超过50字），像真人聊天\n"
+            f"- 不要每句话都以反问结尾，不要重复同一个比喻"
+        )
+        messages.append({"role": "system", "content": system_msg})
+
+        # Add conversation history
+        if history:
+            for msg in history[-8:]:  # Keep last 8 turns for context
+                role = "user" if msg.get("role") == "me" else "assistant"
+                messages.append({"role": role, "content": msg.get("content", "")})
+
+        # Add current message
+        messages.append({"role": "user", "content": message})
+
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.post(
+                    f"{AI_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": AI_MODEL,
+                        "max_tokens": 120,
+                        "messages": messages,
+                    },
+                )
+                return resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.warning(f"Twin self-chat failed: {e}")
+            return None
+
     async def translate_message(
         self,
         owner_id: str,
