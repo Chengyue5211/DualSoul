@@ -1008,6 +1008,16 @@ function wsHandle(msg){
     if(chatFriend&&msg.data.friend_id===chatFriend.user_id){showDraftPending()}
   }else if(msg.type==='twin_draft'){
     if(chatFriend&&msg.data.friend_id===chatFriend.user_id){showDraft(msg.data.draft,msg.data.for_msg_id)}
+  }else if(msg.type==='auto_translation'){
+    // Auto-detected foreign language/dialect — show translation below the message
+    var atd=msg.data;
+    var bubble=document.querySelector('.bubble[data-msgid="'+atd.for_msg_id+'"]');
+    if(bubble&&!bubble.parentNode.querySelector('.msg-translated')){
+      var trDiv=document.createElement('div');
+      trDiv.className='msg-translated';
+      trDiv.innerHTML='<span style="font-size:9px;color:var(--ac2)">'+esc(atd.detected_lang)+'</span> '+esc(atd.translated_content);
+      bubble.parentNode.insertBefore(trDiv,bubble.nextSibling);
+    }
   }
 }
 
@@ -1019,9 +1029,11 @@ function appendIncoming(m){
   var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
   var ai=m.ai_generated?'<div class="ai-tag">'+t('twinAutoTag')+'</div>':'';
   var tm=(m.created_at||'').slice(11,16)||'now';
+  var mid=m.msg_id||('m'+Math.random());
+  var trBtn='<span class="msg-translate" onclick="translateMsg(this,\''+esc(mid)+'\')" title="Translate">&#x1F310;</span>';
   var incAv='<div class="msg-av">'+buildAvatar(chatFriend.name,34,m.sender_mode||'real')+'</div>';
   box.innerHTML+='<div class="msg theirs">'+incAv+
-    '<div><div class="bubble">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+tm+'</div></div></div>';
+    '<div><div class="bubble" data-msgid="'+esc(mid)+'">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+tm+trBtn+'</div></div></div>';
   box.scrollTop=box.scrollHeight;
 }
 

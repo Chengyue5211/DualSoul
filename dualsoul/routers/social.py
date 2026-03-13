@@ -220,6 +220,14 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
             for_msg_id=msg_id,
         ))
 
+    # Auto-detect foreign language/dialect and push translation (async, non-blocking)
+    if manager.is_online(req.to_user_id):
+        asyncio.ensure_future(_auto_detect_and_push_translation(
+            recipient_id=req.to_user_id,
+            content=content,
+            for_msg_id=msg_id,
+        ))
+
     # Determine if twin should auto-reply:
     # 1. Explicit: receiver_mode is 'twin'
     # 2. Offline auto-reply: recipient is offline + has twin_auto_reply enabled
@@ -288,6 +296,28 @@ async def translate(req: TranslateRequest, user=Depends(get_current_user)):
     return {"success": True, "data": result}
 
 
+@router.post("/translate/detect")
+async def detect_translate(req: TranslateRequest, user=Depends(get_current_user)):
+    """Auto-detect if a message is in a foreign language or dialect and translate.
+
+    Unlike /translate which requires explicit source/target, this automatically
+    detects the language and only translates if it differs from the user's
+    preferred language. Also handles Chinese dialects.
+    """
+    uid = user["user_id"]
+    content = req.content.strip()
+    if not content:
+        return {"success": False, "error": "Content cannot be empty"}
+
+    result = await _twin.detect_and_translate(
+        owner_id=uid,
+        content=content,
+    )
+    if not result:
+        return {"success": True, "needs_translation": False}
+    return {"success": True, "needs_translation": True, "data": result}
+
+
 @router.post("/twin/chat")
 async def twin_chat(req: TwinChatRequest, user=Depends(get_current_user)):
     """Chat with your own digital twin — the twin knows it IS you."""
@@ -349,3 +379,23 @@ async def _generate_and_push_draft(recipient_id: str, sender_id: str, incoming_m
             })
     except Exception:
         pass  # Draft generation is best-effort
+
+
+async def _auto_detect_and_push_translation(recipient_id: str, content: str, for_msg_id: str):
+    """Background task: detect foreign language/dialect and push translation via WebSocket."""
+    try:
+        result = await _twin.detect_and_translate(
+            owner_id=recipient_id,
+            content=content,
+        )
+        if result:
+            await manager.send_to(recipient_id, {
+                "type": "auto_translation",
+                "data": {
+                    "for_msg_id": for_msg_id,
+                    "detected_lang": result["detected_lang"],
+                    "translated_content": result["translated_content"],
+                },
+            })
+    except Exception:
+        pass  # Auto-detection is best-effort

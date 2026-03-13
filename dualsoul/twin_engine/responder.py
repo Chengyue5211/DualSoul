@@ -308,6 +308,96 @@ class TwinResponder:
             "translation_style": "personality_preserving",
         }
 
+    async def detect_and_translate(
+        self,
+        owner_id: str,
+        content: str,
+        owner_lang: str = "",
+    ) -> dict | None:
+        """Auto-detect if content is in a different language/dialect and translate.
+
+        Checks if the message is in a language different from the owner's preferred
+        language. If so, translates it. Also handles Chinese dialects (粤语, 四川话, etc.)
+
+        Args:
+            owner_id: The user who needs the translation
+            content: The message content to check
+            owner_lang: Owner's preferred language code (auto-fetched if empty)
+
+        Returns:
+            Dict with detection + translation result, or None if same language
+        """
+        if not AI_BASE_URL or not AI_API_KEY:
+            return None
+
+        if not owner_lang:
+            profile = get_twin_profile(owner_id)
+            if profile:
+                owner_lang = profile.preferred_lang or "zh"
+            else:
+                owner_lang = "zh"
+
+        owner_lang_name = get_lang_name(owner_lang)
+
+        # Ask AI to detect language and translate if needed
+        prompt = (
+            f"Analyze this message and determine if it needs translation for a "
+            f"{owner_lang_name} speaker.\n\n"
+            f"Message: \"{content}\"\n\n"
+            f"Rules:\n"
+            f"- If the message is standard {owner_lang_name}, respond with exactly: SAME\n"
+            f"- If the message is in a different language OR a dialect (e.g. Cantonese/粤语, "
+            f"Sichuanese/四川话, Hokkien/闽南语, Shanghainese/上海话, etc.), respond in this "
+            f"exact format:\n"
+            f"LANG: <detected language or dialect name>\n"
+            f"TRANSLATION: <translation into standard {owner_lang_name}>\n\n"
+            f"Be precise. Only output SAME or the LANG/TRANSLATION format, nothing else."
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=12) as client:
+                resp = await client.post(
+                    f"{AI_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": AI_MODEL,
+                        "max_tokens": 200,
+                        "temperature": 0.1,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                )
+                raw = resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.warning(f"Language detection failed: {e}")
+            return None
+
+        if raw.upper().startswith("SAME"):
+            return None  # Same language, no translation needed
+
+        # Parse LANG: ... TRANSLATION: ... format
+        detected_lang = ""
+        translation = ""
+        for line in raw.split("\n"):
+            line = line.strip()
+            if line.upper().startswith("LANG:"):
+                detected_lang = line[5:].strip()
+            elif line.upper().startswith("TRANSLATION:"):
+                translation = line[12:].strip()
+
+        if not translation:
+            return None
+
+        return {
+            "detected_lang": detected_lang,
+            "translated_content": translation,
+            "original_content": content,
+            "target_lang": owner_lang,
+            "auto_detected": True,
+        }
+
     async def _ai_reply(
         self, profile, incoming_msg: str, sender_mode: str, target_lang: str = ""
     ) -> str | None:
