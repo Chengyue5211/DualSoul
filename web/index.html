@@ -556,6 +556,21 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
   </div>
   <div class="profile-section">
+    <h3>导入外部分身</h3>
+    <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">从年轮、OpenClaw等平台导入你培养的智能体，让它在DualSoul替你社交</p>
+    <div id="importStatus" style="display:none;background:rgba(124,92,252,.08);border:1px solid rgba(124,92,252,.2);border-radius:10px;padding:10px 14px;font-size:11px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:14px">&#x1F47B;</span>
+        <span style="font-weight:700;color:var(--ac)" id="importSourceLabel">年轮分身</span>
+      </div>
+      <div style="color:var(--tx2)" id="importStats"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="importTwinFile()" style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">上传JSON文件</button>
+      <button onclick="showImportHelp()" style="padding:10px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit">?</button>
+    </div>
+  </div>
+  <div class="profile-section">
     <h3 id="inviteTitle">邀请好友</h3>
     <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px" id="inviteDesc">分享链接给朋友，对方打开注册后自动加你为好友</p>
     <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="inviteLink"></div>
@@ -1760,6 +1775,7 @@ function loadProfile(){
     }
     // Check style learning status
     checkLearnStatus();
+    loadImportStatus();
     // Populate style template cards in profile
     populateProfileStyleCards();
     populateProfileTwinStyles();
@@ -1847,6 +1863,84 @@ function saveGender(val){
   })}).then(function(r){return r.json()}).then(function(d){
     if(d.success)toast(LANG==='zh'?'性别已更新':'Gender updated');
   }).catch(function(){});
+}
+
+// Twin import from external platforms
+function importTwinFile(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=function(){
+    if(!inp.files[0])return;
+    var reader=new FileReader();
+    reader.onload=function(){
+      try{
+        var data=JSON.parse(reader.result);
+        // Detect source platform
+        var source='unknown';
+        if(data.source)source=data.source;
+        else if(data.twin&&data.twin.twin_type)source='nianlun';
+        else if(data.agent_id||data.agent)source='openclaw';
+        // Wrap in TPF format if not already
+        var payload=data;
+        if(!data.twin&&!data.skeleton){
+          // Raw agent data — wrap it
+          payload={twin:{personality:data.personality||data.description||'',speech_style:data.speech_style||data.style||''}};
+          if(data.memories)payload.memories=data.memories;
+          if(data.entities)payload.entities=data.entities;
+        }
+        toast(LANG==='zh'?'正在导入...':'Importing...');
+        fetch(DS_BASE+'/api/twin/import',{method:'POST',headers:headers(),body:JSON.stringify({
+          source:source,format:'tpf_v1',data:payload
+        })}).then(function(r){return r.json()}).then(function(d){
+          if(d.success){
+            toast(LANG==='zh'?'导入成功! 记忆'+d.imported.memories+'条, 实体'+d.imported.entities+'个':'Import success! '+d.imported.memories+' memories, '+d.imported.entities+' entities');
+            loadImportStatus();
+          }else{
+            toast(d.error||'Import failed');
+          }
+        }).catch(function(){toast(t('networkError'))});
+      }catch(e){
+        toast(LANG==='zh'?'JSON格式错误':'Invalid JSON file');
+      }
+    };
+    reader.readAsText(inp.files[0]);
+  };
+  inp.click();
+}
+
+function loadImportStatus(){
+  fetch(DS_BASE+'/api/twin/status',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success)return;
+    var box=g('importStatus');if(!box)return;
+    if(d.twin_source==='local'||!d.nianlun_profile){box.style.display='none';return}
+    box.style.display='block';
+    var p=d.nianlun_profile;
+    var sourceNames={'nianlun':'年轮分身','openclaw':'OpenClaw Agent'};
+    g('importSourceLabel').textContent=sourceNames[d.twin_source]||(d.twin_source+' 分身');
+    g('importStats').innerHTML='v'+p.version+' | '+
+      (p.twin_name||'未命名')+' | '+
+      '记忆 '+p.memories_count+' 条 | '+
+      '实体 '+p.entities_count+' 个<br>'+
+      '<span style="font-size:9px">导入于 '+p.imported_at+'</span>';
+  }).catch(function(){});
+}
+
+function showImportHelp(){
+  var msg=LANG==='zh'?
+    '如何导入外部分身：\n\n'+
+    '1. 在你的培养平台（年轮、OpenClaw等）导出智能体数据为JSON文件\n'+
+    '2. 点击"上传JSON文件"选择导出的文件\n'+
+    '3. DualSoul自动识别平台格式并导入\n\n'+
+    '最小格式只需要:\n'+
+    '{"twin":{"personality":"性格描述","speech_style":"说话方式"}}\n\n'+
+    '完整格式支持五维人格、记忆、实体等丰富数据'
+    :
+    'How to import your AI agent:\n\n'+
+    '1. Export your agent data as JSON from your platform\n'+
+    '2. Click "Upload JSON" and select the file\n'+
+    '3. DualSoul auto-detects the format and imports\n\n'+
+    'Minimum format:\n'+
+    '{"twin":{"personality":"...","speech_style":"..."}}';
+  alert(msg);
 }
 
 function saveProfile(){
