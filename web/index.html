@@ -281,7 +281,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   });
 }
 </script>
-<div class="splash v" id="splashScreen">
+<div class="splash v" id="splashScreen" onclick="this.classList.remove('v')">
   <div class="splash-inner">
     <div class="sp-av sp-real" id="spLeft">&#x1F9D1;</div>
     <div class="sp-connect"></div>
@@ -1476,7 +1476,7 @@ var _styleTemplates={
 };
 
 function populateProfileStyleCards(){
-  var container=g('profileStyleCards');if(!container)return;
+  var container=g('profileStyleCards');if(!container||typeof _styleTemplates==='undefined')return;
   var cards=_styleTemplates[LANG]||_styleTemplates.en;
   container.innerHTML=cards.map(function(c){
     return '<div class="style-card" data-personality="'+esc(c.personality)+'" data-style="'+esc(c.style)+'" onclick="profPickCard(this)" style="padding:8px 10px">'+
@@ -1727,9 +1727,12 @@ document.addEventListener('keydown',function(e){
 // Fix manifest link to respect path prefix
 (function(){var ml=document.getElementById('manifestLink');if(ml)ml.href=DS_BASE+'/manifest.json'})();
 
-// Register Service Worker for PWA
+// Unregister old Service Workers and clear caches to fix stale HTML issue
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register(DS_BASE+'/sw.js').catch(function(){});
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){r.unregister()});
+  });
+  if(window.caches){caches.keys().then(function(k){k.forEach(function(n){caches.delete(n)})})}
 }
 </script>
 </body>
