@@ -39,6 +39,12 @@ class AvatarUploadRequest(BaseModel):
     type: str = "real"  # 'real' or 'twin'
 
 
+class TwinDraftRequest(BaseModel):
+    friend_id: str
+    incoming_msg: str
+    context: list[dict] = []  # [{role: "me"/"friend", content: "..."}]
+
+
 # Social
 class AddFriendRequest(BaseModel):
     friend_username: str

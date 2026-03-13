@@ -102,6 +102,62 @@ class TwinResponder:
             result["translation_style"] = translation_style
         return result
 
+    async def generate_draft(
+        self,
+        twin_owner_id: str,
+        from_user_id: str,
+        incoming_msg: str,
+        context: list[dict] | None = None,
+    ) -> str | None:
+        """Generate a draft suggestion for the owner to review (NOT saved to DB).
+
+        Unlike generate_reply, this is a suggestion the real person might want to send.
+        Returns just the draft text, or None if unavailable.
+        """
+        if not AI_BASE_URL or not AI_API_KEY:
+            return None
+
+        profile = get_twin_profile(twin_owner_id)
+        if not profile:
+            return None
+
+        # Build context string from recent messages
+        ctx_str = ""
+        if context:
+            for msg in context[-5:]:  # Last 5 messages for context
+                role = msg.get("role", "friend")
+                ctx_str += f"{role}: {msg.get('content', '')}\n"
+
+        prompt = (
+            f"You are helping {profile.display_name} draft a reply.\n"
+            f"Personality: {profile.personality}\n"
+            f"Speech style: {profile.speech_style}\n\n"
+            f"{'Conversation context:\n' + ctx_str if ctx_str else ''}"
+            f"Friend says: \"{incoming_msg}\"\n\n"
+            f"Draft a reply that {profile.display_name} would naturally send. "
+            f"Match their personality and speaking style exactly. "
+            f"Keep under 40 words. Output only the draft text."
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.post(
+                    f"{AI_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": AI_MODEL,
+                        "max_tokens": 80,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                )
+                return resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            logger.warning(f"Draft generation failed: {e}")
+            return None
+
     async def translate_message(
         self,
         owner_id: str,

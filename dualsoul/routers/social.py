@@ -1,5 +1,6 @@
 """Social router — friends, messages, and the four conversation modes."""
 
+import asyncio
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
@@ -7,7 +8,7 @@ from fastapi import APIRouter, Depends
 from dualsoul.auth import get_current_user
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
-from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest
+from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinDraftRequest
 from dualsoul.twin_engine.responder import TwinResponder
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
@@ -210,6 +211,15 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
         },
     })
 
+    # Generate a draft suggestion for the recipient's twin (async, non-blocking)
+    if manager.is_online(req.to_user_id):
+        asyncio.ensure_future(_generate_and_push_draft(
+            recipient_id=req.to_user_id,
+            sender_id=uid,
+            incoming_msg=content,
+            for_msg_id=msg_id,
+        ))
+
     # Determine if twin should auto-reply:
     # 1. Explicit: receiver_mode is 'twin'
     # 2. Offline auto-reply: recipient is offline + has twin_auto_reply enabled
@@ -278,6 +288,21 @@ async def translate(req: TranslateRequest, user=Depends(get_current_user)):
     return {"success": True, "data": result}
 
 
+@router.post("/twin/draft")
+async def twin_draft(req: TwinDraftRequest, user=Depends(get_current_user)):
+    """Generate a draft reply suggestion from the user's twin (not saved to DB)."""
+    uid = user["user_id"]
+    draft = await _twin.generate_draft(
+        twin_owner_id=uid,
+        from_user_id=req.friend_id,
+        incoming_msg=req.incoming_msg,
+        context=req.context,
+    )
+    if not draft:
+        return {"success": False, "error": "Draft unavailable"}
+    return {"success": True, "draft": draft}
+
+
 @router.get("/unread")
 async def unread_count(user=Depends(get_current_user)):
     """Get unread message count."""
@@ -288,3 +313,25 @@ async def unread_count(user=Depends(get_current_user)):
             (uid,),
         ).fetchone()
     return {"count": row["cnt"] if row else 0}
+
+
+async def _generate_and_push_draft(recipient_id: str, sender_id: str, incoming_msg: str, for_msg_id: str):
+    """Background task: generate a twin draft and push to recipient via WebSocket."""
+    # Notify recipient that draft is being generated
+    await manager.send_to(recipient_id, {
+        "type": "twin_draft_pending",
+        "data": {"friend_id": sender_id, "for_msg_id": for_msg_id},
+    })
+    try:
+        draft = await _twin.generate_draft(
+            twin_owner_id=recipient_id,
+            from_user_id=sender_id,
+            incoming_msg=incoming_msg,
+        )
+        if draft:
+            await manager.send_to(recipient_id, {
+                "type": "twin_draft",
+                "data": {"friend_id": sender_id, "draft": draft, "for_msg_id": for_msg_id},
+            })
+    except Exception:
+        pass  # Draft generation is best-effort
