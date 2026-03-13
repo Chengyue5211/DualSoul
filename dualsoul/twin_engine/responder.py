@@ -497,7 +497,12 @@ class TwinResponder:
                     from_user_id=owner_id,
                     incoming_msg=msg_content,
                     sender_mode="twin",
-                    social_context="朋友之间的私聊，语气要轻松自然，像微信聊天一样",
+                    social_context=(
+                        "你是分身，主人现在不在线。你不能替主人做任何决定！"
+                        "不能替主人定时间、定地点、答应事情。"
+                        "你只能说：我帮你问问主人/我跟主人说一声/等主人回来定。"
+                        "语气轻松自然，像朋友聊天。"
+                    ),
                 )
                 if reply:
                     # Push twin reply to both parties
@@ -719,13 +724,11 @@ class TwinResponder:
                 f"Preserve their personality, humor, and speaking style."
             )
 
-        # Social context instruction — make replies match the tone of the conversation
+        # Social context instruction — critical behavioral override
         context_instruction = ""
         if social_context:
             context_instruction = (
-                f"\n场景提示：{social_context}"
-                f"\n根据对方消息的语气和场景来回复——如果对方很随意，你也随意；"
-                f"如果对方在约时间，就自然地回应时间。不要用公事公办的语气回复私人聊天。"
+                f"\n\n【最重要的规则，必须遵守】{social_context}"
             )
 
         personality_block = profile.build_personality_prompt()
