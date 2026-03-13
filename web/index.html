@@ -139,6 +139,11 @@ nav .ni.on .nc{transform:scale(1.15)}
 .msg.theirs .bubble{background:var(--bg2);border:1px solid var(--bd);border-top-left-radius:4px}
 .msg.mine .bubble{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.2);border-top-right-radius:4px}
 .msg .ai-tag{font-size:8px;color:rgba(124,92,252,.6);margin-top:2px}
+/* Chat images — WeChat-like thumbnail */
+.chat-img{max-width:160px;max-height:200px;border-radius:8px;cursor:pointer;display:block}
+/* Full-screen image preview */
+.img-preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.img-preview-overlay img{max-width:92%;max-height:90%;object-fit:contain;border-radius:4px}
 .msg .twin-icon{font-size:8px;color:rgba(124,92,252,.5)}
 .msg .msg-time{font-size:8px;color:rgba(255,255,255,.15);margin-top:2px}
 .msg .msg-translate{display:inline-block;font-size:9px;color:var(--ac2);cursor:pointer;margin-top:3px;margin-left:4px;opacity:.6;transition:.2s}
@@ -1639,6 +1644,14 @@ function chatSendFile(){
   var inp=document.createElement('input');inp.type='file';
   inp.onchange=function(){if(inp.files[0])sendFileMsg(inp.files[0],'file')};inp.click();
 }
+// Image preview — tap to view full screen, tap again to close
+function previewImg(src){
+  var ov=document.createElement('div');ov.className='img-preview-overlay';
+  ov.innerHTML='<img src="'+src+'">';
+  ov.onclick=function(){ov.remove()};
+  document.body.appendChild(ov);
+}
+
 function sendFileMsg(file,type){
   if(file.size>5*1024*1024){alert(LANG==='zh'?'文件不能超过5MB':'File must be under 5MB');return}
   var reader=new FileReader();
@@ -1646,11 +1659,11 @@ function sendFileMsg(file,type){
     var box=g('chatMsgs');if(!box)return;
     if(type==='image'){
       var myAv=chatFriend&&chatFriend.is_twin_chat?'<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>':'';
-      box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble"><img src="'+reader.result+'" style="max-width:200px;border-radius:8px"></div></div></div>';
+      box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble"><img src="'+reader.result+'" class="chat-img" onclick="previewImg(this.src)"></div></div></div>';
       box.scrollTop=box.scrollHeight;
       // In twin chat, tell the twin about the image so it responds
       if(chatFriend&&chatFriend.is_twin_chat){
-        var desc=LANG==='zh'?'[我发了一张图片给你看]':'[I sent you a photo]';
+        var desc=LANG==='zh'?'[我给你发了一张图片，请友好地回应，比如夸赞、评论或提问]':'[I sent you a photo, please respond naturally with a comment or question about it]';
         sendTwinChat(desc);
       }
     }
