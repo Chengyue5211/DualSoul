@@ -335,7 +335,21 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div class="section-title">Friend Requests</div>
       <div class="friend-list" id="pendingList"></div>
     </div>
-    <div class="section-title">Friends</div>
+    <div class="section-title" id="myTwinLabel">我的分身</div>
+    <div class="friend-list">
+      <div class="friend-item" id="twinChatItem" onclick="openTwinChat()" style="border:1px solid rgba(124,92,252,.2);background:rgba(124,92,252,.04)">
+        <div class="dual-av" style="width:44px;height:44px">
+          <div class="av-front is-twin" style="width:32px;height:32px;font-size:14px">&#x1F47B;</div>
+          <div class="av-back is-real" style="width:22px;height:22px;font-size:10px" id="twinChatInitial">?</div>
+        </div>
+        <div class="fi-info">
+          <div class="fi-name" id="twinChatName">我的分身</div>
+          <div class="fi-mode" style="color:var(--ac2)" id="twinChatHint">和你的数字分身聊天</div>
+        </div>
+        <div style="font-size:18px">💬</div>
+      </div>
+    </div>
+    <div class="section-title" id="friendsLabel">Friends</div>
     <div class="friend-list" id="friendList">
       <div class="empty">No friends yet.<br>Add someone by username to get started!</div>
     </div>
@@ -585,6 +599,10 @@ function applyLang(){
   var lar=g('labelAutoReply');if(lar)lar.innerHTML=t('twinAutoReply')+'<br><span style="font-size:9px;color:var(--tx2)">'+t('twinAutoDesc')+'</span>';
   var psb=document.querySelector('.profile-save');if(psb)psb.textContent=t('saveTwin');
   var plo=document.querySelector('.profile-logout');if(plo)plo.textContent=t('logout');
+  // Twin chat entry
+  var mtl=g('myTwinLabel');if(mtl)mtl.textContent=LANG==='zh'?'我的分身':'My Twin';
+  var tch=g('twinChatHint');if(tch)tch.textContent=LANG==='zh'?'和你的数字分身聊天':'Chat with your digital twin';
+  var frl=g('friendsLabel');if(frl)frl.textContent=LANG==='zh'?'好友':'Friends';
   // Invite
   var ivt=g('inviteTitle');if(ivt)ivt.textContent=t('inviteTitle');
   var ivd=g('inviteDesc');if(ivd)ivd.textContent=t('inviteDesc');
@@ -1070,6 +1088,65 @@ function respondFriend(id,action){
 }
 
 // Chat
+// Chat with own twin
+var _twinChatHistory=[];
+
+function openTwinChat(){
+  hideDraft();clearAutoSendTimer();
+  chatFriend={user_id:'__my_twin__',name:(_profileName||'')+(LANG==='zh'?' 的分身':"'s Twin"),current_mode:'twin',is_twin_chat:true};
+  g('friendsView').style.display='none';
+  g('chatView').style.display='flex';
+  g('chatName').textContent=chatFriend.name;
+  // Update chat header avatar
+  var ca=g('chatAvatar');
+  var tmpDiv=document.createElement('div');tmpDiv.innerHTML=buildAvatar(_profileName||'?',36,'twin',_myAvatar,_myTwinAvatar);
+  var newAv=tmpDiv.firstChild;newAv.id='chatAvatar';ca.parentNode.replaceChild(newAv,ca);
+  var box=g('chatMsgs');
+  if(!_twinChatHistory.length){
+    // First time: twin greets the user
+    var greet=LANG==='zh'?
+      '嗨！我是你的数字分身 👻\n\n你可以跟我聊任何事。我会学习你的风格，以后有朋友给你发消息时，我能帮你拟回复。\n\n现在，试着跟我说句话？':
+      "Hey! I'm your digital twin 👻\n\nYou can chat with me about anything. I'll learn your style, and when friends message you later, I can draft replies for you.\n\nTry saying something to me?";
+    box.innerHTML='<div class="msg theirs"><div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div><div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(greet).replace(/\n/g,'<br>')+'</div></div></div>';
+  }else{
+    // Restore history
+    box.innerHTML=_twinChatHistory.map(function(m){
+      var cls='msg '+(m.mine?'mine':'theirs');
+      var av='<div class="msg-av">'+buildAvatar(_profileName||'?',34,m.mine?'real':'twin')+'</div>';
+      return '<div class="'+cls+'">'+av+'<div><div class="bubble"'+(m.mine?'':' style="box-shadow:0 0 12px rgba(124,92,252,.15)"')+'>'+esc(m.text).replace(/\n/g,'<br>')+'</div></div></div>';
+    }).join('');
+  }
+  box.scrollTop=box.scrollHeight;
+}
+
+function sendTwinChat(text){
+  _twinChatHistory.push({mine:true,text:text});
+  var box=g('chatMsgs');
+  var myAv='<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>';
+  box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble">'+esc(text)+'</div></div></div>';
+  box.scrollTop=box.scrollHeight;
+  // Show typing indicator
+  box.innerHTML+='<div class="msg theirs" id="twinTyping"><div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div><div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)"><span class="draft-dots">'+(LANG==='zh'?'分身正在想...':'Thinking...')+'</span></div></div></div>';
+  box.scrollTop=box.scrollHeight;
+  // Call twin draft API
+  fetch(DS_BASE+'/api/social/twin/draft',{method:'POST',headers:headers(),body:JSON.stringify({
+    friend_id:myId,incoming_msg:text,context:_twinChatHistory.slice(-6).map(function(m){return{role:m.mine?'me':'twin',content:m.text}})
+  })}).then(function(r){return r.json()}).then(function(d){
+    var typing=g('twinTyping');if(typing)typing.remove();
+    var reply=d.draft||(LANG==='zh'?'嗯，我还在学习你的风格，多聊几句我就更懂你了！':'Hmm, I\'m still learning your style. Chat more and I\'ll get better!');
+    _twinChatHistory.push({mine:false,text:reply});
+    var twinAv='<div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div>';
+    box.innerHTML+='<div class="msg theirs">'+twinAv+'<div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(reply).replace(/\n/g,'<br>')+'</div></div></div>';
+    box.scrollTop=box.scrollHeight;
+  }).catch(function(){
+    var typing=g('twinTyping');if(typing)typing.remove();
+    var fallback=LANG==='zh'?'抱歉，我刚走神了。再说一次？':'Sorry, I zoned out. Say that again?';
+    _twinChatHistory.push({mine:false,text:fallback});
+    box.innerHTML+='<div class="msg theirs"><div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div><div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(fallback)+'</div></div></div>';
+    box.scrollTop=box.scrollHeight;
+  });
+}
+
 function openChat(userId,name,friendMode){
   hideDraft();clearAutoSendTimer();
   chatFriend={user_id:userId,name:name,current_mode:friendMode};
@@ -1124,6 +1201,8 @@ function sendMsg(isTwinDraft){
   var inp=g('chatInput');var text=inp.value.trim();
   if(!text)return;inp.value='';inp.style.height='36px';
   hideDraft();
+  // Route to twin chat if talking to own twin
+  if(chatFriend.is_twin_chat){sendTwinChat(text);return}
   var senderMode=isTwinDraft?'twin':'real';
   var box=g('chatMsgs');
   var empty=box.querySelector('.empty');if(empty)empty.remove();
@@ -1160,6 +1239,9 @@ function loadProfile(){
     _myAvatar=p.avatar||'';
     _myTwinAvatar=p.twin_avatar||'';
     updateInviteUI();
+    // Update twin chat entry
+    var tci=g('twinChatInitial');if(tci)tci.textContent=(_profileName||'?')[0].toUpperCase();
+    var tcn=g('twinChatName');if(tcn)tcn.textContent=LANG==='zh'?_profileName+'的分身':_profileName+"'s Twin";
     g('profPersonality').value=p.twin_personality||'';
     g('profStyle').value=p.twin_speech_style||'';
     // Update profile page avatar
