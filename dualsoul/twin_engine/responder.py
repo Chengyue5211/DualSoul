@@ -195,13 +195,13 @@ class TwinResponder:
         messages = []
 
         # System message: establish twin identity firmly
+        personality_block = profile.build_personality_prompt()
         system_msg = (
             f"你是{name}的数字分身（digital twin）。\n"
             f"现在正在和你对话的人就是{name}本人——你的主人。这是主人和分身之间的私密对话。\n\n"
             f"你的核心身份：你是{name}的另一个自己，一个数字化的存在。"
             f"你知道自己是AI驱动的数字分身，你以{name}的性格和方式说话。\n\n"
-            f"性格：{profile.personality}\n"
-            f"说话风格：{profile.speech_style}\n\n"
+            f"{personality_block}\n"
             f"重要规则：\n"
             f"- 你始终清楚自己是{name}的数字分身，对话对象就是{name}本人\n"
             f"- 你用{name}的说话方式交流，但不假装是真人\n"
@@ -286,10 +286,10 @@ class TwinResponder:
         source_name = get_lang_name(source_lang)
         target_name = get_lang_name(target_lang)
 
+        personality_block = profile.build_personality_prompt()
         prompt = (
             f"You are {profile.display_name}'s personal translator.\n"
-            f"Personality: {profile.personality}\n"
-            f"Speech style: {profile.speech_style}\n\n"
+            f"{personality_block}\n"
             f"Translate the following from {source_name} to {target_name}.\n"
             f"IMPORTANT: Do NOT just translate words. Rewrite as if {profile.display_name} "
             f"were naturally speaking {target_name} — preserve their humor, tone, "
@@ -432,10 +432,10 @@ class TwinResponder:
                 f"Preserve their personality, humor, and speaking style."
             )
 
+        personality_block = profile.build_personality_prompt()
         prompt = (
             f"You are {profile.display_name}'s digital twin.\n"
-            f"Personality: {profile.personality}\n"
-            f"Speech style: {profile.speech_style}\n\n"
+            f"{personality_block}\n"
             f"Someone ({sender_label}) says: \"{incoming_msg}\"\n\n"
             f"Reply as {profile.display_name}'s twin. Keep it under 50 words, "
             f"natural and authentic. Output only the reply text."

@@ -66,7 +66,91 @@ MIGRATIONS = [
     "ALTER TABLE social_messages ADD COLUMN auto_reply INTEGER DEFAULT 0",
     "ALTER TABLE social_messages ADD COLUMN metadata TEXT DEFAULT ''",
     "ALTER TABLE users ADD COLUMN voice_sample TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN twin_source TEXT DEFAULT 'local'",
 ]
+
+
+# Schema V2 — Twin import from Nianlun (年轮分身导入)
+SCHEMA_V2 = """
+CREATE TABLE IF NOT EXISTS twin_profiles (
+    profile_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'nianlun'
+        CHECK(source IN ('nianlun', 'local')),
+    version INTEGER NOT NULL DEFAULT 1,
+    is_active INTEGER NOT NULL DEFAULT 1,
+
+    -- Identity
+    twin_name TEXT DEFAULT '',
+    training_status TEXT DEFAULT '',
+    quality_score REAL DEFAULT 0.0,
+    self_awareness REAL DEFAULT 0.0,
+    interaction_count INTEGER DEFAULT 0,
+
+    -- Five-dimension personality (五维人格骨架)
+    dim_judgement TEXT DEFAULT '',
+    dim_cognition TEXT DEFAULT '',
+    dim_expression TEXT DEFAULT '',
+    dim_relation TEXT DEFAULT '',
+    dim_sovereignty TEXT DEFAULT '',
+
+    -- Structured personality
+    value_order TEXT DEFAULT '',
+    behavior_patterns TEXT DEFAULT '',
+    speech_style TEXT DEFAULT '',
+    boundaries TEXT DEFAULT '',
+
+    -- Certificate (身份证书)
+    certificate TEXT DEFAULT '',
+
+    -- Full import payload (cold storage)
+    raw_import TEXT DEFAULT '',
+
+    imported_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+
+    UNIQUE(user_id, version)
+);
+CREATE INDEX IF NOT EXISTS idx_tp_user_active ON twin_profiles(user_id, is_active);
+
+CREATE TABLE IF NOT EXISTS twin_memories (
+    memory_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    memory_type TEXT NOT NULL
+        CHECK(memory_type IN ('daily', 'weekly', 'monthly', 'quarterly', 'yearly')),
+    period_start TEXT NOT NULL,
+    period_end TEXT NOT NULL,
+
+    summary_text TEXT NOT NULL,
+    emotional_tone TEXT DEFAULT '',
+    themes TEXT DEFAULT '',
+
+    key_events TEXT DEFAULT '',
+    growth_signals TEXT DEFAULT '',
+
+    source TEXT DEFAULT 'nianlun',
+    imported_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_tm_user_type ON twin_memories(user_id, memory_type, period_start);
+CREATE INDEX IF NOT EXISTS idx_tm_user_recent ON twin_memories(user_id, period_end DESC);
+
+CREATE TABLE IF NOT EXISTS twin_entities (
+    entity_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    entity_name TEXT NOT NULL,
+    entity_type TEXT NOT NULL
+        CHECK(entity_type IN ('person', 'place', 'thing', 'event', 'concept')),
+    importance_score REAL DEFAULT 0.0,
+    mention_count INTEGER DEFAULT 0,
+    context TEXT DEFAULT '',
+    relations TEXT DEFAULT '',
+
+    source TEXT DEFAULT 'nianlun',
+    imported_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_te_user_type ON twin_entities(user_id, entity_type, importance_score DESC);
+CREATE INDEX IF NOT EXISTS idx_te_user_name ON twin_entities(user_id, entity_name);
+"""
 
 
 def init_db():
@@ -75,6 +159,7 @@ def init_db():
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(SCHEMA)
+    conn.executescript(SCHEMA_V2)
     # Run migrations (idempotent — skip if column already exists)
     for sql in MIGRATIONS:
         try:
