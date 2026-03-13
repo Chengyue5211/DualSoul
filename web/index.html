@@ -200,6 +200,7 @@ nav .ni.on .nc{transform:scale(1.15)}
   <div class="auth-logo">&#x1F47B;</div>
   <h1>DualSoul</h1>
   <div class="tagline">Every person has two voices</div>
+  <div id="inviteBanner" style="display:none;background:rgba(124,92,252,.1);border:1px solid rgba(124,92,252,.2);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--ac2);text-align:center"></div>
   <div class="auth-form" id="authForm">
     <input id="authUser" placeholder="Username" autocomplete="username">
     <input id="authPass" type="password" placeholder="Password" autocomplete="current-password">
@@ -273,6 +274,9 @@ nav .ni.on .nc{transform:scale(1.15)}
     <div class="add-friend">
       <input id="addInput" placeholder="Add friend by username..." maxlength="50">
       <button onclick="addFriend()">Add</button>
+    </div>
+    <div style="margin-bottom:14px">
+      <button onclick="copyInviteLink()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(124,92,252,.3);border-radius:10px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📤 分享邀请链接给微信好友</button>
     </div>
     <div id="pendingSection" style="display:none">
       <div class="section-title">Friend Requests</div>
@@ -354,6 +358,12 @@ nav .ni.on .nc{transform:scale(1.15)}
     </div>
     <button class="profile-save" onclick="saveProfile()">Save Twin Settings</button>
   </div>
+  <div class="profile-section">
+    <h3 id="inviteTitle">邀请好友</h3>
+    <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px" id="inviteDesc">分享链接给朋友，对方打开注册后自动加你为好友</p>
+    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="inviteLink"></div>
+    <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
+  </div>
   <button id="langBtn2" onclick="setLang(LANG==='zh'?'en':'zh')" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px">Language / 语言切换</button>
   <button class="profile-logout" onclick="logout()">Logout</button>
 </div>
@@ -422,6 +432,11 @@ var I18N={
     obTitle3:'永远在线，始终是你',obDesc3:'你睡觉、工作、生活时，分身替你保持对话。回来看看分身替你说了什么。',
     obNext:'下一步',obSkip:'跳过设置',
     obCreateTwin:'创建你的分身',
+    inviteTitle:'邀请好友',
+    inviteDesc:'分享链接给朋友，对方打开注册后自动加你为好友',
+    inviteCopy:'复制邀请链接',
+    inviteQuick:'📤 分享邀请链接给微信好友',
+    inviteCopied:'链接已复制！发给朋友吧',
     langSwitch:'EN'
   },
   en:{
@@ -465,6 +480,11 @@ var I18N={
     obTitle3:'Always Present, Always You',obDesc3:'Your twin keeps conversations alive while you sleep, work, or live. Come back and see what your twin said on your behalf.',
     obNext:'Next',obSkip:'Skip setup',
     obCreateTwin:'Create Your Twin',
+    inviteTitle:'Invite Friends',
+    inviteDesc:'Share this link — they register and you\'re automatically friends',
+    inviteCopy:'Copy Invite Link',
+    inviteQuick:'📤 Share invite link',
+    inviteCopied:'Link copied! Send it to a friend',
     langSwitch:'中文'
   }
 };
@@ -502,6 +522,11 @@ function applyLang(){
   var lar=g('labelAutoReply');if(lar)lar.innerHTML=t('twinAutoReply')+'<br><span style="font-size:9px;color:var(--tx2)">'+t('twinAutoDesc')+'</span>';
   var psb=document.querySelector('.profile-save');if(psb)psb.textContent=t('saveTwin');
   var plo=document.querySelector('.profile-logout');if(plo)plo.textContent=t('logout');
+  // Invite
+  var ivt=g('inviteTitle');if(ivt)ivt.textContent=t('inviteTitle');
+  var ivd=g('inviteDesc');if(ivd)ivd.textContent=t('inviteDesc');
+  var ivc=g('inviteCopyBtn');if(ivc)ivc.textContent=t('inviteCopy');
+  var ivq=g('inviteQuickBtn');if(ivq)ivq.textContent=t('inviteQuick');
   // About
   var abt=document.querySelector('#tabAbout .tab-header h2');if(abt)abt.textContent=t('aboutTitle');
   var abh=document.querySelector('.about h3');if(abh)abh.textContent=t('aboutProto');
@@ -572,6 +597,7 @@ function enterApp(){
   g('mainApp').classList.add('v');
   loadProfile();loadFriends();
   wsConnect();
+  checkInviteParam();
 }
 
 // --- Onboarding ---
@@ -779,6 +805,16 @@ function loadUnread(){
 // Auto-login + apply language
 (function(){
   applyLang();
+  // Show invite banner if ?invite= is in URL
+  var _inviteParams=new URLSearchParams(location.search);
+  var _inviter=_inviteParams.get('invite');
+  if(_inviter){
+    var ib=g('inviteBanner');
+    if(ib){ib.style.display='block';ib.textContent=LANG==='zh'?_inviter+' 邀请你加入 DualSoul！注册后自动成为好友':''+_inviter+' invited you to DualSoul! Register to become friends';
+      // Auto switch to register mode
+      if(!isRegister){toggleAuthMode()}
+    }
+  }
   var t=localStorage.getItem('ds_token');
   var u=localStorage.getItem('ds_uid');
   if(t&&u){token=t;myId=u;enterApp()}
@@ -956,6 +992,8 @@ function loadProfile(){
     _profileName=p.display_name||p.username||'';
     g('profileName').textContent=_profileName;
     g('profileUsername').textContent='@'+p.username;
+    _profileUsername=p.username;
+    updateInviteUI();
     g('profPersonality').value=p.twin_personality||'';
     g('profStyle').value=p.twin_speech_style||'';
     var av=g('profileAv');
@@ -996,6 +1034,44 @@ function saveProfile(){
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)toast('Twin settings saved!');else toast(d.error||'Failed');
   }).catch(function(){toast(t('networkError'))});
+}
+
+// Invite
+function getInviteLink(){
+  var base=location.origin+location.pathname;
+  return base+'?invite='+encodeURIComponent(_profileUsername||'');
+}
+function updateInviteUI(){
+  var link=getInviteLink();
+  var el=g('inviteLink');if(el)el.textContent=link;
+}
+function copyInviteLink(){
+  var link=getInviteLink();
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(function(){toast(t('inviteCopied'))}).catch(function(){fallbackCopy(link)});
+  }else{fallbackCopy(link)}
+}
+function fallbackCopy(text){
+  var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');toast(t('inviteCopied'))}catch(e){toast('Copy failed')}
+  document.body.removeChild(ta);
+}
+var _profileUsername='';
+
+// Handle ?invite=xxx in URL — after registration, auto-add the inviter
+function checkInviteParam(){
+  var params=new URLSearchParams(location.search);
+  var inviter=params.get('invite');
+  if(inviter&&token){
+    // Auto-send friend request to inviter
+    fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:inviter})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success)toast(LANG==='zh'?'已自动添加 '+inviter+' 为好友！':'Auto-added '+inviter+' as friend!');
+    }).catch(function(){});
+    // Clean up URL
+    if(history.replaceState){history.replaceState(null,'',location.pathname)}
+  }
 }
 
 // Enter key to send
