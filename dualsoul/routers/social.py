@@ -211,15 +211,6 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
         },
     })
 
-    # Generate a draft suggestion for the recipient's twin (async, non-blocking)
-    if manager.is_online(req.to_user_id):
-        asyncio.ensure_future(_generate_and_push_draft(
-            recipient_id=req.to_user_id,
-            sender_id=uid,
-            incoming_msg=content,
-            for_msg_id=msg_id,
-        ))
-
     # Auto-detect foreign language/dialect and push translation (async, non-blocking)
     if manager.is_online(req.to_user_id):
         asyncio.ensure_future(_auto_detect_and_push_translation(
@@ -230,9 +221,9 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
 
     # Determine if twin should auto-reply:
     # 1. Explicit: receiver_mode is 'twin'
-    # 2. Offline auto-reply: recipient is offline + has twin_auto_reply enabled
+    # 2. Auto-reply enabled: twin_auto_reply is on (regardless of online status)
     should_twin_reply = req.receiver_mode == "twin"
-    if not should_twin_reply and req.receiver_mode == "real" and not manager.is_online(req.to_user_id):
+    if not should_twin_reply and req.receiver_mode == "real":
         with get_db() as db:
             row = db.execute(
                 "SELECT twin_auto_reply FROM users WHERE user_id=?", (req.to_user_id,)
