@@ -54,14 +54,17 @@ nav .ni.on .nc{transform:scale(1.15)}
 /* Tabs */
 .tab{display:none;padding:0 14px 80px}.tab.v{display:block}
 
-/* Dual Avatar Component */
+/* Dual Avatar Component — stacked: front avatar overlaps back avatar (back shows ~1/3) */
 .dual-av{position:relative;flex-shrink:0}
-.dual-av .av-real,.dual-av .av-twin{border-radius:50%;position:absolute;border:2px solid var(--bg2);display:flex;align-items:center;justify-content:center;transition:.3s;font-weight:700}
-.dual-av .av-real{background:var(--bg3);color:var(--tx);bottom:0;left:0;z-index:2}
-.dual-av .av-twin{background:linear-gradient(135deg,rgba(124,92,252,.4),rgba(92,200,250,.4));color:#fff;top:0;right:0;z-index:1;opacity:.65}
-.dual-av.mode-twin .av-twin{z-index:2;opacity:1;bottom:0;left:0;top:auto;right:auto;animation:twinShimmer 3s ease infinite}
-.dual-av.mode-twin .av-real{z-index:1;opacity:.4;top:0;right:0;bottom:auto;left:auto}
-@keyframes twinShimmer{0%,100%{box-shadow:0 0 6px rgba(124,92,252,.3)}50%{box-shadow:0 0 16px rgba(92,200,250,.5)}}
+.dual-av .av-front,.dual-av .av-back{border-radius:50%;position:absolute;display:flex;align-items:center;justify-content:center;font-weight:700;transition:.3s}
+.dual-av .av-front{bottom:0;left:0;z-index:2;border:2px solid var(--bg2)}
+.dual-av .av-back{top:0;right:0;z-index:1;border:1.5px solid rgba(255,255,255,.08);opacity:.55;filter:saturate(.7)}
+/* Real mode: real in front (solid bg), twin behind (gradient) */
+.dual-av .av-front.is-real{background:var(--bg3);color:var(--tx)}
+.dual-av .av-front.is-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;animation:twinShimmer 3s ease infinite}
+.dual-av .av-back.is-real{background:var(--bg3);color:var(--tx)}
+.dual-av .av-back.is-twin{background:linear-gradient(135deg,rgba(124,92,252,.5),rgba(92,200,250,.5));color:#fff}
+@keyframes twinShimmer{0%,100%{box-shadow:0 0 6px rgba(124,92,252,.3)}50%{box-shadow:0 0 14px rgba(92,200,250,.5)}}
 
 /* Identity Switch */
 .id-switch{display:flex;align-items:center;gap:10px;padding:12px 14px;margin:0 -14px 14px;background:var(--bg2);border-bottom:1px solid var(--bd)}
@@ -99,9 +102,10 @@ nav .ni.on .nc{transform:scale(1.15)}
 .chat-name{font-size:14px;font-weight:700;flex:1}
 .chat-mode-tag{font-size:9px;color:rgba(124,92,252,.8);padding:3px 8px;border:1px solid rgba(124,92,252,.2);border-radius:10px}
 .chat-msgs{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:8px}
-.msg{display:flex;gap:8px;max-width:85%;animation:msgIn .2s ease}
+.msg{display:flex;gap:8px;max-width:85%;animation:msgIn .2s ease;align-items:flex-start}
 .msg.mine{margin-left:auto;flex-direction:row-reverse}
 @keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.msg .msg-av{flex-shrink:0}
 .msg .bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6}
 .msg.theirs .bubble{background:var(--bg2);border:1px solid var(--bd);border-top-left-radius:4px}
 .msg.mine .bubble{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.2);border-top-right-radius:4px}
@@ -117,8 +121,8 @@ nav .ni.on .nc{transform:scale(1.15)}
 /* Profile Tab */
 .profile-card{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:20px;margin:14px 0;text-align:center}
 .profile-card .dual-av{margin:0 auto 12px;width:64px;height:64px}
-.profile-card .dual-av .av-real{width:48px;height:48px;font-size:20px}
-.profile-card .dual-av .av-twin{width:48px;height:48px;font-size:20px}
+.profile-card .dual-av .av-front{width:48px;height:48px;font-size:20px}
+.profile-card .dual-av .av-back{width:34px;height:34px;font-size:14px}
 .profile-name{font-size:18px;font-weight:800;margin-bottom:4px}
 .profile-username{font-size:11px;color:var(--tx2)}
 .profile-section{margin:14px 0}
@@ -284,8 +288,8 @@ nav .ni.on .nc{transform:scale(1.15)}
     <div class="chat-header">
       <span class="chat-back" onclick="backToList()">&#8249;</span>
       <div class="dual-av" id="chatAvatar" style="width:36px;height:36px">
-        <div class="av-real" style="width:28px;height:28px;font-size:12px">?</div>
-        <div class="av-twin" style="width:28px;height:28px;font-size:12px">&#x1F47B;</div>
+        <div class="av-front is-real" style="width:28px;height:28px;font-size:12px">?</div>
+        <div class="av-back is-twin" style="width:20px;height:20px;font-size:10px">&#x1F47B;</div>
       </div>
       <span class="chat-name" id="chatName">Friend</span>
       <span class="chat-mode-tag" id="chatModeTag">Real &rarr; Real</span>
@@ -323,8 +327,8 @@ nav .ni.on .nc{transform:scale(1.15)}
   <div class="tab-header"><h2>Profile</h2></div>
   <div class="profile-card">
     <div class="dual-av" id="profileAv" style="width:64px;height:64px">
-      <div class="av-real" style="width:48px;height:48px;font-size:20px">?</div>
-      <div class="av-twin" style="width:48px;height:48px;font-size:20px">&#x1F47B;</div>
+      <div class="av-front is-real" style="width:48px;height:48px;font-size:20px">?</div>
+      <div class="av-back is-twin" style="width:34px;height:34px;font-size:14px">&#x1F47B;</div>
     </div>
     <div class="profile-name" id="profileName">User</div>
     <div class="profile-username" id="profileUsername">@username</div>
@@ -367,6 +371,7 @@ var token='';
 var myId='';
 var myMode='real';
 var chatFriend=null;
+var _profileName='';
 var isRegister=false;
 var ws=null;
 var wsRetry=0;
@@ -608,7 +613,8 @@ function appendIncoming(m){
   var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
   var ai=m.ai_generated?'<div class="ai-tag">Twin auto-reply</div>':'';
   var t=(m.created_at||'').slice(11,16)||'now';
-  box.innerHTML+='<div class="msg theirs">'+buildAvatar(chatFriend.name,30)+
+  var incAv='<div class="msg-av">'+buildAvatar(chatFriend.name,34,m.sender_mode||'real')+'</div>';
+  box.innerHTML+='<div class="msg theirs">'+incAv+
     '<div><div class="bubble">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+t+'</div></div></div>';
   box.scrollTop=box.scrollHeight;
 }
@@ -644,17 +650,27 @@ function switchMode(mode,el){
   el.parentElement.querySelectorAll('.idt').forEach(function(b){b.classList.remove('on')});
   el.classList.add('on');
   g('modeHint').textContent=mode==='real'?'Real mode':'Twin mode';
-  document.querySelectorAll('.dual-av').forEach(function(a){a.classList.toggle('mode-twin',mode==='twin')});
+  // Update profile avatar to reflect current mode
+  var pav=g('profileAv');
+  if(pav){var tmpD=document.createElement('div');tmpD.innerHTML=buildAvatar(_profileName||'?',64,mode);var nAv=tmpD.firstChild;nAv.id='profileAv';pav.parentNode.replaceChild(nAv,pav)}
   if(chatFriend)updateModeTag();
   fetch(DS_BASE+'/api/identity/switch',{method:'POST',headers:headers(),body:JSON.stringify({mode:mode})}).catch(function(){});
 }
 
-function buildAvatar(name,size){
-  size=size||48;var sm=Math.round(size*0.75);
-  var cls='dual-av'+(myMode==='twin'?' mode-twin':'');
-  return '<div class="'+cls+'" style="width:'+size+'px;height:'+size+'px">'+
-    '<div class="av-real" style="width:'+sm+'px;height:'+sm+'px;font-size:'+Math.round(sm*0.44)+'px">'+esc((name||'?')[0].toUpperCase())+'</div>'+
-    '<div class="av-twin" style="width:'+sm+'px;height:'+sm+'px;font-size:'+Math.round(sm*0.44)+'px">&#x1F47B;</div></div>';
+function buildAvatar(name,size,mode){
+  // mode: 'real' (default) = real in front, 'twin' = twin in front
+  size=size||48;mode=mode||'real';
+  var front=Math.round(size*0.72);  // front avatar: ~72% of container
+  var back=Math.round(size*0.50);   // back avatar: ~50% (shows ~1/3 peeking out)
+  var initial=esc((name||'?')[0].toUpperCase());
+  var isTwin=mode==='twin';
+  var frontCls=isTwin?'is-twin':'is-real';
+  var backCls=isTwin?'is-real':'is-twin';
+  var frontContent=isTwin?'&#x1F47B;':initial;
+  var backContent=isTwin?initial:'&#x1F47B;';
+  return '<div class="dual-av" style="width:'+size+'px;height:'+size+'px">'+
+    '<div class="av-front '+frontCls+'" style="width:'+front+'px;height:'+front+'px;font-size:'+Math.round(front*0.44)+'px">'+frontContent+'</div>'+
+    '<div class="av-back '+backCls+'" style="width:'+back+'px;height:'+back+'px;font-size:'+Math.round(back*0.44)+'px">'+backContent+'</div></div>';
 }
 
 // Friends
@@ -670,7 +686,7 @@ function loadFriends(){
     if(pending.length){
       ps.style.display='block';
       pl.innerHTML=pending.map(function(f){
-        return '<div class="friend-item">'+buildAvatar(f.display_name,40)+
+        return '<div class="friend-item">'+buildAvatar(f.display_name,40,f.current_mode)+
           '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+'</div><div class="fi-mode">@'+esc(f.username)+'</div></div>'+
           '<div class="pending-btns">'+
           '<button class="btn-accept" onclick="respondFriend(\''+esc(f.conn_id)+'\',\'accept\')">Accept</button>'+
@@ -682,7 +698,7 @@ function loadFriends(){
       fl.innerHTML=accepted.map(function(f){
         var ml=f.current_mode==='twin'?'Twin online':'Online';
         return '<div class="friend-item" onclick="openChat(\''+esc(f.user_id)+'\',\''+esc(f.display_name)+'\',\''+esc(f.current_mode)+'\')">'+
-          buildAvatar(f.display_name,44)+
+          buildAvatar(f.display_name,44,f.current_mode)+
           '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+'</div><div class="fi-mode">'+ml+'</div></div>'+
           '<div class="fi-time">'+esc(f.accepted_at||'').slice(5,16)+'</div></div>';
       }).join('');
@@ -713,6 +729,12 @@ function openChat(userId,name,friendMode){
   g('friendsView').style.display='none';
   g('chatView').style.display='flex';
   g('chatName').textContent=name;
+  // Update chat header dual-avatar to reflect friend's current mode
+  var ca=g('chatAvatar');
+  var fm=friendMode||'real';
+  var tmpDiv=document.createElement('div');tmpDiv.innerHTML=buildAvatar(name,36,fm);
+  var newAv=tmpDiv.firstChild;newAv.id='chatAvatar';
+  ca.parentNode.replaceChild(newAv,ca);
   updateModeTag();
   fetch(DS_BASE+'/api/social/messages?friend_id='+userId+'&limit=50',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
@@ -725,7 +747,9 @@ function openChat(userId,name,friendMode){
       var ai=m.ai_generated?'<div class="ai-tag">Twin auto-reply</div>':'';
       var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
       var t=(m.created_at||'').slice(11,16);
-      return '<div class="'+cls+'">'+(mine?'':buildAvatar(name,30))+
+      var avName=mine?(_profileName||'Me'):name;
+      var av='<div class="msg-av">'+buildAvatar(avName,34,m.sender_mode||'real')+'</div>';
+      return '<div class="'+cls+'">'+av+
         '<div><div class="bubble">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+t+'</div></div></div>';
     }).join('');
     box.scrollTop=box.scrollHeight;
@@ -755,7 +779,8 @@ function sendMsg(){
   var box=g('chatMsgs');
   var empty=box.querySelector('.empty');if(empty)empty.remove();
   var tw=myMode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
-  box.innerHTML+='<div class="msg mine"><div><div class="bubble">'+tw+esc(text)+'</div><div class="msg-time">now</div></div></div>';
+  var myAv='<div class="msg-av">'+buildAvatar(_profileName||'Me',34,myMode)+'</div>';
+  box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble">'+tw+esc(text)+'</div><div class="msg-time">now</div></div></div>';
   box.scrollTop=box.scrollHeight;
   fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
     to_user_id:chatFriend.user_id,content:text,sender_mode:myMode,receiver_mode:rm
@@ -764,7 +789,8 @@ function sendMsg(){
     // Show twin reply from HTTP response (WS may also deliver it, dedup by msg_id)
     if(d.ai_reply&&d.ai_reply.content&&!_shownMsgIds[d.ai_reply.msg_id]){
       _shownMsgIds[d.ai_reply.msg_id]=1;
-      box.innerHTML+='<div class="msg theirs">'+buildAvatar(chatFriend.name,30)+
+      var twinAv='<div class="msg-av">'+buildAvatar(chatFriend.name,34,'twin')+'</div>';
+      box.innerHTML+='<div class="msg theirs">'+twinAv+
         '<div><div class="bubble"><span class="twin-icon">&#x1F47B;</span> '+esc(d.ai_reply.content)+'</div>'+
         '<div class="ai-tag">Twin auto-reply</div><div class="msg-time">now</div></div></div>';
       box.scrollTop=box.scrollHeight;
@@ -777,12 +803,13 @@ function loadProfile(){
   fetch(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var p=d.data;
-    g('profileName').textContent=p.display_name||p.username;
+    _profileName=p.display_name||p.username||'';
+    g('profileName').textContent=_profileName;
     g('profileUsername').textContent='@'+p.username;
     g('profPersonality').value=p.twin_personality||'';
     g('profStyle').value=p.twin_speech_style||'';
     var av=g('profileAv');
-    av.querySelector('.av-real').textContent=(p.display_name||p.username||'?')[0].toUpperCase();
+    av.querySelector('.av-front').textContent=(_profileName||'?')[0].toUpperCase();
     // Auto-reply toggle
     var cb=g('profAutoReply');var dot=g('arDot');
     if(cb){
