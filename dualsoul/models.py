@@ -52,6 +52,7 @@ class TwinDraftRequest(BaseModel):
 class TwinChatRequest(BaseModel):
     message: str
     history: list[dict] = []  # [{role: "me"/"twin", content: "..."}]
+    image: str = ""  # Optional base64 image data URL for vision
 
 
 # Social

@@ -1448,21 +1448,25 @@ function openTwinChat(){
   box.scrollTop=box.scrollHeight;
 }
 
-function sendTwinChat(text){
+function sendTwinChat(text,imageDataUrl){
   _twinChatHistory.push({mine:true,text:text});
   var box=g('chatMsgs');
   var myIdx='tc_'+(_twinChatHistory.length-1);
   var myTrBtn='<span class="msg-translate" onclick="translateMsg(this,\''+myIdx+'\')" title="Translate">&#x1F310;</span>';
   var myAv='<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>';
-  box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble" data-msgid="'+myIdx+'">'+esc(text)+'</div><div class="msg-time">'+myTrBtn+'</div></div></div>';
+  // Only show text bubble if it's not a hidden image description
+  if(!imageDataUrl){
+    box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble" data-msgid="'+myIdx+'">'+esc(text)+'</div><div class="msg-time">'+myTrBtn+'</div></div></div>';
+  }
   box.scrollTop=box.scrollHeight;
   // Show typing indicator
-  box.innerHTML+='<div class="msg theirs" id="twinTyping"><div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div><div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)"><span class="draft-dots">'+(LANG==='zh'?'分身正在想...':'Thinking...')+'</span></div></div></div>';
+  box.innerHTML+='<div class="msg theirs" id="twinTyping"><div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div><div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)"><span class="draft-dots">'+(LANG==='zh'?'分身正在看...':'Analyzing...')+'</span></div></div></div>';
   box.scrollTop=box.scrollHeight;
-  // Call twin self-chat API (dedicated endpoint with identity awareness)
-  fetch(DS_BASE+'/api/social/twin/chat',{method:'POST',headers:headers(),body:JSON.stringify({
-    message:text,history:_twinChatHistory.slice(-8).map(function(m){return{role:m.mine?'me':'twin',content:m.text}})
-  })}).then(function(r){return r.json()}).then(function(d){
+  // Call twin self-chat API with optional image
+  var payload={message:text,history:_twinChatHistory.slice(-8).map(function(m){return{role:m.mine?'me':'twin',content:m.text}})};
+  if(imageDataUrl)payload.image=imageDataUrl;
+  fetch(DS_BASE+'/api/social/twin/chat',{method:'POST',headers:headers(),body:JSON.stringify(payload)
+  }).then(function(r){return r.json()}).then(function(d){
     var typing=g('twinTyping');if(typing)typing.remove();
     var reply=d.reply||(LANG==='zh'?'嗯，我还在学习你的风格，多聊几句我就更懂你了！':'Hmm, I\'m still learning your style. Chat more and I\'ll get better!');
     _twinChatHistory.push({mine:false,text:reply});
@@ -1661,10 +1665,10 @@ function sendFileMsg(file,type){
       var myAv=chatFriend&&chatFriend.is_twin_chat?'<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>':'';
       box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble"><img src="'+reader.result+'" class="chat-img" onclick="previewImg(this.src)"></div></div></div>';
       box.scrollTop=box.scrollHeight;
-      // In twin chat, tell the twin about the image so it responds
+      // In twin chat, send image to vision AI so twin can see and respond
       if(chatFriend&&chatFriend.is_twin_chat){
-        var desc=LANG==='zh'?'[我给你发了一张图片，请友好地回应，比如夸赞、评论或提问]':'[I sent you a photo, please respond naturally with a comment or question about it]';
-        sendTwinChat(desc);
+        var prompt=LANG==='zh'?'请看这张图片，根据图片内容回应我':'Please look at this image and respond based on what you see';
+        sendTwinChat(prompt,reader.result);
       }
     }
   };

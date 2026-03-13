@@ -22,6 +22,7 @@ JWT_EXPIRE_HOURS = int(os.getenv("DUALSOUL_JWT_EXPIRE_HOURS", "72"))
 AI_BASE_URL = os.getenv("DUALSOUL_AI_BASE_URL", "")
 AI_API_KEY = os.getenv("DUALSOUL_AI_KEY", "")
 AI_MODEL = os.getenv("DUALSOUL_AI_MODEL", "gpt-3.5-turbo")
+AI_VISION_MODEL = os.getenv("DUALSOUL_AI_VISION_MODEL", "qwen-vl-plus")
 
 # Server
 HOST = os.getenv("DUALSOUL_HOST", "0.0.0.0")

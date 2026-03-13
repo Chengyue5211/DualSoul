@@ -326,6 +326,7 @@ async def twin_chat(req: TwinChatRequest, user=Depends(get_current_user)):
         owner_id=uid,
         message=req.message,
         history=req.history,
+        image_url=req.image,
     )
     if not reply:
         return {"success": False, "error": "Twin chat unavailable"}

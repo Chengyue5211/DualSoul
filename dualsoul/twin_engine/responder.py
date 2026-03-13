@@ -16,7 +16,7 @@ import logging
 
 import httpx
 
-from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
+from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL, AI_VISION_MODEL
 from dualsoul.database import gen_id, get_db
 from dualsoul.twin_engine.personality import get_lang_name, get_twin_profile
 
@@ -164,6 +164,7 @@ class TwinResponder:
         owner_id: str,
         message: str,
         history: list[dict] | None = None,
+        image_url: str = "",
     ) -> str | None:
         """Chat with your own digital twin — the twin knows it IS you.
 
@@ -175,6 +176,7 @@ class TwinResponder:
             owner_id: The user who is chatting with their own twin
             message: The user's latest message
             history: Recent conversation history [{role: 'me'/'twin', content: '...'}]
+            image_url: Optional base64 data URL of an image to analyze
 
         Returns:
             The twin's reply text, or None
@@ -187,6 +189,7 @@ class TwinResponder:
             return None
 
         name = profile.display_name or "主人"
+        use_vision = bool(image_url)
 
         # Build conversation history as chat messages
         messages = []
@@ -208,6 +211,11 @@ class TwinResponder:
             f"- 不要每句话都以反问结尾，不要重复同一个比喻\n"
             f"- 回答要直接，有内容，不要说空话套话"
         )
+        if use_vision:
+            system_msg += (
+                f"\n- 如果主人发了图片，仔细观察图片内容并针对性地回应\n"
+                f"- 根据图片内容和上下文来理解主人的意图（是分享、求评价、求分析等）"
+            )
         messages.append({"role": "system", "content": system_msg})
 
         # Add conversation history
@@ -216,11 +224,20 @@ class TwinResponder:
                 role = "user" if msg.get("role") == "me" else "assistant"
                 messages.append({"role": role, "content": msg.get("content", "")})
 
-        # Add current message
-        messages.append({"role": "user", "content": message})
+        # Add current message — with image if present
+        if use_vision:
+            user_content = [
+                {"type": "image_url", "image_url": {"url": image_url}},
+                {"type": "text", "text": message or "请看这张图片并回应"},
+            ]
+            messages.append({"role": "user", "content": user_content})
+        else:
+            messages.append({"role": "user", "content": message})
+
+        model = AI_VISION_MODEL if use_vision else AI_MODEL
 
         try:
-            async with httpx.AsyncClient(timeout=15) as client:
+            async with httpx.AsyncClient(timeout=20) as client:
                 resp = await client.post(
                     f"{AI_BASE_URL}/chat/completions",
                     headers={
@@ -228,7 +245,7 @@ class TwinResponder:
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": AI_MODEL,
+                        "model": model,
                         "max_tokens": 120,
                         "messages": messages,
                     },
