@@ -20,13 +20,17 @@ a{color:var(--ac);text-decoration:none}
 /* Splash */
 .splash{position:fixed;inset:0;background:var(--bg);z-index:1000;display:none;flex-direction:column;align-items:center;justify-content:center}
 .splash.v{display:flex}
-.splash-inner{position:relative;width:120px;height:120px;margin-bottom:30px}
-.sp-figure{width:60px;height:80px;border-radius:30px 30px 20px 20px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-.sp-left{background:var(--tx);animation:splitLeft 2s ease 0.5s forwards}
-.sp-right{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);opacity:0;animation:splitRight 2s ease 0.5s forwards}
-@keyframes splitLeft{0%{transform:translate(-50%,-50%)}100%{transform:translate(-90%,-50%)}}
-@keyframes splitRight{0%{transform:translate(-50%,-50%);opacity:0}30%{opacity:0.6}100%{transform:translate(-10%,-50%);opacity:0.6;box-shadow:0 0 30px rgba(124,92,252,.4)}}
-.sp-text{opacity:0;font-size:16px;font-weight:600;color:var(--tx);text-align:center;animation:spTextIn 1s ease 1.8s forwards;line-height:1.8}
+.splash-inner{position:relative;width:180px;height:120px;margin-bottom:30px}
+.sp-av{width:72px;height:72px;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;overflow:hidden}
+.sp-real{background:var(--bg3);color:var(--tx);border:3px solid rgba(255,255,255,.15);animation:spSplitLeft 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
+.sp-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;border:3px solid rgba(124,92,252,.4);opacity:0;animation:spSplitRight 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
+.sp-twin::after{content:'';position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.06) 3deg,transparent 6deg);animation:spCyberSpin 8s linear infinite}
+.sp-connect{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:2px;background:linear-gradient(90deg,var(--tx),var(--ac));opacity:0;animation:spConnectIn 0.8s ease 2s forwards}
+@keyframes spSplitLeft{0%{transform:translate(-50%,-50%)}100%{transform:translate(-110%,-50%)}}
+@keyframes spSplitRight{0%{transform:translate(-50%,-50%);opacity:0}20%{opacity:0.5}100%{transform:translate(10%,-50%);opacity:1;box-shadow:0 0 24px rgba(124,92,252,.35),0 0 48px rgba(92,200,250,.15)}}
+@keyframes spCyberSpin{to{transform:rotate(360deg)}}
+@keyframes spConnectIn{0%{opacity:0;width:0}100%{opacity:0.6;width:36px}}
+.sp-text{opacity:0;font-size:16px;font-weight:600;color:var(--tx);text-align:center;animation:spTextIn 1s ease 2.2s forwards;line-height:1.8}
 @keyframes spTextIn{to{opacity:1}}
 
 /* Toast */
@@ -66,17 +70,21 @@ nav .ni.on .nc{transform:scale(1.15)}
 /* Tabs */
 .tab{display:none;padding:0 14px 80px}.tab.v{display:block}
 
-/* Dual Avatar Component — stacked: front avatar overlaps back avatar (back shows ~1/3) */
+/* Dual Avatar Component — stacked: front avatar overlaps back avatar */
 .dual-av{position:relative;flex-shrink:0}
-.dual-av .av-front,.dual-av .av-back{border-radius:50%;position:absolute;display:flex;align-items:center;justify-content:center;font-weight:700;transition:.3s}
+.dual-av .av-front,.dual-av .av-back{border-radius:50%;position:absolute;display:flex;align-items:center;justify-content:center;font-weight:700;transition:.3s;overflow:hidden}
 .dual-av .av-front{bottom:0;left:0;z-index:2;border:2px solid var(--bg2)}
-.dual-av .av-back{top:0;right:0;z-index:1;border:1.5px solid rgba(255,255,255,.08);opacity:.55;filter:saturate(.7)}
-/* Real mode: real in front (solid bg), twin behind (gradient) */
-.dual-av .av-front.is-real{background:var(--bg3);color:var(--tx)}
-.dual-av .av-front.is-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;animation:twinShimmer 3s ease infinite}
-.dual-av .av-back.is-real{background:var(--bg3);color:var(--tx)}
-.dual-av .av-back.is-twin{background:linear-gradient(135deg,rgba(124,92,252,.5),rgba(92,200,250,.5));color:#fff}
-@keyframes twinShimmer{0%,100%{box-shadow:0 0 6px rgba(124,92,252,.3)}50%{box-shadow:0 0 14px rgba(92,200,250,.5)}}
+.dual-av .av-back{top:0;right:0;z-index:1;border:1.5px solid rgba(255,255,255,.1);opacity:.6}
+/* Real avatar: warm, solid, human */
+.dual-av .av-front.is-real{background:linear-gradient(145deg,#2a2a3a,#3a3a4a);color:var(--tx);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.dual-av .av-back.is-real{background:linear-gradient(145deg,#2a2a3a,#3a3a4a);color:var(--tx)}
+/* Twin avatar: cyber, glowing, digital */
+.dual-av .av-front.is-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;animation:twinShimmer 3s ease infinite;box-shadow:0 0 12px rgba(124,92,252,.3)}
+.dual-av .av-back.is-twin{background:linear-gradient(135deg,rgba(124,92,252,.6),rgba(92,200,250,.6));color:#fff}
+/* Cyber ring effect on twin front avatar */
+.dual-av .av-front.is-twin::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:1.5px solid rgba(92,200,250,.4);animation:twinRing 2s ease infinite}
+@keyframes twinShimmer{0%,100%{box-shadow:0 0 8px rgba(124,92,252,.3)}50%{box-shadow:0 0 18px rgba(92,200,250,.45)}}
+@keyframes twinRing{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.08);opacity:.2}}
 
 
 /* Add Friend */
@@ -117,6 +125,9 @@ nav .ni.on .nc{transform:scale(1.15)}
 .msg .ai-tag{font-size:8px;color:rgba(124,92,252,.6);margin-top:2px}
 .msg .twin-icon{font-size:8px;color:rgba(124,92,252,.5)}
 .msg .msg-time{font-size:8px;color:rgba(255,255,255,.15);margin-top:2px}
+.msg .msg-translate{display:inline-block;font-size:9px;color:var(--ac2);cursor:pointer;margin-top:3px;margin-left:4px;opacity:.6;transition:.2s}
+.msg .msg-translate:hover{opacity:1}
+.msg .msg-translated{font-size:11px;color:var(--tx2);background:rgba(124,92,252,.06);border:1px solid rgba(124,92,252,.12);border-radius:8px;padding:6px 10px;margin-top:4px;line-height:1.5}
 .chat-input{display:flex;gap:8px;padding:10px 0;border-top:1px solid var(--bd);flex-shrink:0;align-items:flex-end}
 .chat-input textarea{flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;resize:none;max-height:80px}
 .chat-input textarea::placeholder{color:var(--tx2)}
@@ -249,8 +260,9 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 </script>
 <div class="splash v" id="splashScreen">
   <div class="splash-inner">
-    <div class="sp-figure sp-left" id="spLeft"></div>
-    <div class="sp-figure sp-right" id="spRight"></div>
+    <div class="sp-av sp-real" id="spLeft">&#x1F9D1;</div>
+    <div class="sp-connect"></div>
+    <div class="sp-av sp-twin" id="spRight">&#x1F47B;</div>
   </div>
   <div class="sp-text" id="spText"></div>
 </div>
@@ -524,6 +536,8 @@ var I18N={
     obTitle3:'永远在线，始终是你',obDesc3:'你睡觉、工作、生活时，分身替你保持对话。回来看看分身替你说了什么。',
     obNext:'下一步',obSkip:'跳过设置',
     obCreateTwin:'创建你的分身',
+    translating:'翻译中...',
+    translateFail:'翻译失败',
     learnTitle:'从聊天记录学习',
     learnDesc:'分析你发过的消息，自动提炼说话风格，让分身更像你',
     learnBtn:'让分身学习我的风格',
@@ -583,6 +597,8 @@ var I18N={
     obTitle3:'Always Present, Always You',obDesc3:'Your twin keeps conversations alive while you sleep, work, or live. Come back and see what your twin said on your behalf.',
     obNext:'Next',obSkip:'Skip setup',
     obCreateTwin:'Create Your Twin',
+    translating:'Translating...',
+    translateFail:'Translation failed',
     learnTitle:'Learn from chat history',
     learnDesc:'Analyze your messages to auto-extract speaking style, making your twin more like you',
     learnBtn:'Learn my style',
@@ -1209,8 +1225,10 @@ function openChat(userId,name,friendMode){
       var tm=(m.created_at||'').slice(11,16);
       var avName=mine?(_profileName||'Me'):name;
       var av='<div class="msg-av">'+buildAvatar(avName,34,m.sender_mode||'real')+'</div>';
+      var msgIdx=m.msg_id||('m'+Math.random());
+      var trBtn='<span class="msg-translate" onclick="translateMsg(this,\''+esc(msgIdx)+'\')" title="Translate">&#x1F310;</span>';
       return '<div class="'+cls+'">'+av+
-        '<div><div class="bubble">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+tm+'</div></div></div>';
+        '<div><div class="bubble" data-msgid="'+esc(msgIdx)+'">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+tm+trBtn+'</div></div></div>';
     }).join('');
     box.scrollTop=box.scrollHeight;
   }).catch(function(){});
@@ -1221,6 +1239,36 @@ function updateModeTag(){
   var m=myMode==='twin'?t('twin'):t('real');
   var ft=chatFriend.current_mode==='twin'?t('twin'):t('real');
   g('chatModeTag').innerHTML=m+' &rarr; '+ft;
+}
+
+function translateMsg(el,msgId){
+  // Find the bubble by data-msgid
+  var bubble=document.querySelector('.bubble[data-msgid="'+msgId+'"]');
+  if(!bubble)return;
+  // Don't translate twice
+  if(bubble.parentNode.querySelector('.msg-translated'))return;
+  var content=bubble.textContent.trim();
+  if(!content)return;
+  // Determine target language (opposite of user's preferred)
+  var myLang=LANG||'zh';
+  var targetLang=myLang==='zh'?'en':'zh';
+  el.textContent=t('translating');el.style.opacity='1';
+  fetch(DS_BASE+'/api/social/translate',{method:'POST',headers:headers(),body:JSON.stringify({
+    content:content,source_lang:'auto',target_lang:targetLang
+  })}).then(function(r){return r.json()}).then(function(d){
+    el.textContent='\u{1F310}';el.style.opacity='.6';
+    if(d.success&&d.data){
+      var tr=document.createElement('div');
+      tr.className='msg-translated';
+      tr.textContent=d.data.translated_content;
+      bubble.parentNode.insertBefore(tr,bubble.nextSibling);
+    }else{
+      toast(t('translateFail'));
+    }
+  }).catch(function(){
+    el.textContent='\u{1F310}';el.style.opacity='.6';
+    toast(t('translateFail'));
+  });
 }
 
 function backToList(){
