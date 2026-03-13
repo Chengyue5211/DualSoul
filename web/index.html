@@ -72,25 +72,24 @@ nav .ni.on .nc{transform:scale(1.15)}
 
 /* Dual Avatar Component — stacked: front avatar overlaps back avatar */
 /* Dual Avatar — side-by-side real+twin composite */
-.dual-av{display:inline-flex;flex-shrink:0;border-radius:6px;overflow:hidden;background:#0a0e1a;box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.dual-av .av-half{display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;position:relative}
-.dual-av .av-half.is-real{background:linear-gradient(145deg,#1a1e2e,#2a2e3e);color:var(--tx)}
-.dual-av .av-half.is-twin{background:linear-gradient(135deg,#06101e,#0a1828);color:#5cc8fa}
-/* Holographic wireframe glow on twin side */
-.dual-av .av-half.is-twin::before{content:'';position:absolute;inset:0;border:1px solid rgba(92,200,250,.3);z-index:3;pointer-events:none}
-.dual-av .av-half.is-twin::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(92,200,250,.08) 0%,transparent 40%,transparent 60%,rgba(92,200,250,.05) 100%);z-index:2;pointer-events:none;animation:holoScan 3s linear infinite}
-@keyframes holoScan{0%{background-position:0 -100%}100%{background-position:0 100%}}
-/* Twin image filter: holographic blue wireframe look */
-.dual-av .av-half.is-twin img{filter:saturate(0.15) brightness(1.4) contrast(1.4) sepia(1) hue-rotate(170deg);mix-blend-mode:screen}
-.dual-av .av-half.is-twin .av-init{color:#5cc8fa;text-shadow:0 0 8px rgba(92,200,250,.6),0 0 16px rgba(92,200,250,.3);position:relative;z-index:2}
-/* Glow divider between halves */
-.dual-av .av-divider{width:1px;background:linear-gradient(180deg,transparent,rgba(92,200,250,.5),transparent);flex-shrink:0;z-index:3}
-/* Active mode indicator — brighter/larger feel */
-.dual-av .av-half.active{flex:1.15}
-.dual-av .av-half:not(.active){flex:0.85;opacity:.75}
-/* Shimmer on twin */
-.dual-av .av-half.is-twin.active{box-shadow:inset 0 0 15px rgba(92,200,250,.12)}
-@keyframes twinShimmer{0%,100%{box-shadow:inset 0 0 10px rgba(92,200,250,.08)}50%{box-shadow:inset 0 0 20px rgba(92,200,250,.18)}}
+.dual-av{display:inline-flex;flex-direction:row;flex-shrink:0;border-radius:8px;overflow:hidden;background:#080c18;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.dual-av .av-half{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.dual-av .av-half img,.dual-av .av-half svg{width:100%;height:100%;display:block}
+/* Real side: warm photo-like */
+.dual-av .av-half.is-real{background:linear-gradient(160deg,#1e1a2e,#2e2636)}
+/* Twin side: dark cyber */
+.dual-av .av-half.is-twin{background:linear-gradient(160deg,#04101e,#081828)}
+/* Holographic overlay on twin side */
+.dual-av .av-half.is-twin::before{content:'';position:absolute;inset:0;border:1px solid rgba(92,200,250,.25);z-index:3;pointer-events:none}
+.dual-av .av-half.is-twin::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(92,200,250,.06) 0%,transparent 35%,transparent 65%,rgba(92,200,250,.04) 100%);z-index:2;pointer-events:none}
+/* Twin uploaded image filter */
+.dual-av .av-half.is-twin img{filter:saturate(0.1) brightness(1.3) contrast(1.5) sepia(1) hue-rotate(170deg);mix-blend-mode:screen}
+/* Glow divider */
+.dual-av .av-divider{width:1px;background:linear-gradient(180deg,transparent 5%,rgba(92,200,250,.45) 50%,transparent 95%);flex-shrink:0;z-index:3}
+/* Active mode: slightly brighter */
+.dual-av .av-half.active{flex:1.1}
+.dual-av .av-half:not(.active){flex:0.9;opacity:.7}
+.dual-av .av-half.is-twin.active{box-shadow:inset 0 0 12px rgba(92,200,250,.1)}
 
 
 /* Add Friend */
@@ -385,10 +384,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     <div class="section-title" id="myTwinLabel">我的分身</div>
     <div class="friend-list">
       <div class="friend-item" id="twinChatItem" onclick="openTwinChat()" style="border:1px solid rgba(124,92,252,.2);background:rgba(124,92,252,.04)">
-        <div class="dual-av" style="width:70px;height:44px">
-          <div class="av-half is-real" style="height:44px"><span class="av-init" style="font-size:16px" id="twinChatInitial">?</span></div>
+        <div class="dual-av" id="twinChatAvatar" style="width:75px;height:44px">
+          <div class="av-half is-real"><img id="twinChatRealImg" style="width:100%;height:100%;object-fit:cover"></div>
           <div class="av-divider"></div>
-          <div class="av-half is-twin active" style="height:44px"><span class="av-init" style="font-size:16px">?</span></div>
+          <div class="av-half is-twin active"><img id="twinChatTwinImg" style="width:100%;height:100%;object-fit:cover"></div>
         </div>
         <div class="fi-info">
           <div class="fi-name" id="twinChatName">我的分身</div>
@@ -407,10 +406,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   <div class="chat-view" id="chatView">
     <div class="chat-header">
       <span class="chat-back" onclick="backToList()">&#8249;</span>
-      <div class="dual-av" id="chatAvatar" style="width:58px;height:36px">
-        <div class="av-half is-real active" style="height:36px"><span class="av-init" style="font-size:13px">?</span></div>
+      <div class="dual-av" id="chatAvatar" style="width:61px;height:36px">
+        <div class="av-half is-real active"><img style="width:100%;height:100%;object-fit:cover"></div>
         <div class="av-divider"></div>
-        <div class="av-half is-twin" style="height:36px"><span class="av-init" style="font-size:13px">?</span></div>
+        <div class="av-half is-twin"><img style="width:100%;height:100%;object-fit:cover"></div>
       </div>
       <span class="chat-name" id="chatName">Friend</span>
       <span class="chat-mode-tag" id="chatModeTag">Real &rarr; Real</span>
@@ -460,10 +459,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 <div class="tab" id="tabProfile">
   <div class="tab-header"><h2>Profile</h2></div>
   <div class="profile-card">
-    <div class="dual-av" id="profileAv" style="width:102px;height:64px">
-      <div class="av-half is-real active" style="height:64px"><span class="av-init" style="font-size:24px">?</span></div>
+    <div class="dual-av" id="profileAv" style="width:109px;height:64px">
+      <div class="av-half is-real active"><img style="width:100%;height:100%;object-fit:cover"></div>
       <div class="av-divider"></div>
-      <div class="av-half is-twin" style="height:64px"><span class="av-init" style="font-size:24px">?</span></div>
+      <div class="av-half is-twin"><img style="width:100%;height:100%;object-fit:cover"></div>
     </div>
     <div class="profile-name" id="profileName">User</div>
     <div class="profile-username" id="profileUsername">@username</div>
@@ -1279,29 +1278,37 @@ function swTab(name,el){
 }
 
 
+// Default SVG portraits (inline data URIs)
+var _svgReal='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a2440"/><stop offset="100%" stop-color="#3a2e4a"/></linearGradient><radialGradient id="skin" cx=".5" cy=".4" r=".5"><stop offset="0%" stop-color="#e8c9a0"/><stop offset="100%" stop-color="#d4a574"/></radialGradient></defs><rect width="80" height="100" fill="url(#bg)"/><ellipse cx="40" cy="38" rx="20" ry="24" fill="url(#skin)"/><ellipse cx="40" cy="36" rx="21" ry="12" fill="#3a2818" opacity=".85"/><path d="M19 38c0-4 2-16 10-20s14-3 20 1 10 14 10 19" fill="#3a2818" opacity=".9"/><ellipse cx="33" cy="40" rx="2.5" ry="2" fill="#2a1e10"/><ellipse cx="47" cy="40" rx="2.5" ry="2" fill="#2a1e10"/><path d="M35 52q5 4 10 0" fill="none" stroke="#c4856a" stroke-width="1.5" stroke-linecap="round"/><path d="M37 46h6" fill="none" stroke="#c4956a" stroke-width="1" opacity=".6"/><ellipse cx="40" cy="85" rx="28" ry="22" fill="#4a3a5a"/><path d="M28 72q12 6 24 0" fill="url(#skin)" opacity=".8"/></svg>');
+var _svgTwin='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100"><defs><linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#04101e"/><stop offset="100%" stop-color="#081828"/></linearGradient></defs><rect width="80" height="100" fill="url(#bg2)"/><ellipse cx="40" cy="38" rx="20" ry="24" fill="none" stroke="#5cc8fa" stroke-width="1" opacity=".7"/><line x1="40" y1="14" x2="40" y2="62" stroke="#5cc8fa" stroke-width=".5" opacity=".2"/><line x1="20" y1="38" x2="60" y2="38" stroke="#5cc8fa" stroke-width=".5" opacity=".2"/><ellipse cx="40" cy="38" rx="14" ry="16" fill="none" stroke="#5cc8fa" stroke-width=".5" opacity=".35"/><circle cx="33" cy="40" r="3" fill="none" stroke="#5cc8fa" stroke-width="1" opacity=".8"/><circle cx="33" cy="40" r="1" fill="#5cc8fa" opacity=".9"/><circle cx="47" cy="40" r="3" fill="none" stroke="#5cc8fa" stroke-width="1" opacity=".8"/><circle cx="47" cy="40" r="1" fill="#5cc8fa" opacity=".9"/><path d="M35 52q5 3 10 0" fill="none" stroke="#5cc8fa" stroke-width="1" opacity=".6"/><path d="M36 46h8" fill="none" stroke="#5cc8fa" stroke-width=".8" opacity=".5"/><path d="M19 36c2-12 8-20 21-22s19 10 21 22" fill="none" stroke="#5cc8fa" stroke-width="1" opacity=".5"/><ellipse cx="40" cy="85" rx="28" ry="22" fill="none" stroke="#5cc8fa" stroke-width="1" opacity=".5"/><path d="M28 72q12 5 24 0" fill="none" stroke="#5cc8fa" stroke-width=".8" opacity=".4"/><line x1="25" y1="75" x2="25" y2="100" stroke="#5cc8fa" stroke-width=".5" opacity=".2"/><line x1="40" y1="70" x2="40" y2="100" stroke="#5cc8fa" stroke-width=".5" opacity=".2"/><line x1="55" y1="75" x2="55" y2="100" stroke="#5cc8fa" stroke-width=".5" opacity=".2"/><circle cx="40" cy="38" r="30" fill="none" stroke="#5cc8fa" stroke-width=".3" opacity=".15"/></svg>');
+
+// Set default SVGs on hardcoded avatar img elements
+(function(){
+  var pairs=[['twinChatRealImg',_svgReal],['twinChatTwinImg',_svgTwin]];
+  pairs.forEach(function(p){var el=document.getElementById(p[0]);if(el&&!el.src)el.src=p[1]});
+  // Also set defaults on chatAvatar and profileAv imgs
+  document.querySelectorAll('#chatAvatar .av-half.is-real img, #profileAv .av-half.is-real img').forEach(function(el){if(!el.getAttribute('src'))el.src=_svgReal});
+  document.querySelectorAll('#chatAvatar .av-half.is-twin img, #profileAv .av-half.is-twin img').forEach(function(el){if(!el.getAttribute('src'))el.src=_svgTwin});
+})();
+
 function buildAvatar(name,size,mode,avatarUrl,twinAvatarUrl){
-  // Side-by-side dual avatar: real half + twin half
-  // mode: 'real' = real side active, 'twin' = twin side active
+  // Side-by-side dual avatar: real portrait + cyber twin portrait
   size=size||48;mode=mode||'real';
-  var w=Math.round(size*1.6);  // wider than tall for side-by-side
-  var halfW=Math.round(w/2);
-  var fs=Math.round(size*0.38);
-  var initial=esc((name||'?')[0].toUpperCase());
+  var w=Math.round(size*1.7);
   var isTwin=mode==='twin';
-  // Real side content
+  // Real side: uploaded photo or default portrait SVG
   var realImg=avatarUrl?'<img src="'+DS_BASE+avatarUrl+'" style="width:100%;height:100%;object-fit:cover">':
-    '<span class="av-init" style="font-size:'+fs+'px">'+initial+'</span>';
-  // Twin side content — use same photo with holographic filter, or ghost icon
+    '<img src="'+_svgReal+'" style="width:100%;height:100%;object-fit:cover">';
+  // Twin side: uploaded twin photo (with CSS filter), or default cyber SVG
   var twinSrc=twinAvatarUrl||avatarUrl;
   var twinImg=twinSrc?'<img src="'+DS_BASE+twinSrc+'" style="width:100%;height:100%;object-fit:cover">':
-    '<span class="av-init" style="font-size:'+fs+'px">'+initial+'</span>';
-  // Layout: real on left, twin on right
-  var realActive=!isTwin?' active':'';
-  var twinActive=isTwin?' active':'';
+    '<img src="'+_svgTwin+'" style="width:100%;height:100%;object-fit:cover">';
+  var realAct=!isTwin?' active':'';
+  var twinAct=isTwin?' active':'';
   return '<div class="dual-av" style="width:'+w+'px;height:'+size+'px">'+
-    '<div class="av-half is-real'+realActive+'" style="height:'+size+'px">'+realImg+'</div>'+
+    '<div class="av-half is-real'+realAct+'">'+realImg+'</div>'+
     '<div class="av-divider"></div>'+
-    '<div class="av-half is-twin'+twinActive+'" style="height:'+size+'px">'+twinImg+'</div></div>';
+    '<div class="av-half is-twin'+twinAct+'">'+twinImg+'</div></div>';
 }
 
 // Friends
@@ -1545,9 +1552,9 @@ function loadProfile(){
     _myTwinAvatar=p.twin_avatar||'';
     updateInviteUI();
     // Update twin chat entry
-    var tci=g('twinChatInitial');if(tci)tci.textContent=(_profileName||'?')[0].toUpperCase();
-    // Also update twin side initial in the twin chat entry
-    var twinEntry=g('twinChatItem');if(twinEntry){var twinInits=twinEntry.querySelectorAll('.av-half.is-twin .av-init');twinInits.forEach(function(el){el.textContent=(_profileName||'?')[0].toUpperCase()});}
+    // Update twin chat entry avatars
+    var tcri=g('twinChatRealImg');if(tcri)tcri.src=_myAvatar?(DS_BASE+_myAvatar):_svgReal;
+    var tcti=g('twinChatTwinImg');if(tcti)tcti.src=_myTwinAvatar?(DS_BASE+_myTwinAvatar):(_myAvatar?(DS_BASE+_myAvatar):_svgTwin);
     var tcn=g('twinChatName');if(tcn)tcn.textContent=LANG==='zh'?_profileName+'的分身':_profileName+"'s Twin";
     g('profPersonality').value=p.twin_personality||'';
     g('profStyle').value=p.twin_speech_style||'';
