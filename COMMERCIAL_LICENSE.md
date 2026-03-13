@@ -47,6 +47,7 @@ The DualSoul protocol incorporates inventions that are the subject of pending pa
 2. **DISP Four-Mode Message Routing Protocol** — The 2x2 conversation mode routing and in-band identity tracking mechanism
 3. **Progressive Trust Certificate System** — Twin maturity calibration from untrusted to trusted status
 4. **Cross-Language Personality-Preserving Communication** — Personality-aware translation that preserves the owner's humor, tone, and expressions across languages
+5. **Twin Portable Format & Federated Import System** — Cross-platform AI twin data portability standard (TPF v1.0) with 5D personality model, temporal memory, and entity relationship networks
 
 Patent rights are retained by the author regardless of the open-source license. The AGPL-3.0 license grants implicit patent rights for use within the scope of that license. Commercial licensees receive an explicit patent grant within their license agreement.
 
