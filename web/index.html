@@ -250,7 +250,22 @@ nav .ni.on .nc{transform:scale(1.15)}
 .cam-btns .cam-take{background:var(--gd);color:#fff}
 .cam-btns .cam-retake{background:var(--bg3);color:var(--tx);border:1px solid var(--bd)}
 .cam-btns .cam-skip{background:transparent;color:var(--tx2)}
+/* Twin avatar filter styles */
 .twin-filter{filter:saturate(1.3) contrast(1.1) hue-rotate(20deg) brightness(1.05)}
+.twin-filter.tf-cyber{filter:saturate(1.4) contrast(1.2) hue-rotate(200deg) brightness(1.1)}
+.twin-filter.tf-neon{filter:saturate(2) contrast(1.3) hue-rotate(280deg) brightness(1.15) drop-shadow(0 0 4px rgba(124,92,252,.5))}
+.twin-filter.tf-sketch{filter:grayscale(1) contrast(1.5) brightness(1.1)}
+.twin-filter.tf-pop{filter:saturate(2.5) contrast(1.4) brightness(1.05)}
+.twin-filter.tf-dream{filter:saturate(0.8) contrast(0.9) brightness(1.2) hue-rotate(30deg) blur(0.5px)}
+.twin-filter.tf-ice{filter:saturate(0.6) contrast(1.1) brightness(1.15) hue-rotate(170deg)}
+/* Twin style picker */
+.twin-styles{display:flex;gap:8px;overflow-x:auto;padding:8px 0;-webkit-overflow-scrolling:touch}
+.twin-styles::-webkit-scrollbar{display:none}
+.ts-option{flex-shrink:0;text-align:center;cursor:pointer;transition:.2s}
+.ts-option .ts-preview-img{width:56px;height:56px;border-radius:50%;overflow:hidden;border:2.5px solid var(--bd);transition:.2s;margin:0 auto 4px}
+.ts-option.on .ts-preview-img{border-color:var(--ac);box-shadow:0 0 12px rgba(124,92,252,.3)}
+.ts-option .ts-label{font-size:9px;color:var(--tx2)}
+.ts-option.on .ts-label{color:var(--ac2);font-weight:700}
 </style>
 </head>
 <body>
@@ -438,6 +453,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
     <div class="profile-name" id="profileName">User</div>
     <div class="profile-username" id="profileUsername">@username</div>
+    <div id="profTwinStyleWrap" style="margin-top:12px;display:none">
+      <div style="font-size:10px;color:var(--tx2);margin-bottom:6px" id="profTwinStyleLabel">分身头像风格</div>
+      <div class="twin-styles" id="profTwinStyles"></div>
+    </div>
   </div>
   <div class="profile-section">
     <h3>Twin Personality</h3>
@@ -774,6 +793,25 @@ function obSkip(){enterApp()}
 
 var _camStream=null;
 var _capturedPhoto=null;
+var _selectedTwinFilter='';
+
+var _twinFilterStyles=[
+  {cls:'',name:{zh:'原版',en:'Original'}},
+  {cls:'tf-cyber',name:{zh:'赛博朋克',en:'Cyberpunk'}},
+  {cls:'tf-neon',name:{zh:'霓虹',en:'Neon'}},
+  {cls:'tf-sketch',name:{zh:'素描',en:'Sketch'}},
+  {cls:'tf-pop',name:{zh:'波普',en:'Pop Art'}},
+  {cls:'tf-dream',name:{zh:'梦幻',en:'Dreamy'}},
+  {cls:'tf-ice',name:{zh:'冰蓝',en:'Ice Blue'}}
+];
+
+function pickTwinStyle(el,filterCls){
+  el.parentElement.querySelectorAll('.ts-option').forEach(function(o){o.classList.remove('on')});
+  el.classList.add('on');
+  _selectedTwinFilter=filterCls;
+  var preview=g('twinPreviewImg');
+  if(preview)preview.className='twin-filter '+filterCls;
+}
 
 function tsRunStep(){
   var msgs=g('tsMsgs');
@@ -914,17 +952,29 @@ function takePhoto(){
   video.style.display='none';
   // Stop camera
   if(_camStream){_camStream.getTracks().forEach(function(t){t.stop()});_camStream=null}
-  // Show result: real photo + twin version side by side
+  // Show style picker for twin avatar
   var inp=g('tsInput');
+  var styles=_twinFilterStyles;
+  var styleHtml='<div class="twin-styles" id="twinStylePicker">';
+  styles.forEach(function(s,i){
+    var onCls=i===0?'on':'';
+    styleHtml+='<div class="ts-option '+onCls+'" onclick="pickTwinStyle(this,\''+s.cls+'\')" data-filter="'+s.cls+'">'+
+      '<div class="ts-preview-img"><img src="'+_capturedPhoto+'" class="twin-filter '+(i===0?s.cls:s.cls)+'" style="width:100%;height:100%;object-fit:cover"></div>'+
+      '<div class="ts-label">'+s.name[LANG]+'</div></div>';
+  });
+  styleHtml+='</div>';
   inp.innerHTML='<div class="cam-wrap">'+
     '<div class="cam-result">'+
     '<div><div class="av-box"><img src="'+_capturedPhoto+'"></div><div class="av-label">'+(LANG==='zh'?'真人':'Real')+'</div></div>'+
     '<div class="cam-arrow">→</div>'+
-    '<div><div class="av-box twin-box"><img src="'+_capturedPhoto+'" class="twin-filter"></div><div class="av-label" style="color:var(--ac2)">'+(LANG==='zh'?'数字分身':'Twin')+'</div></div>'+
+    '<div><div class="av-box twin-box" id="twinPreviewBox"><img src="'+_capturedPhoto+'" class="twin-filter '+styles[0].cls+'" id="twinPreviewImg"></div><div class="av-label" style="color:var(--ac2)">'+(LANG==='zh'?'数字分身':'Twin')+'</div></div>'+
     '</div>'+
+    '<div style="margin:8px 0;text-align:center;font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'选择分身风格：':'Choose twin style:')+'</div>'+
+    styleHtml+
     '<div class="cam-btns"><button class="cam-take" onclick="confirmPhoto()">'+(LANG==='zh'?'✓ 使用这张':'✓ Use this')+'</button>'+
     '<button class="cam-retake" onclick="retakePhoto()">'+(LANG==='zh'?'重拍':'Retake')+'</button></div></div>';
-  tsAddMsg('system',LANG==='zh'?'左边是你，右边是你的数字分身！':'Left is you, right is your digital twin!');
+  _selectedTwinFilter=styles[0].cls;
+  tsAddMsg('system',LANG==='zh'?'选一个你喜欢的分身风格！左滑可以看更多':'Pick a style for your twin! Swipe for more');
 }
 
 function retakePhoto(){
@@ -938,7 +988,11 @@ function retakePhoto(){
 }
 
 function confirmPhoto(){
-  tsAddMsg('user',LANG==='zh'?'📸 照片已设置':'📸 Photo set');
+  // Save selected twin filter style
+  localStorage.setItem('ds_twin_filter',_selectedTwinFilter||'');
+  var styleName='';
+  _twinFilterStyles.forEach(function(s){if(s.cls===_selectedTwinFilter)styleName=s.name[LANG]});
+  tsAddMsg('user',LANG==='zh'?'📸 照片已设置'+(styleName?' · '+styleName:''):'📸 Photo set'+(styleName?' · '+styleName:''));
   g('tsInput').style.display='none';
   tsStep=1;setTimeout(tsRunStep,400);
 }
@@ -1132,7 +1186,8 @@ function buildAvatar(name,size,mode,avatarUrl,twinAvatarUrl){
   var backCls=isTwin?'is-real':'is-twin';
   // Determine content: use image if available, otherwise initial/ghost
   var realContent=avatarUrl?'<img src="'+DS_BASE+avatarUrl+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">':initial;
-  var twinContent=twinAvatarUrl?'<img src="'+DS_BASE+twinAvatarUrl+'" class="twin-filter" style="width:100%;height:100%;border-radius:50%;object-fit:cover">':'&#x1F47B;';
+  var tf=localStorage.getItem('ds_twin_filter')||'';
+  var twinContent=twinAvatarUrl?'<img src="'+DS_BASE+twinAvatarUrl+'" class="twin-filter '+tf+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">':'&#x1F47B;';
   var frontContent=isTwin?twinContent:realContent;
   var backContent=isTwin?realContent:twinContent;
   return '<div class="dual-av" style="width:'+size+'px;height:'+size+'px">'+
@@ -1399,6 +1454,7 @@ function loadProfile(){
     checkLearnStatus();
     // Populate style template cards in profile
     populateProfileStyleCards();
+    populateProfileTwinStyles();
   }).catch(function(){});
 }
 
@@ -1427,6 +1483,32 @@ function populateProfileStyleCards(){
       '<div class="sc-name" style="font-size:11px">'+esc(c.name)+'</div>'+
       '<div class="sc-example" style="font-size:10px">'+esc(c.example)+'</div></div>';
   }).join('');
+}
+
+function populateProfileTwinStyles(){
+  var wrap=g('profTwinStyleWrap');var container=g('profTwinStyles');
+  if(!wrap||!container)return;
+  // Only show if user has a twin avatar
+  if(!_myTwinAvatar){wrap.style.display='none';return}
+  wrap.style.display='block';
+  var currentFilter=localStorage.getItem('ds_twin_filter')||'';
+  container.innerHTML=_twinFilterStyles.map(function(s){
+    var onCls=s.cls===currentFilter?'on':'';
+    return '<div class="ts-option '+onCls+'" onclick="profPickTwinStyle(this,\''+s.cls+'\')" data-filter="'+s.cls+'">'+
+      '<div class="ts-preview-img"><img src="'+DS_BASE+_myTwinAvatar+'" class="twin-filter '+s.cls+'" style="width:100%;height:100%;object-fit:cover"></div>'+
+      '<div class="ts-label">'+s.name[LANG]+'</div></div>';
+  }).join('');
+}
+
+function profPickTwinStyle(el,filterCls){
+  el.parentElement.querySelectorAll('.ts-option').forEach(function(o){o.classList.remove('on')});
+  el.classList.add('on');
+  localStorage.setItem('ds_twin_filter',filterCls);
+  // Refresh profile avatar display
+  var pav=g('profileAv');
+  var tmpD=document.createElement('div');tmpD.innerHTML=buildAvatar(_profileName||'?',64,myMode,_myAvatar,_myTwinAvatar);
+  var nAv=tmpD.firstChild;nAv.id='profileAv';pav.parentNode.replaceChild(nAv,pav);
+  toast(LANG==='zh'?'分身风格已更新':'Twin style updated');
 }
 
 function profPickCard(el){
