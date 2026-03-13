@@ -1252,8 +1252,9 @@ function wsHandle(msg){
     var d=msg.data;
     // Update unread badge
     loadUnread();
-    // If we are in chat with this sender, append the message
-    if(chatFriend&&d.from_user_id===chatFriend.user_id){
+    // If we are in chat with this person, append the message
+    // Match both from_user_id (they sent) and to_user_id (my twin replied to them)
+    if(chatFriend&&(d.from_user_id===chatFriend.user_id||d.to_user_id===chatFriend.user_id)){
       appendIncoming(d);
     }
   }else if(msg.type==='friend_request'){
@@ -1281,13 +1282,18 @@ function appendIncoming(m){
   if(m.msg_id)_shownMsgIds[m.msg_id]=1;
   var box=g('chatMsgs');
   var empty=box.querySelector('.empty');if(empty)empty.remove();
+  // Determine if this is my message or theirs
+  // My twin replying on my behalf: from_user_id === myId → mine
+  var mine=m.from_user_id===myId;
+  var cls='msg '+(mine?'mine':'theirs');
   var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
   var ai=m.ai_generated?'<div class="ai-tag">'+t('twinAutoTag')+'</div>':'';
   var tm=(m.created_at||'').slice(11,16)||'now';
   var mid=m.msg_id||('m'+Math.random());
   var trBtn='<span class="msg-translate" onclick="translateMsg(this,\''+esc(mid)+'\')" title="Translate">&#x1F310;</span>';
-  var incAv='<div class="msg-av">'+buildAvatar(chatFriend.name,34,m.sender_mode||'real')+'</div>';
-  box.innerHTML+='<div class="msg theirs">'+incAv+
+  var avName=mine?(_profileName||'Me'):chatFriend.name;
+  var av='<div class="msg-av">'+buildAvatar(avName,34,m.sender_mode||'real')+'</div>';
+  box.innerHTML+='<div class="'+cls+'">'+av+
     '<div><div class="bubble" data-msgid="'+esc(mid)+'">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+tm+trBtn+'</div></div></div>';
   box.scrollTop=box.scrollHeight;
 }
