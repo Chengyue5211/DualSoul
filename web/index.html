@@ -337,15 +337,15 @@ nav .ni.on .nc{transform:scale(1.15)}
   <div class="profile-section">
     <h3>Twin Personality</h3>
     <div class="profile-field">
-      <label>How would you describe your twin's personality?</label>
+      <label id="labelPersonality">How would you describe your twin's personality?</label>
       <textarea id="profPersonality" placeholder="e.g., friendly and thoughtful, a bit humorous"></textarea>
     </div>
     <div class="profile-field">
-      <label>Speech style</label>
+      <label id="labelStyle">Speech style</label>
       <textarea id="profStyle" placeholder="e.g., casual and warm, uses short sentences"></textarea>
     </div>
     <div class="profile-field" style="display:flex;align-items:center;gap:10px;margin-top:12px">
-      <label style="flex:1;margin:0">Offline auto-reply<br><span style="font-size:9px;color:var(--tx2)">Twin replies when you're away</span></label>
+      <label id="labelAutoReply" style="flex:1;margin:0">Offline auto-reply<br><span style="font-size:9px;color:var(--tx2)">Twin replies when you're away</span></label>
       <label style="position:relative;width:44px;height:24px;cursor:pointer">
         <input type="checkbox" id="profAutoReply" style="display:none" onchange="toggleAutoReply(this)">
         <span style="position:absolute;inset:0;background:var(--bg3);border-radius:12px;border:1px solid var(--bd);transition:.3s"></span>
@@ -354,6 +354,7 @@ nav .ni.on .nc{transform:scale(1.15)}
     </div>
     <button class="profile-save" onclick="saveProfile()">Save Twin Settings</button>
   </div>
+  <button id="langBtn2" onclick="setLang(LANG==='zh'?'en':'zh')" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px">Language / 语言切换</button>
   <button class="profile-logout" onclick="logout()">Logout</button>
 </div>
 
@@ -407,6 +408,7 @@ var I18N={
     mTT:'分身 → 分身',mTTd:'分身对聊',
     profileTitle:'个人资料',
     twinPersonality:'分身性格',
+    personalityLabel:'你的分身性格是什么样的？',
     personalityPh:'例如：友好体贴，有点幽默',
     speechStyle:'说话风格',
     stylePh:'例如：随性温暖，短句为主',
@@ -449,6 +451,7 @@ var I18N={
     mTT:'Twin → Twin',mTTd:'Twin-to-twin chat',
     profileTitle:'Profile',
     twinPersonality:'Twin Personality',
+    personalityLabel:'How would you describe your twin\'s personality?',
     personalityPh:'e.g., friendly and thoughtful, a bit humorous',
     speechStyle:'Speech style',
     stylePh:'e.g., casual and warm, uses short sentences',
@@ -476,6 +479,7 @@ function applyLang(){
   var an=g('authName');if(an)an.placeholder=t('displayName');
   var tl=document.querySelector('.tagline');if(tl)tl.textContent=t('appTagline');
   var ls=g('langBtn');if(ls)ls.textContent=t('langSwitch');
+  var ls2=g('langBtn2');if(ls2)ls2.textContent=LANG==='zh'?'English / 切换英文':'中文 / Switch to Chinese';
   // Nav
   var nls=document.querySelectorAll('nav .nl');
   if(nls.length>=3){nls[0].textContent=t('social');nls[1].textContent=t('about');nls[2].textContent=t('profile')}
@@ -493,6 +497,9 @@ function applyLang(){
   var ps=document.querySelector('.profile-section h3');if(ps)ps.textContent=t('twinPersonality');
   var pp=g('profPersonality');if(pp)pp.placeholder=t('personalityPh');
   var pst=g('profStyle');if(pst)pst.placeholder=t('stylePh');
+  var lp=g('labelPersonality');if(lp)lp.textContent=t('personalityLabel');
+  var lst=g('labelStyle');if(lst)lst.textContent=t('speechStyle');
+  var lar=g('labelAutoReply');if(lar)lar.innerHTML=t('twinAutoReply')+'<br><span style="font-size:9px;color:var(--tx2)">'+t('twinAutoDesc')+'</span>';
   var psb=document.querySelector('.profile-save');if(psb)psb.textContent=t('saveTwin');
   var plo=document.querySelector('.profile-logout');if(plo)plo.textContent=t('logout');
   // About
