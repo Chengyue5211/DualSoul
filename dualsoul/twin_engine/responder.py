@@ -128,11 +128,12 @@ class TwinResponder:
                 role = msg.get("role", "friend")
                 ctx_str += f"{role}: {msg.get('content', '')}\n"
 
+        ctx_block = f"Conversation context:\n{ctx_str}" if ctx_str else ""
         prompt = (
             f"You are helping {profile.display_name} draft a reply.\n"
             f"Personality: {profile.personality}\n"
             f"Speech style: {profile.speech_style}\n\n"
-            f"{'Conversation context:\n' + ctx_str if ctx_str else ''}"
+            f"{ctx_block}"
             f"Friend says: \"{incoming_msg}\"\n\n"
             f"Draft a reply that {profile.display_name} would naturally send. "
             f"Match their personality and speaking style exactly. "
