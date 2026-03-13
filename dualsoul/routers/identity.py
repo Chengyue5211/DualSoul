@@ -1,4 +1,4 @@
-"""Identity router — switch mode, profile management, twin preview, avatar upload."""
+"""Identity router — switch mode, profile management, twin preview, avatar upload, style learning."""
 
 import base64
 import hashlib
@@ -11,6 +11,7 @@ from dualsoul.auth import get_current_user
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from dualsoul.database import get_db
 from dualsoul.models import AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest
+from dualsoul.twin_engine.learner import analyze_style, get_message_count, learn_and_update
 
 _AVATAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "avatars")
 os.makedirs(_AVATAR_DIR, exist_ok=True)
@@ -158,3 +159,54 @@ async def twin_preview(req: TwinPreviewRequest, user=Depends(get_current_user)):
         reply = f"Hey! This is {name}'s twin — I think the weekend might work, let me check!"
 
     return {"success": True, "reply": reply}
+
+
+@router.get("/twin/learn/status")
+async def learn_status(user=Depends(get_current_user)):
+    """Check if enough messages exist for style learning."""
+    uid = user["user_id"]
+    count = get_message_count(uid)
+    min_required = 10
+    return {
+        "success": True,
+        "message_count": count,
+        "min_required": min_required,
+        "ready": count >= min_required,
+    }
+
+
+@router.post("/twin/learn")
+async def learn_style(user=Depends(get_current_user)):
+    """Analyze the user's chat history and extract personality + speech style.
+
+    Returns the analysis result. The user can preview before applying.
+    """
+    uid = user["user_id"]
+    result = await analyze_style(uid)
+    if not result:
+        return {"success": False, "error": "Analysis unavailable (no AI backend)"}
+    if "error" in result:
+        return {
+            "success": False,
+            "error": result["error"],
+            "message_count": result.get("current", 0),
+            "min_required": result.get("required", 10),
+        }
+    return {"success": True, "data": result}
+
+
+@router.post("/twin/learn/apply")
+async def apply_learned_style(user=Depends(get_current_user)):
+    """Analyze and directly apply the learned style to the twin profile."""
+    uid = user["user_id"]
+    result = await learn_and_update(uid, auto_apply=True)
+    if not result:
+        return {"success": False, "error": "Learning unavailable"}
+    if "error" in result:
+        return {
+            "success": False,
+            "error": result["error"],
+            "message_count": result.get("current", 0),
+            "min_required": result.get("required", 10),
+        }
+    return {"success": True, "data": result}

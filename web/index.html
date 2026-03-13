@@ -437,6 +437,16 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       </label>
     </div>
     <button class="profile-save" onclick="saveProfile()">Save Twin Settings</button>
+    <div id="learnSection" style="margin-top:16px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:18px">🧠</span>
+        <span id="learnTitle" style="font-size:13px;font-weight:700;color:var(--tx)">从聊天记录学习</span>
+      </div>
+      <p id="learnDesc" style="font-size:10px;color:var(--tx2);line-height:1.5;margin-bottom:10px">分析你发过的消息，自动提炼说话风格，让分身更像你</p>
+      <div id="learnStatus" style="font-size:10px;color:var(--tx2);margin-bottom:8px"></div>
+      <button id="learnBtn" onclick="learnStyle()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">让分身学习我的风格</button>
+      <div id="learnResult" style="display:none;margin-top:10px;padding:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;font-size:11px;line-height:1.6"></div>
+    </div>
   </div>
   <div class="profile-section">
     <h3 id="inviteTitle">邀请好友</h3>
@@ -514,6 +524,17 @@ var I18N={
     obTitle3:'永远在线，始终是你',obDesc3:'你睡觉、工作、生活时，分身替你保持对话。回来看看分身替你说了什么。',
     obNext:'下一步',obSkip:'跳过设置',
     obCreateTwin:'创建你的分身',
+    learnTitle:'从聊天记录学习',
+    learnDesc:'分析你发过的消息，自动提炼说话风格，让分身更像你',
+    learnBtn:'让分身学习我的风格',
+    learnLoading:'正在分析你的聊天记录...',
+    learnNotEnough:'消息还不够多，至少需要{min}条（当前{cur}条）',
+    learnResult:'分析结果：',
+    learnPersonality:'性格：',
+    learnSpeechStyle:'说话风格：',
+    learnApply:'应用到分身',
+    learnApplied:'已应用！分身现在更像你了',
+    learnSamples:'分析了{n}条消息',
     inviteTitle:'邀请好友',
     inviteDesc:'分享链接给朋友，对方打开注册后自动加你为好友',
     inviteCopy:'复制邀请链接',
@@ -562,6 +583,17 @@ var I18N={
     obTitle3:'Always Present, Always You',obDesc3:'Your twin keeps conversations alive while you sleep, work, or live. Come back and see what your twin said on your behalf.',
     obNext:'Next',obSkip:'Skip setup',
     obCreateTwin:'Create Your Twin',
+    learnTitle:'Learn from chat history',
+    learnDesc:'Analyze your messages to auto-extract speaking style, making your twin more like you',
+    learnBtn:'Learn my style',
+    learnLoading:'Analyzing your chat history...',
+    learnNotEnough:'Not enough messages yet — need at least {min} (currently {cur})',
+    learnResult:'Analysis result:',
+    learnPersonality:'Personality: ',
+    learnSpeechStyle:'Speech style: ',
+    learnApply:'Apply to twin',
+    learnApplied:'Applied! Your twin is now more like you',
+    learnSamples:'Analyzed {n} messages',
     inviteTitle:'Invite Friends',
     inviteDesc:'Share this link — they register and you\'re automatically friends',
     inviteCopy:'Copy Invite Link',
@@ -603,6 +635,10 @@ function applyLang(){
   var mtl=g('myTwinLabel');if(mtl)mtl.textContent=LANG==='zh'?'我的分身':'My Twin';
   var tch=g('twinChatHint');if(tch)tch.textContent=LANG==='zh'?'和你的数字分身聊天':'Chat with your digital twin';
   var frl=g('friendsLabel');if(frl)frl.textContent=LANG==='zh'?'好友':'Friends';
+  // Learn style
+  var lrt=g('learnTitle');if(lrt)lrt.textContent=t('learnTitle');
+  var lrd=g('learnDesc');if(lrd)lrd.textContent=t('learnDesc');
+  var lrb=g('learnBtn');if(lrb&&!lrb.disabled)lrb.textContent=t('learnBtn');
   // Invite
   var ivt=g('inviteTitle');if(ivt)ivt.textContent=t('inviteTitle');
   var ivd=g('inviteDesc');if(ivd)ivd.textContent=t('inviteDesc');
@@ -1254,6 +1290,8 @@ function loadProfile(){
       cb.checked=!!p.twin_auto_reply;
       updateArToggle(cb.checked);
     }
+    // Check style learning status
+    checkLearnStatus();
   }).catch(function(){});
 }
 
@@ -1283,6 +1321,69 @@ function saveProfile(){
   fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify(body)})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)toast('Twin settings saved!');else toast(d.error||'Failed');
+  }).catch(function(){toast(t('networkError'))});
+}
+
+// ========== Style Learning ==========
+function checkLearnStatus(){
+  fetch(DS_BASE+'/api/identity/twin/learn/status',{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(!d.success)return;
+    var el=g('learnStatus');
+    if(el){
+      if(d.ready){
+        el.textContent=t('learnSamples').replace('{n}',d.message_count);
+        el.style.color='var(--ac)';
+      }else{
+        el.textContent=t('learnNotEnough').replace('{min}',d.min_required).replace('{cur}',d.message_count);
+        el.style.color='var(--tx2)';
+      }
+    }
+    var btn=g('learnBtn');
+    if(btn)btn.disabled=!d.ready;
+    if(btn&&!d.ready){btn.style.opacity='0.5';btn.style.cursor='not-allowed'}
+    else if(btn){btn.style.opacity='1';btn.style.cursor='pointer'}
+  }).catch(function(){});
+}
+function learnStyle(){
+  var btn=g('learnBtn');
+  var resultDiv=g('learnResult');
+  if(btn){btn.disabled=true;btn.textContent=t('learnLoading')}
+  if(resultDiv)resultDiv.style.display='none';
+  fetch(DS_BASE+'/api/identity/twin/learn',{method:'POST',headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(btn){btn.disabled=false;btn.textContent=t('learnBtn')}
+    if(!d.success){
+      if(d.error==='not_enough_messages'){
+        toast(t('learnNotEnough').replace('{min}',d.min_required).replace('{cur}',d.message_count));
+      }else{toast(d.error||'Failed')}
+      return;
+    }
+    var data=d.data;
+    if(resultDiv){
+      resultDiv.style.display='block';
+      resultDiv.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:var(--tx)">'+t('learnResult')+'</div>'+
+        '<div style="margin-bottom:4px"><b>'+t('learnPersonality')+'</b>'+data.personality+'</div>'+
+        '<div style="margin-bottom:8px"><b>'+t('learnSpeechStyle')+'</b>'+data.speech_style+'</div>'+
+        '<div style="font-size:9px;color:var(--tx2)">'+t('learnSamples').replace('{n}',data.samples_analyzed)+'</div>'+
+        '<button onclick="applyLearnedStyle()" style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+t('learnApply')+'</button>';
+    }
+    // Pre-fill the textareas so user can see/edit before applying
+    g('profPersonality').value=data.personality;
+    g('profStyle').value=data.speech_style;
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.textContent=t('learnBtn')}
+    toast(t('networkError'));
+  });
+}
+function applyLearnedStyle(){
+  fetch(DS_BASE+'/api/identity/twin/learn/apply',{method:'POST',headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      toast(t('learnApplied'));
+      var resultDiv=g('learnResult');
+      if(resultDiv)resultDiv.style.display='none';
+    }else{toast(d.error||'Failed')}
   }).catch(function(){toast(t('networkError'))});
 }
 
