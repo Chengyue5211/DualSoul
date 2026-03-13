@@ -26,6 +26,7 @@ class UpdateProfileRequest(BaseModel):
     twin_speech_style: str = ""
     preferred_lang: str = ""  # ISO 639-1: zh, en, ja, ko, fr, de, es, etc.
     twin_auto_reply: int | None = None  # 0=off, 1=on (None=no change)
+    gender: str = ""  # 'male', 'female', '' (unset)
 
 
 class TwinPreviewRequest(BaseModel):
@@ -78,3 +79,15 @@ class SendMessageRequest(BaseModel):
     receiver_mode: str = "real"
     msg_type: str = "text"
     target_lang: str = ""  # If set, twin translates to this language with personality preservation
+
+
+# Twin Import (年轮分身导入)
+class TwinImportRequest(BaseModel):
+    format: str = "tpf_v1"  # Twin Portable Format version
+    data: dict  # Full Nianlun export payload
+
+
+class TwinSyncRequest(BaseModel):
+    format: str = "tpf_v1"
+    since: str = ""  # ISO timestamp of last sync
+    data: dict  # Incremental data (new memories, entities, dimension updates)

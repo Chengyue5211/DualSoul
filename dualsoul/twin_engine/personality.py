@@ -23,6 +23,7 @@ class TwinProfile:
     personality: str
     speech_style: str
     preferred_lang: str  # ISO 639-1 code (zh, en, ja, ko, etc.) or empty
+    gender: str = ""  # 'male', 'female', or '' (unset)
     twin_source: str = "local"  # 'local' or 'nianlun'
 
     # Nianlun 5D dimensions (populated when twin_source='nianlun')
@@ -57,13 +58,22 @@ class TwinProfile:
         Local twins get a simple 2-line prompt.
         Nianlun twins get a rich multi-section prompt with 5D data.
         """
+        gender_line = ""
+        if self.gender:
+            gender_label = {"male": "男性", "female": "女性"}.get(self.gender, self.gender)
+            gender_line = f"Gender: {gender_label}\n"
+
         if not self.is_nianlun:
             return (
+                f"{gender_line}"
                 f"Personality: {self.personality}\n"
                 f"Speech style: {self.speech_style}\n"
             )
 
-        lines = ["[Five-Dimension Personality Profile]"]
+        lines = []
+        if gender_line:
+            lines.append(gender_line.strip())
+        lines.append("[Five-Dimension Personality Profile]")
 
         dims = [
             ("Judgement (判断力)", self.dim_judgement),
@@ -154,7 +164,7 @@ def get_twin_profile(user_id: str) -> TwinProfile | None:
     with get_db() as db:
         row = db.execute(
             "SELECT user_id, display_name, twin_personality, twin_speech_style, "
-            "preferred_lang, twin_source "
+            "preferred_lang, twin_source, gender "
             "FROM users WHERE user_id=?",
             (user_id,),
         ).fetchone()
@@ -169,6 +179,7 @@ def get_twin_profile(user_id: str) -> TwinProfile | None:
         personality=row["twin_personality"] or DEFAULT_PERSONALITY,
         speech_style=row["twin_speech_style"] or DEFAULT_SPEECH_STYLE,
         preferred_lang=row["preferred_lang"] or "",
+        gender=row["gender"] if "gender" in row.keys() else "",
         twin_source=twin_source,
     )
 

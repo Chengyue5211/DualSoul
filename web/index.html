@@ -527,6 +527,14 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
         <textarea id="profStyle" placeholder="e.g., casual and warm, uses short sentences"></textarea>
       </div>
       <div class="profile-field" style="display:flex;align-items:center;gap:10px;margin-top:12px">
+        <label id="labelGender" style="flex:1;margin:0;font-size:12px">性别</label>
+        <select id="profGender" style="padding:6px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px" onchange="saveGender(this.value)">
+          <option value="">未设置</option>
+          <option value="male">男</option>
+          <option value="female">女</option>
+        </select>
+      </div>
+      <div class="profile-field" style="display:flex;align-items:center;gap:10px;margin-top:12px">
         <label id="labelAutoReply" style="flex:1;margin:0">Offline auto-reply<br><span style="font-size:9px;color:var(--tx2)">Twin replies when you're away</span></label>
         <label style="position:relative;width:44px;height:24px;cursor:pointer">
           <input type="checkbox" id="profAutoReply" style="display:none" onchange="toggleAutoReply(this)">
@@ -1742,6 +1750,8 @@ function loadProfile(){
     refreshProfileAvatars();
     var prl=g('profRealLabel');if(prl)prl.textContent=LANG==='zh'?(_profileName+'的真身'):((_profileName||'')+"'s Real");
     var ptl=g('profTwinLabel');if(ptl)ptl.textContent=LANG==='zh'?(_profileName+'的分身'):((_profileName||'')+"'s Twin");
+    // Gender
+    var gs=g('profGender');if(gs)gs.value=p.gender||'';
     // Auto-reply toggle
     var cb=g('profAutoReply');var dot=g('arDot');
     if(cb){
@@ -1829,6 +1839,14 @@ function toggleAutoReply(cb){
     if(d.success)toast(cb.checked?'Offline twin activated!':'Offline twin disabled');
     else toast(d.error||'Failed');
   }).catch(function(){toast(t('networkError'))});
+}
+
+function saveGender(val){
+  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+    gender:val||'unset'
+  })}).then(function(r){return r.json()}).then(function(d){
+    if(d.success)toast(LANG==='zh'?'性别已更新':'Gender updated');
+  }).catch(function(){});
 }
 
 function saveProfile(){

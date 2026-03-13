@@ -67,6 +67,7 @@ MIGRATIONS = [
     "ALTER TABLE social_messages ADD COLUMN metadata TEXT DEFAULT ''",
     "ALTER TABLE users ADD COLUMN voice_sample TEXT DEFAULT ''",
     "ALTER TABLE users ADD COLUMN twin_source TEXT DEFAULT 'local'",
+    "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT ''",
 ]
 
 

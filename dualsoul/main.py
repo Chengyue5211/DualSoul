@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from dualsoul import __version__
 from dualsoul.config import CORS_ORIGINS, HOST, PORT
 from dualsoul.database import init_db
-from dualsoul.routers import auth, identity, social, ws
+from dualsoul.routers import auth, identity, social, twin_import, ws
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(identity.router)
 app.include_router(social.router)
+app.include_router(twin_import.router)
 app.include_router(ws.router)
 
 # Serve demo web client

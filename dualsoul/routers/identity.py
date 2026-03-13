@@ -40,7 +40,7 @@ async def get_profile(user=Depends(get_current_user)):
         row = db.execute(
             "SELECT user_id, username, display_name, current_mode, "
             "twin_personality, twin_speech_style, preferred_lang, avatar, twin_avatar, "
-            "twin_auto_reply FROM users WHERE user_id=?",
+            "twin_auto_reply, gender FROM users WHERE user_id=?",
             (uid,),
         ).fetchone()
     if not row:
@@ -58,6 +58,7 @@ async def get_profile(user=Depends(get_current_user)):
             "avatar": row["avatar"] or "",
             "twin_avatar": row["twin_avatar"] or "",
             "twin_auto_reply": row["twin_auto_reply"] if "twin_auto_reply" in row.keys() else 0,
+            "gender": row["gender"] if "gender" in row.keys() else "",
         },
     }
 
@@ -83,6 +84,9 @@ async def update_profile(req: UpdateProfileRequest, user=Depends(get_current_use
     if req.twin_auto_reply is not None:
         updates.append("twin_auto_reply=?")
         params.append(1 if req.twin_auto_reply else 0)
+    if req.gender:
+        updates.append("gender=?")
+        params.append(req.gender)
     if not updates:
         return {"success": False, "error": "Nothing to update"}
     params.append(uid)
