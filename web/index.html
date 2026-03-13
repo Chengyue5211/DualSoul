@@ -1640,14 +1640,19 @@ function chatSendFile(){
   inp.onchange=function(){if(inp.files[0])sendFileMsg(inp.files[0],'file')};inp.click();
 }
 function sendFileMsg(file,type){
-  // For now, convert to base64 and send as text with prefix
   if(file.size>5*1024*1024){alert(LANG==='zh'?'文件不能超过5MB':'File must be under 5MB');return}
   var reader=new FileReader();
   reader.onload=function(){
     var box=g('chatMsgs');if(!box)return;
     if(type==='image'){
-      box.innerHTML+='<div class="msg mine"><div><div class="bubble"><img src="'+reader.result+'" style="max-width:200px;border-radius:8px"></div></div></div>';
+      var myAv=chatFriend&&chatFriend.is_twin_chat?'<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>':'';
+      box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble"><img src="'+reader.result+'" style="max-width:200px;border-radius:8px"></div></div></div>';
       box.scrollTop=box.scrollHeight;
+      // In twin chat, tell the twin about the image so it responds
+      if(chatFriend&&chatFriend.is_twin_chat){
+        var desc=LANG==='zh'?'[我发了一张图片给你看]':'[I sent you a photo]';
+        sendTwinChat(desc);
+      }
     }
   };
   reader.readAsDataURL(file);
