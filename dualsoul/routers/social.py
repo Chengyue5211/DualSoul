@@ -337,6 +337,25 @@ async def unread_count(user=Depends(get_current_user)):
     return {"count": row["cnt"] if row else 0}
 
 
+@router.get("/unread/by-friend")
+async def unread_by_friend(user=Depends(get_current_user)):
+    """Get unread message count grouped by sender."""
+    uid = user["user_id"]
+    with get_db() as db:
+        rows = db.execute(
+            """
+            SELECT from_user_id, COUNT(*) as cnt
+            FROM social_messages
+            WHERE to_user_id=? AND is_read=0
+            GROUP BY from_user_id
+            """,
+            (uid,),
+        ).fetchall()
+    result = {}
+    for r in rows:
+        result[r["from_user_id"]] = r["cnt"]
+    return {"unread": result}
+
 
 async def _auto_detect_and_push_translation(recipient_id: str, content: str, for_msg_id: str):
     """Background task: detect foreign language/dialect and push translation via WebSocket."""

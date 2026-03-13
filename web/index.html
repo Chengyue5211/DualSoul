@@ -118,6 +118,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .fi-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fi-mode{font-size:9px;color:rgba(124,92,252,.7)}
 .fi-time{font-size:9px;color:rgba(255,255,255,.2)}
+.fi-unread{background:#f06030;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 5px;border-radius:10px;flex-shrink:0}
 .fi-badge{background:var(--ac);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
 .pending-btns{display:flex;gap:6px}
 .pending-btns button{padding:5px 14px;border-radius:8px;border:none;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -420,9 +421,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
         <div class="id-img real" id="idRealImg"><img></div>
         <div class="id-name" id="idRealName">真身</div>
       </div>
-      <div class="id-chat-center" onclick="openTwinChat()">
+      <div class="id-chat-center" onclick="openTwinChat()" style="position:relative">
         <div class="id-chat-text" id="twinChatHint">和你的数字分身聊天</div>
         <div class="id-chat-arrow">💬 ›</div>
+        <span class="fi-unread" id="twinChatBadge" style="display:none;position:absolute;top:-4px;right:-4px"></span>
       </div>
       <div class="id-card" onclick="pickAvatar('twin')">
         <div class="id-img cyber" id="idTwinImg"><img></div>
@@ -1258,8 +1260,9 @@ function wsReconnect(){
 function wsHandle(msg){
   if(msg.type==='new_message'){
     var d=msg.data;
-    // Update unread badge
+    // Update unread badges
     loadUnread();
+    loadFriendUnread();
     // If we are in chat with this person, append the message
     // Match both from_user_id (they sent) and to_user_id (my twin replied to them)
     if(chatFriend&&(d.from_user_id===chatFriend.user_id||d.to_user_id===chatFriend.user_id)){
@@ -1268,6 +1271,20 @@ function wsHandle(msg){
   }else if(msg.type==='friend_request'){
     toast('New friend request!');
     loadFriends();
+  }else if(msg.type==='twin_notification'){
+    // Twin notified its owner about an incoming message from a friend
+    var nd=msg.data;
+    toast((LANG==='zh'?'分身提醒：':'Twin: ')+nd.from_friend+(LANG==='zh'?' 给你发了消息':' sent you a message'));
+    loadUnread();
+    loadFriendUnread();
+    // If owner is currently in twin self-chat, show the notification there
+    if(chatFriend&&chatFriend.is_twin_chat){
+      _twinChatHistory.push({mine:false,text:nd.content});
+      var box=g('chatMsgs');
+      var twinAv='<div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div>';
+      box.innerHTML+='<div class="msg theirs">'+twinAv+'<div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(nd.content).replace(/\n/g,'<br>')+'</div></div></div>';
+      box.scrollTop=box.scrollHeight;
+    }
   }else if(msg.type==='auto_translation'){
     // Auto-detected foreign language/dialect — show translation below the message
     var atd=msg.data;
@@ -1307,6 +1324,27 @@ function loadUnread(){
     var c=d.count||0;
     g('unreadLabel').textContent=c?c+' unread':'';
     var b=g('navBadge');b.style.display=c?'inline':'none';b.textContent=c>99?'99+':c;
+  }).catch(function(){});
+}
+
+var _friendUnread={};
+function loadFriendUnread(){
+  fetch(DS_BASE+'/api/social/unread/by-friend',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    _friendUnread=d.unread||{};
+    // Update badges on existing friend items
+    document.querySelectorAll('.fi-unread').forEach(function(el){
+      var fid=el.getAttribute('data-fid');
+      var c=_friendUnread[fid]||0;
+      el.style.display=c?'inline-block':'none';
+      el.textContent=c>99?'99+':c;
+    });
+    // Update twin self-chat badge
+    var tb=g('twinChatBadge');
+    if(tb){
+      var selfCount=_friendUnread[myId]||0;
+      tb.style.display=selfCount?'inline-block':'none';
+      tb.textContent=selfCount>99?'99+':selfCount;
+    }
   }).catch(function(){});
 }
 
@@ -1407,14 +1445,17 @@ function loadFriends(){
           var sn={'nianlun':'年轮','openclaw':'OpenClaw','guide':'Guide'};
           srcBadge='<span style="font-size:8px;padding:1px 5px;border-radius:6px;background:'+(sc[f.reg_source]||'#666')+';color:#fff;margin-left:4px">'+(sn[f.reg_source]||f.reg_source)+'</span>';
         }
+        var uc=_friendUnread[f.user_id]||0;
+        var ubadge='<span class="fi-unread" data-fid="'+esc(f.user_id)+'" style="display:'+(uc?'inline-block':'none')+'">'+(uc>99?'99+':uc)+'</span>';
         return '<div class="friend-item" onclick="openChat(\''+esc(f.user_id)+'\',\''+esc(f.display_name)+'\',\''+esc(f.current_mode)+'\')">'+
           buildAvatar(f.display_name,44,f.current_mode)+
           '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+srcBadge+'</div><div class="fi-mode">'+ml+'</div></div>'+
-          '<div class="fi-time">'+esc(f.accepted_at||'').slice(5,16)+'</div></div>';
+          ubadge+'</div>';
       }).join('');
     }else{fl.innerHTML='<div class="empty">'+t('noFriends').replace('\n','<br>')+'</div>'}
   }).catch(function(){});
   loadUnread();
+  loadFriendUnread();
 }
 
 function addFriend(){

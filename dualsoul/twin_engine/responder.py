@@ -518,6 +518,35 @@ class TwinResponder:
                     await manager.send_to(owner_id, twin_msg)
                     await manager.send_to(target_id, twin_msg)
                     confirm += f"\n{target_name}的分身回复了：「{reply['content']}」"
+
+                    # Notify the friend's REAL person via their twin self-chat
+                    # "有朋友找你：芬森想约你见面，你看什么时候方便？"
+                    notify_id = gen_id("sm_")
+                    notify_text = (
+                        f"主人，{owner_name}给你发了消息：「{msg_content}」\n"
+                        f"我先替你回了一句，但具体怎么安排得你来定哦～"
+                    )
+                    with get_db() as db:
+                        db.execute(
+                            """
+                            INSERT INTO social_messages
+                            (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                             content, msg_type, ai_generated)
+                            VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1)
+                            """,
+                            (notify_id, target_id, target_id, notify_text),
+                        )
+                    # Push notification to friend via WebSocket
+                    await manager.send_to(target_id, {
+                        "type": "twin_notification",
+                        "data": {
+                            "msg_id": notify_id,
+                            "content": notify_text,
+                            "from_friend": owner_name,
+                            "original_msg": msg_content,
+                            "created_at": now,
+                        },
+                    })
             except Exception:
                 pass  # Twin reply is best-effort
 
