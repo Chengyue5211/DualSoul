@@ -192,7 +192,7 @@ class TwinResponder:
 
         # Step 1: Check if this is an action instruction (send message to friend)
         if not use_vision:
-            action_result = await self._try_execute_action(owner_id, name, message)
+            action_result = await self._try_execute_action(owner_id, name, message, history)
             if action_result:
                 return action_result
 
@@ -284,16 +284,15 @@ class TwinResponder:
         names = [r["display_name"] or r["username"] for r in rows]
         return f"主人的好友列表：{', '.join(names)}\n\n"
 
-    async def _try_execute_action(self, owner_id: str, owner_name: str, message: str) -> str | None:
+    async def _try_execute_action(
+        self, owner_id: str, owner_name: str, message: str,
+        history: list[dict] | None = None,
+    ) -> str | None:
         """Detect if the message is an instruction to send a message to a friend.
 
         Uses AI to parse the intent. If it's an action, execute it and return
         a confirmation message. If it's just chat, return None.
         """
-        # Quick heuristic: skip action detection for very short messages or questions
-        if len(message) < 6:
-            return None
-
         # Get friend list for matching
         with get_db() as db:
             friends = db.execute(
@@ -317,21 +316,36 @@ class TwinResponder:
             fname = f["display_name"] or f["username"]
             friend_names.append(f"{fname}(ID:{f['user_id']})")
 
+        # Build conversation context for follow-up detection
+        history_text = ""
+        if history:
+            recent = history[-6:]
+            for msg in recent:
+                role = "主人" if msg.get("role") == "me" else "分身"
+                history_text += f"{role}：{msg.get('content', '')}\n"
+
+        context_block = ""
+        if history_text:
+            context_block = f"之前的对话：\n{history_text}\n"
+
         # Ask AI to classify: chat or action?
         classify_prompt = (
             f"你是{owner_name}的数字分身助手。分析主人的消息，判断这是闲聊还是让你去执行任务。\n\n"
-            f"主人说：\"{message}\"\n\n"
+            f"{context_block}"
+            f"主人最新消息：\"{message}\"\n\n"
             f"主人的好友列表：{', '.join(friend_names)}\n\n"
             f"判断规则：\n"
             f"- 如果主人让你去给某个好友发消息/传话/联系/约时间等，这是【任务】\n"
-            f"- 如果主人只是在跟你聊天、问问题、说感受，这是【闲聊】\n\n"
+            f"- 如果主人只是在跟你聊天、问问题、说感受，这是【闲聊】\n"
+            f"- 主人提到的人名可能是昵称/简称，要模糊匹配好友列表（如'橙子'匹配'橙宝'，'小明'匹配'明明'）\n"
+            f"- 如果之前的对话已经在讨论给某人发消息，主人的后续确认也算【任务】\n\n"
             f"如果是【任务】，请严格按以下格式输出：\n"
             f"ACTION\n"
-            f"TO: <好友的完整ID，从好友列表中匹配>\n"
+            f"TO: <好友的完整ID，从好友列表中匹配，用模糊匹配找最像的>\n"
             f"MSG: <你要替主人发给好友的消息内容>\n\n"
             f"MSG写法要求：\n"
             f"- 用{owner_name}本人的口吻写，就像{owner_name}自己在微信上发消息一样\n"
-            f"- 不要用对方的名字开头（比如不要写'橙子，...'），正常人发微信不会先叫对方名字\n"
+            f"- 不要用对方的名字开头，正常人发微信不会先叫对方名字\n"
             f"- 自然、简短、口语化\n\n"
             f"如果是【闲聊】，只输出一个字：\n"
             f"CHAT"
@@ -373,17 +387,19 @@ class TwinResponder:
         if not target_id or not msg_content:
             return None
 
-        # Validate the target is actually a friend
+        # Validate the target is actually a friend — multi-level matching
         target_friend = None
         target_name = ""
+
+        # Level 1: exact ID match
         for f in friends:
             if f["user_id"] == target_id:
                 target_friend = f
                 target_name = f["display_name"] or f["username"]
                 break
 
+        # Level 2: substring match on name
         if not target_friend:
-            # Try fuzzy match by name in case AI didn't use exact ID
             for f in friends:
                 fname = f["display_name"] or f["username"]
                 if fname in target_id or target_id in fname:
@@ -391,6 +407,29 @@ class TwinResponder:
                     target_name = fname
                     target_id = f["user_id"]
                     break
+
+        # Level 3: shared Chinese character match (橙子 ↔ 橙宝)
+        if not target_friend:
+            ai_name = target_id  # AI might have returned a name instead of ID
+            best_match = None
+            best_score = 0
+            for f in friends:
+                fname = f["display_name"] or f["username"]
+                # Count shared characters
+                shared = len(set(ai_name) & set(fname))
+                if shared > best_score:
+                    best_score = shared
+                    best_match = f
+            if best_match and best_score > 0:
+                target_friend = best_match
+                target_name = best_match["display_name"] or best_match["username"]
+                target_id = best_match["user_id"]
+
+        # Level 4: only one friend — just use them
+        if not target_friend and len(friends) == 1:
+            target_friend = friends[0]
+            target_name = friends[0]["display_name"] or friends[0]["username"]
+            target_id = friends[0]["user_id"]
 
         if not target_friend:
             return f"抱歉，我在好友列表里没找到这个人。你的好友有：{', '.join(f['display_name'] or f['username'] for f in friends)}"
