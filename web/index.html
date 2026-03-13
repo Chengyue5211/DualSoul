@@ -379,7 +379,7 @@ var ws=null;
 var wsRetry=0;
 
 // ========== i18n ==========
-var LANG=localStorage.getItem('ds_lang')||(navigator.language&&!navigator.language.startsWith('zh')?'en':'zh');
+var LANG=localStorage.getItem('ds_lang')||'zh';
 var I18N={
   zh:{
     appTagline:'每个人都有两个声音',
