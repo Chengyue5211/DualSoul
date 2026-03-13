@@ -130,6 +130,13 @@ nav .ni.on .nc{transform:scale(1.15)}
 .chat-back{font-size:20px;color:var(--tx2);cursor:pointer;padding:4px}
 .chat-name{font-size:14px;font-weight:700;flex:1}
 .chat-mode-tag{font-size:9px;color:rgba(124,92,252,.8);padding:3px 8px;border:1px solid rgba(124,92,252,.2);border-radius:10px}
+.twin-toggle{display:none;align-items:center;gap:4px;cursor:pointer;margin-left:auto;flex-shrink:0}
+.twin-toggle.show{display:flex}
+.tt-track{width:32px;height:18px;border-radius:9px;background:var(--bg3);position:relative;transition:.2s}
+.tt-dot{position:absolute;width:14px;height:14px;border-radius:50%;top:2px;left:2px;background:var(--tx2);transition:.2s}
+.tt-track.on{background:rgba(124,92,252,.3)}
+.tt-dot.on{left:16px;background:var(--ac)}
+.tt-label{font-size:9px;color:var(--tx2);white-space:nowrap}
 .chat-msgs{flex:1;overflow-y:auto;padding:12px 0;display:flex;flex-direction:column;gap:8px}
 .msg{display:flex;gap:8px;max-width:85%;animation:msgIn .2s ease;align-items:flex-start}
 .msg.mine{margin-left:auto;flex-direction:row-reverse}
@@ -439,6 +446,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       </div>
       <span class="chat-name" id="chatName">Friend</span>
       <span class="chat-mode-tag" id="chatModeTag">Real &rarr; Real</span>
+      <label class="twin-toggle" id="twinToggleWrap" onclick="toggleTwinTakeover()" title="分身代聊">
+        <span class="tt-track"><span class="tt-dot" id="ttDot"></span></span>
+        <span class="tt-label" id="ttLabel">分身代聊</span>
+      </label>
     </div>
     <div class="chat-msgs" id="chatMsgs">
       <div class="empty">Start the conversation!</div>
@@ -586,7 +597,7 @@ var I18N={
     friendSent:'好友请求已发送！',enterUsername:'请输入用户名',
     startConversation:'开始聊天吧！',
     sayPlaceholder:'说点什么...',send:'发送',
-    twinAutoReply:'分身自动回复',twinAutoDesc:'你离线时分身替你回复',
+    twinAutoReply:'分身自动回复',twinAutoDesc:'开启后分身替你回复消息',twinTakeover:'分身代聊',twinTakeoverOn:'分身代聊中',
     unread:'条未读',
     aboutTitle:'关于 DualSoul',aboutProto:'双身份社交协议',
     aboutDesc1:'在AI时代，每个人都可以拥有一个数字分身——一个能代你说话、回复、互动的AI延伸。',
@@ -647,7 +658,7 @@ var I18N={
     friendSent:'Friend request sent!',enterUsername:'Enter a username',
     startConversation:'Start the conversation!',
     sayPlaceholder:'Say something...',send:'Send',
-    twinAutoReply:'Offline auto-reply',twinAutoDesc:'Twin replies when you\'re away',
+    twinAutoReply:'Auto-reply',twinAutoDesc:'Twin replies to messages for you',twinTakeover:'Twin takeover',twinTakeoverOn:'Twin chatting',
     unread:' unread',
     aboutTitle:'About DualSoul',aboutProto:'The Dual Identity Protocol',
     aboutDesc1:'In the age of AI, every person can have a digital twin — an AI extension of themselves that can speak, respond, and interact on their behalf.',
@@ -1400,6 +1411,8 @@ function openTwinChat(){
   g('friendsView').style.display='none';
   g('chatView').style.display='flex';
   g('chatName').textContent=chatFriend.name;
+  // Hide twin toggle for self-chat
+  var ttw=g('twinToggleWrap');if(ttw)ttw.className='twin-toggle';
   // Update chat header avatar
   var ca=g('chatAvatar');
   var tmpDiv=document.createElement('div');tmpDiv.innerHTML=buildAvatar(_profileName||'?',36,'twin',_myAvatar,_myTwinAvatar);
@@ -1460,11 +1473,41 @@ function sendTwinChat(text,imageDataUrl){
   });
 }
 
+// Twin takeover toggle — "分身代聊"
+var _twinTakeover=false;
+function toggleTwinTakeover(){
+  _twinTakeover=!_twinTakeover;
+  var dot=g('ttDot');var track=dot?dot.parentElement:null;var label=g('ttLabel');
+  if(dot){dot.className='tt-dot'+(_twinTakeover?' on':'');}
+  if(track){track.className='tt-track'+(_twinTakeover?' on':'');}
+  if(label){label.textContent=_twinTakeover?(LANG==='zh'?'分身代聊中':'Twin chatting'):(LANG==='zh'?'分身代聊':'Twin takeover');}
+  // Update server setting
+  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+    twin_auto_reply:_twinTakeover?1:0
+  })}).then(function(r){return r.json()}).then(function(d){
+    if(d.success)toast(_twinTakeover?(LANG==='zh'?'分身接管对话':'Twin takes over'):(LANG==='zh'?'真人模式':'Real mode'));
+  }).catch(function(){});
+  updateModeTag();
+}
+function syncTwinToggleUI(on){
+  _twinTakeover=!!on;
+  var dot=g('ttDot');var track=dot?dot.parentElement:null;var label=g('ttLabel');
+  if(dot){dot.className='tt-dot'+(_twinTakeover?' on':'');}
+  if(track){track.className='tt-track'+(_twinTakeover?' on':'');}
+  if(label){label.textContent=_twinTakeover?(LANG==='zh'?'分身代聊中':'Twin chatting'):(LANG==='zh'?'分身代聊':'Twin takeover');}
+}
+
 function openChat(userId,name,friendMode){
   chatFriend={user_id:userId,name:name,current_mode:friendMode};
   g('friendsView').style.display='none';
   g('chatView').style.display='flex';
   g('chatName').textContent=name;
+  // Show twin toggle for real chats (not twin self-chat)
+  var ttw=g('twinToggleWrap');if(ttw)ttw.className='twin-toggle show';
+  // Sync toggle with server state
+  fetch(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(d.success)syncTwinToggleUI(d.data.twin_auto_reply);
+  }).catch(function(){});
   // Update chat header dual-avatar to reflect friend's current mode
   var ca=g('chatAvatar');
   var fm=friendMode||'real';
@@ -1496,9 +1539,13 @@ function openChat(userId,name,friendMode){
 
 function updateModeTag(){
   if(!chatFriend)return;
-  var m=myMode==='twin'?t('twin'):t('real');
-  var ft=chatFriend.current_mode==='twin'?t('twin'):t('real');
-  g('chatModeTag').innerHTML=m+' &rarr; '+ft;
+  if(_twinTakeover){
+    g('chatModeTag').innerHTML='<span style="color:var(--ac)">'+t('twin')+'</span> &rarr; '+t('real');
+  }else{
+    var m=myMode==='twin'?t('twin'):t('real');
+    var ft=chatFriend.current_mode==='twin'?t('twin'):t('real');
+    g('chatModeTag').innerHTML=m+' &rarr; '+ft;
+  }
 }
 
 function translateMsg(el,msgId){
