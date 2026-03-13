@@ -328,7 +328,11 @@ class TwinResponder:
             f"如果是【任务】，请严格按以下格式输出：\n"
             f"ACTION\n"
             f"TO: <好友的完整ID，从好友列表中匹配>\n"
-            f"MSG: <你要替主人发给好友的消息内容，用主人的口吻写，自然得体>\n\n"
+            f"MSG: <你要替主人发给好友的消息内容>\n\n"
+            f"MSG写法要求：\n"
+            f"- 用{owner_name}本人的口吻写，就像{owner_name}自己在微信上发消息一样\n"
+            f"- 不要用对方的名字开头（比如不要写'橙子，...'），正常人发微信不会先叫对方名字\n"
+            f"- 自然、简短、口语化\n\n"
             f"如果是【闲聊】，只输出一个字：\n"
             f"CHAT"
         )
@@ -398,15 +402,22 @@ class TwinResponder:
         from datetime import datetime
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        # Check if target has twin_auto_reply on — if so, send to their twin
+        with get_db() as db:
+            target_user = db.execute(
+                "SELECT twin_auto_reply FROM users WHERE user_id=?", (target_id,)
+            ).fetchone()
+        receiver_mode = "twin" if (target_user and target_user["twin_auto_reply"]) else "real"
+
         with get_db() as db:
             db.execute(
                 """
                 INSERT INTO social_messages
                 (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
                  content, msg_type, ai_generated)
-                VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1)
+                VALUES (?, ?, ?, 'twin', ?, ?, 'text', 1)
                 """,
-                (msg_id, owner_id, target_id, msg_content),
+                (msg_id, owner_id, target_id, receiver_mode, msg_content),
             )
 
         # Push via WebSocket to the recipient
@@ -415,7 +426,7 @@ class TwinResponder:
             "data": {
                 "msg_id": msg_id, "from_user_id": owner_id,
                 "to_user_id": target_id, "sender_mode": "twin",
-                "receiver_mode": "real", "content": msg_content,
+                "receiver_mode": receiver_mode, "content": msg_content,
                 "msg_type": "text", "ai_generated": 1, "created_at": now,
             },
         })
@@ -426,12 +437,39 @@ class TwinResponder:
             "data": {
                 "msg_id": msg_id, "from_user_id": owner_id,
                 "to_user_id": target_id, "sender_mode": "twin",
-                "receiver_mode": "real", "content": msg_content,
+                "receiver_mode": receiver_mode, "content": msg_content,
                 "msg_type": "text", "ai_generated": 1, "created_at": now,
             },
         })
 
-        return f"已替你给{target_name}发了消息：「{msg_content}」"
+        # If receiver_mode is twin, trigger the friend's twin to auto-reply
+        confirm = f"已替你给{target_name}发了消息：「{msg_content}」"
+        if receiver_mode == "twin":
+            try:
+                reply = await self.generate_reply(
+                    twin_owner_id=target_id,
+                    from_user_id=owner_id,
+                    incoming_msg=msg_content,
+                    sender_mode="twin",
+                )
+                if reply:
+                    # Push twin reply to both parties
+                    twin_msg = {
+                        "type": "new_message",
+                        "data": {
+                            "msg_id": reply["msg_id"], "from_user_id": target_id,
+                            "to_user_id": owner_id, "sender_mode": "twin",
+                            "receiver_mode": "twin", "content": reply["content"],
+                            "msg_type": "text", "ai_generated": 1, "created_at": now,
+                        },
+                    }
+                    await manager.send_to(owner_id, twin_msg)
+                    await manager.send_to(target_id, twin_msg)
+                    confirm += f"\n{target_name}的分身回复了：「{reply['content']}」"
+            except Exception:
+                pass  # Twin reply is best-effort
+
+        return confirm
 
     async def translate_message(
         self,
