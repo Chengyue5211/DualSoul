@@ -188,6 +188,12 @@ nav .ni.on .nc{transform:scale(1.15)}
 .ts-loading{color:var(--tx2);font-size:12px;animation:pulse 1.5s ease infinite}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
+/* WeChat browser overlay */
+.wx-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#fff}
+.wx-overlay .wx-arrow{position:absolute;top:12px;right:20px;font-size:48px;animation:bounce 1.5s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.wx-overlay .wx-text{font-size:16px;line-height:2;margin-top:60px}
+
 /* Camera Capture */
 .cam-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
 .cam-preview{position:relative;width:180px;height:180px;border-radius:50%;overflow:hidden;border:3px solid var(--ac);background:var(--bg3)}
@@ -209,6 +215,17 @@ nav .ni.on .nc{transform:scale(1.15)}
 </head>
 <body>
 
+<script>
+// Detect WeChat browser and show guidance overlay
+if(/MicroMessenger/i.test(navigator.userAgent)){
+  document.addEventListener('DOMContentLoaded',function(){
+    var ov=document.createElement('div');ov.className='wx-overlay';ov.id='wxOverlay';
+    ov.innerHTML='<div class="wx-arrow">↗</div><div class="wx-text">请点击右上角 <b>⋯</b><br>选择 <b>「在浏览器中打开」</b><br><br>即可正常使用 DualSoul<br><br><small style="color:rgba(255,255,255,.4)">微信内置浏览器功能受限</small></div>';
+    ov.onclick=function(){ov.remove()};
+    document.body.appendChild(ov);
+  });
+}
+</script>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <!-- Auth Page -->
