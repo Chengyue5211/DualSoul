@@ -62,7 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_sm_conv ON social_messages(from_user_id, to_user_
 
 
 MIGRATIONS = [
-    "ALTER TABLE users ADD COLUMN twin_auto_reply INTEGER DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN twin_auto_reply INTEGER DEFAULT 1",
     "ALTER TABLE social_messages ADD COLUMN auto_reply INTEGER DEFAULT 0",
     "ALTER TABLE social_messages ADD COLUMN metadata TEXT DEFAULT ''",
     "ALTER TABLE users ADD COLUMN voice_sample TEXT DEFAULT ''",
