@@ -774,10 +774,10 @@ function applyLang(){
   var ci=g('chatInput');if(ci)ci.placeholder=t('sayPlaceholder');
   // Profile
   var pt=document.querySelector('#tabProfile .tab-header h2');if(pt)pt.textContent=t('profileTitle');
-  var ps=document.querySelector('.profile-section h3');if(ps)ps.textContent=t('twinPersonality');
+  var ps=document.querySelector('.profile-section h3');if(ps)ps.innerHTML=t('twinPersonality')+' <span id="labelQuickStyle" style="font-size:10px;color:var(--ac2);font-weight:400">'+(LANG==='zh'?'点击展开选择风格模板':'Tap to pick a style template')+'</span>';
   var pp=g('profPersonality');if(pp)pp.placeholder=t('personalityPh');
   var pst=g('profStyle');if(pst)pst.placeholder=t('stylePh');
-  var lqs=g('labelQuickStyle');if(lqs)lqs.textContent=LANG==='zh'?'点击展开选择风格模板':'Tap to pick a style template';
+  // labelQuickStyle is now set inline with twinPersonality h3 above
   var lp=g('labelPersonality');if(lp)lp.textContent=t('personalityLabel');
   populateProfileStyleCards();
   var lst=g('labelStyle');if(lst)lst.textContent=t('speechStyle');
