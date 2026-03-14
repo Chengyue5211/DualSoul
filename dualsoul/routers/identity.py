@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from dualsoul.auth import get_current_user
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from dualsoul.database import get_db
-from dualsoul.models import AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest, VoiceUploadRequest
+from dualsoul.models import AvatarGenerateRequest, AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest, VoiceUploadRequest
 from dualsoul.twin_engine.learner import analyze_style, get_message_count, learn_and_update
 
 _AVATAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "avatars")
@@ -129,6 +129,49 @@ async def upload_avatar(req: AvatarUploadRequest, user=Depends(get_current_user)
         db.execute(f"UPDATE users SET {col}=? WHERE user_id=?", (url, uid))
 
     return {"success": True, "url": url}
+
+
+@router.post("/avatar/generate")
+async def generate_avatar(req: AvatarGenerateRequest, user=Depends(get_current_user)):
+    """Generate a stylized AI twin avatar from a real photo.
+
+    Uses DashScope style repaint API (same platform as Qwen).
+    Takes ~15 seconds. Returns the generated image and saves it as twin_avatar.
+    """
+    from dualsoul.twin_engine.avatar import generate_twin_avatar_from_base64, get_available_styles
+
+    uid = user["user_id"]
+
+    result = await generate_twin_avatar_from_base64(
+        image_base64=req.image,
+        style=req.style,
+    )
+    if not result:
+        return {"success": False, "error": "Avatar generation failed — AI service may be unavailable"}
+
+    # Save the generated image as twin avatar
+    img_bytes = base64.b64decode(result["image_base64"])
+    if len(img_bytes) > 5 * 1024 * 1024:
+        return {"success": False, "error": "Generated image too large"}
+
+    name_hash = hashlib.md5(f"{uid}_twin".encode()).hexdigest()[:12]
+    filename = f"{name_hash}.png"
+    filepath = os.path.join(_AVATAR_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(img_bytes)
+
+    url = f"/static/avatars/{filename}"
+    with get_db() as db:
+        db.execute("UPDATE users SET twin_avatar=? WHERE user_id=?", (url, uid))
+
+    return {"success": True, "url": url, "style": req.style}
+
+
+@router.get("/avatar/styles")
+async def avatar_styles():
+    """Return available AI avatar styles."""
+    from dualsoul.twin_engine.avatar import get_available_styles
+    return {"success": True, "styles": get_available_styles()}
 
 
 @router.post("/voice")

@@ -509,6 +509,17 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div style="font-size:10px;color:var(--tx2);margin-bottom:6px" id="profTwinStyleLabel">分身头像风格</div>
       <div class="twin-styles" id="profTwinStyles"></div>
     </div>
+    <div style="margin-top:10px;display:flex;gap:8px;justify-content:center">
+      <button onclick="pickAvatar('real')" style="padding:6px 14px;border:1px solid var(--bd);border-radius:8px;background:var(--bg3);color:var(--tx2);font-size:10px;cursor:pointer;font-family:inherit" id="btnChangeReal">更换真人头像</button>
+      <button onclick="pickAvatar('twin')" style="padding:6px 14px;border:1px solid var(--bd);border-radius:8px;background:var(--bg3);color:var(--tx2);font-size:10px;cursor:pointer;font-family:inherit" id="btnChangeTwin">更换分身头像</button>
+      <button onclick="showAiAvatarGen()" style="padding:6px 14px;border:1px solid rgba(124,92,252,.3);border-radius:8px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit" id="btnAiAvatar">AI生成分身头像</button>
+    </div>
+    <div id="aiAvatarPanel" style="display:none;margin-top:10px;padding:14px;background:var(--bg3);border:1px solid rgba(124,92,252,.15);border-radius:12px">
+      <p style="font-size:10px;color:var(--tx2);margin-bottom:10px" id="aiAvatarDesc">用AI把你的真人照片变成数字分身风格头像：</p>
+      <div id="aiAvatarStyles" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+      <button onclick="generateAiAvatar()" id="aiAvatarGenBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">生成分身头像（约15秒）</button>
+      <div id="aiAvatarStatus" style="margin-top:8px;font-size:10px;color:var(--tx2);text-align:center"></div>
+    </div>
   </div>
   <!-- Twin Growth Stats -->
   <div id="twinGrowthCard" style="margin:14px 0;padding:16px;background:var(--bg2);border:1px solid var(--bd);border-radius:14px">
@@ -694,6 +705,7 @@ var I18N={
     twinGrowth:'分身成长',
     growthConversations:'对话数',growthFriendsHelped:'帮助好友',growthActions:'代办操作',growthDaysActive:'活跃天数',growthStyleLearned:'风格已学习',growthStyleNotLearned:'风格未设置',
     shareTwinCard:'🪪 分享分身名片',twinCardCopied:'名片链接已复制！',twinCardDesc:'展示你的分身形象给别人看（不需要注册也能看）：',twinCardCopy:'复制链接',twinCardPreview:'预览名片',
+    changeReal:'更换真人头像',changeTwin:'更换分身头像',aiAvatar:'AI生成分身头像',aiAvatarDesc:'用AI把你的真人照片变成数字分身风格头像：',aiAvatarGen:'生成分身头像（约15秒）',aiAvatarGenerating:'AI正在绘制你的分身头像...',aiAvatarDone:'分身头像已更新！',aiAvatarFail:'生成失败，请稍后重试',aiAvatarNoPhoto:'请先上传真人头像',
     langSwitch:'EN'
   },
   en:{
@@ -758,6 +770,7 @@ var I18N={
     twinGrowth:'Twin Growth',
     growthConversations:'Conversations',growthFriendsHelped:'Friends helped',growthActions:'Actions taken',growthDaysActive:'Days active',growthStyleLearned:'Style learned',growthStyleNotLearned:'Style not set',
     shareTwinCard:'🪪 Share Twin Card',twinCardCopied:'Card link copied!',twinCardDesc:'Show your twin\'s profile to anyone (no registration needed):',twinCardCopy:'Copy Link',twinCardPreview:'Preview Card',
+    changeReal:'Change Real Avatar',changeTwin:'Change Twin Avatar',aiAvatar:'AI Twin Avatar',aiAvatarDesc:'Transform your real photo into a stylized digital twin avatar:',aiAvatarGen:'Generate (~15 sec)',aiAvatarGenerating:'AI is painting your twin avatar...',aiAvatarDone:'Twin avatar updated!',aiAvatarFail:'Generation failed, please try again',aiAvatarNoPhoto:'Please upload a real avatar first',
     langSwitch:'中文'
   }
 };
@@ -811,6 +824,11 @@ function applyLang(){
   var gfl=g('gFriendsL');if(gfl)gfl.textContent=t('growthFriendsHelped');
   var gal=g('gActionsL');if(gal)gal.textContent=t('growthActions');
   var gdl=g('gDaysL');if(gdl)gdl.textContent=t('growthDaysActive');
+  var bcr=g('btnChangeReal');if(bcr)bcr.textContent=t('changeReal');
+  var bct=g('btnChangeTwin');if(bct)bct.textContent=t('changeTwin');
+  var bai=g('btnAiAvatar');if(bai)bai.textContent=t('aiAvatar');
+  var aad=g('aiAvatarDesc');if(aad)aad.textContent=t('aiAvatarDesc');
+  var aag=g('aiAvatarGenBtn');if(aag)aag.textContent=t('aiAvatarGen');
   var stcb=g('shareTwinCardBtn');if(stcb)stcb.textContent=t('shareTwinCard');
   var tcd=g('twinCardDesc');if(tcd)tcd.textContent=t('twinCardDesc');
   var tccp=g('twinCardCopyBtn');if(tccp)tccp.textContent=t('twinCardCopy');
@@ -1042,7 +1060,10 @@ function tsRunStep(){
     // Upload avatar if captured
     if(_capturedPhoto){
       fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'real'})}).catch(function(){});
-      fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'twin'})}).catch(function(){});
+      // Only upload as twin if AI didn't already generate one
+      if(!_obAiGenerated){
+        fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'twin'})}).catch(function(){});
+      }
     }
     // Upload voice if recorded
     if(_voiceBlob){
@@ -1123,10 +1144,12 @@ function takePhoto(){
     '</div>'+
     '<div style="margin:8px 0;text-align:center;font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'选择分身风格：':'Choose twin style:')+'</div>'+
     styleHtml+
+    '<div style="margin:10px 0 6px;text-align:center"><button onclick="obAiAvatar()" id="obAiBtn" style="padding:8px 16px;border:1px solid rgba(124,92,252,.4);border-radius:10px;background:rgba(124,92,252,.1);color:var(--ac2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'✨ 用AI生成分身头像（更逼真）':'✨ AI Generate Twin Avatar')+'</button>'+
+    '<div id="obAiStatus" style="font-size:10px;color:var(--tx2);margin-top:4px"></div></div>'+
     '<div class="cam-btns"><button class="cam-take" onclick="confirmPhoto()">'+(LANG==='zh'?'✓ 使用这张':'✓ Use this')+'</button>'+
     '<button class="cam-retake" onclick="retakePhoto()">'+(LANG==='zh'?'重拍':'Retake')+'</button></div></div>';
   _selectedTwinFilter=styles[0].cls;
-  tsAddMsg('system',LANG==='zh'?'选一个你喜欢的分身风格！左滑可以看更多':'Pick a style for your twin! Swipe for more');
+  tsAddMsg('system',LANG==='zh'?'选一个你喜欢的分身风格！也可以点AI生成，效果更好':'Pick a style for your twin! Or try AI generation for better results');
 }
 
 function retakePhoto(){
@@ -1137,6 +1160,37 @@ function retakePhoto(){
     '<div class="cam-preview" id="camPreview"><div class="cam-overlay" id="camOverlay" onclick="startCamera()">📷</div><video id="camVideo" autoplay playsinline muted style="display:none"></video><canvas id="camCanvas" style="display:none"></canvas><img id="camPhoto" style="display:none"></div>'+
     '<div class="cam-btns" id="camBtns"><button class="cam-take" onclick="startCamera()">'+(LANG==='zh'?'打开摄像头':'Open Camera')+'</button>'+
     '<button class="cam-skip" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button></div></div>';
+}
+
+var _obAiGenerated=false;
+function obAiAvatar(){
+  if(!_capturedPhoto){toast(LANG==='zh'?'请先拍照':'Please take a photo first');return}
+  var btn=g('obAiBtn');var status=g('obAiStatus');
+  if(!btn)return;
+  btn.disabled=true;btn.style.opacity='0.5';
+  status.textContent=LANG==='zh'?'AI正在绘制你的分身头像，请稍候...':'AI is painting your twin avatar...';
+  // Pick a random style for variety, defaulting to anime
+  var style='anime';
+  fetch(DS_BASE+'/api/identity/avatar/generate',{
+    method:'POST',headers:headers(),
+    body:JSON.stringify({image:_capturedPhoto,style:style})
+  }).then(function(r){return r.json()}).then(function(d){
+    btn.disabled=false;btn.style.opacity='1';
+    if(d.success){
+      _obAiGenerated=true;
+      _myTwinAvatar=d.url;
+      // Update the preview
+      var previewImg=g('twinPreviewImg');
+      if(previewImg){previewImg.src=DS_BASE+d.url;previewImg.className=''}
+      status.textContent=LANG==='zh'?'✨ AI分身头像已生成！':'✨ AI twin avatar generated!';
+      tsAddMsg('system',LANG==='zh'?'AI生成的分身头像效果不错！不满意的话注册后还能换':'AI-generated twin avatar looks great! You can change it later if you want');
+    }else{
+      status.textContent=d.error||(LANG==='zh'?'生成失败，可以先用滤镜版':'Generation failed, try CSS filter instead');
+    }
+  }).catch(function(){
+    btn.disabled=false;btn.style.opacity='1';
+    status.textContent=LANG==='zh'?'网络问题，可以先用滤镜版':'Network error, try CSS filter instead';
+  });
 }
 
 function confirmPhoto(){
@@ -1747,6 +1801,76 @@ function refreshIdentityBar(){
 function refreshProfileAvatars(){
   var pri=document.querySelector('#profRealAvImg img');if(pri)pri.src=_myAvatar?(DS_BASE+_myAvatar):_svgReal;
   var pti=document.querySelector('#profTwinAvImg img');if(pti)pti.src=_myTwinAvatar?(DS_BASE+_myTwinAvatar):(_myAvatar?(DS_BASE+_myAvatar):_svgTwin);
+}
+
+// AI Avatar Generation
+var _aiAvatarStyle='anime';
+var _aiStyles=[
+  {key:'anime',zh:'动漫',en:'Anime'},
+  {key:'3d',zh:'3D立体',en:'3D'},
+  {key:'cyber',zh:'未来科技',en:'Futuristic'},
+  {key:'clay',zh:'黏土',en:'Clay'},
+  {key:'pixel',zh:'像素',en:'Pixel'},
+  {key:'ink',zh:'水墨',en:'Ink'},
+  {key:'retro',zh:'复古漫画',en:'Retro'}
+];
+function showAiAvatarGen(){
+  var panel=g('aiAvatarPanel');
+  if(panel.style.display!=='none'){panel.style.display='none';return}
+  panel.style.display='block';
+  // Render style chips
+  var wrap=g('aiAvatarStyles');
+  if(!wrap.children.length){
+    var html='';
+    _aiStyles.forEach(function(s){
+      var on=s.key===_aiAvatarStyle?' on':'';
+      html+='<div class="ts-chip'+on+'" onclick="pickAiStyle(this,\''+s.key+'\')" style="font-size:11px;padding:6px 12px">'+s[LANG]+'</div>';
+    });
+    wrap.innerHTML=html;
+  }
+}
+function pickAiStyle(el,key){
+  _aiAvatarStyle=key;
+  el.parentElement.querySelectorAll('.ts-chip').forEach(function(c){c.classList.remove('on')});
+  el.classList.add('on');
+}
+function generateAiAvatar(){
+  if(!_myAvatar){toast(t('aiAvatarNoPhoto'));return}
+  var btn=g('aiAvatarGenBtn');
+  var status=g('aiAvatarStatus');
+  btn.disabled=true;btn.style.opacity='0.5';
+  status.textContent=t('aiAvatarGenerating');
+  // First fetch the real avatar image as base64
+  var imgUrl=DS_BASE+_myAvatar;
+  fetch(imgUrl).then(function(r){return r.blob()}).then(function(blob){
+    var reader=new FileReader();
+    reader.onload=function(){
+      var b64=reader.result;
+      // Call AI generate endpoint
+      fetch(DS_BASE+'/api/identity/avatar/generate',{
+        method:'POST',headers:headers(),
+        body:JSON.stringify({image:b64,style:_aiAvatarStyle})
+      }).then(function(r){return r.json()}).then(function(d){
+        btn.disabled=false;btn.style.opacity='1';
+        if(d.success){
+          _myTwinAvatar=d.url;
+          refreshIdentityBar();refreshProfileAvatars();
+          status.textContent=t('aiAvatarDone');
+          toast(t('aiAvatarDone'));
+        }else{
+          status.textContent=d.error||t('aiAvatarFail');
+          toast(d.error||t('aiAvatarFail'));
+        }
+      }).catch(function(){
+        btn.disabled=false;btn.style.opacity='1';
+        status.textContent=t('aiAvatarFail');
+      });
+    };
+    reader.readAsDataURL(blob);
+  }).catch(function(){
+    btn.disabled=false;btn.style.opacity='1';
+    status.textContent=t('aiAvatarFail');
+  });
 }
 
 function toggleCollapse(el){

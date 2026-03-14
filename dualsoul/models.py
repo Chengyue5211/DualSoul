@@ -45,6 +45,11 @@ class VoiceUploadRequest(BaseModel):
     audio: str  # base64 encoded audio data (data:audio/webm;base64,... or raw base64)
 
 
+class AvatarGenerateRequest(BaseModel):
+    image: str  # base64 encoded source photo
+    style: str = "anime"  # Style key: anime, 3d, cyber, clay, pixel, ink, retro
+
+
 class TwinDraftRequest(BaseModel):
     friend_id: str
     incoming_msg: str
