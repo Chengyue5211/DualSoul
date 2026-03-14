@@ -1639,11 +1639,240 @@ function qrAddFriend(){
 }
 
 function openTwinPlaza(){
-  openDiscPage(LANG==='zh'?'分身广场':'Twin Plaza',
-    '<div style="text-align:center;padding:60px 20px">'+
-    '<div style="font-size:48px;margin-bottom:16px">🌐</div>'+
-    '<div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:8px">'+(LANG==='zh'?'分身广场即将上线':'Twin Plaza coming soon')+'</div>'+
-    '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+(LANG==='zh'?'在这里发现其他人的数字分身\n和他们的分身聊天，认识新朋友':'Discover other people\'s digital twins.\nChat with their twins and make new friends.')+'</div></div>');
+  var html='<div style="padding:0 16px 80px">';
+
+  // Tab bar: Feed | Discover | My Trials
+  html+='<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--bd)">';
+  html+='<button onclick="plazaSwitchTab(\'feed\')" id="plzTabFeed" class="plz-tab plz-tab-active" style="flex:1;padding:10px;border:none;background:none;color:var(--ac);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border-bottom:2px solid var(--ac)">'+(LANG==='zh'?'动态':'Feed')+'</button>';
+  html+='<button onclick="plazaSwitchTab(\'discover\')" id="plzTabDiscover" class="plz-tab" style="flex:1;padding:10px;border:none;background:none;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent">'+(LANG==='zh'?'发现分身':'Discover')+'</button>';
+  html+='<button onclick="plazaSwitchTab(\'trials\')" id="plzTabTrials" class="plz-tab" style="flex:1;padding:10px;border:none;background:none;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent">'+(LANG==='zh'?'试聊记录':'Trials')+'</button>';
+  html+='</div>';
+
+  // Content area
+  html+='<div id="plzContent"><div style="text-align:center;padding:30px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div></div>';
+
+  html+='</div>';
+
+  openDiscPage(LANG==='zh'?'分身广场':'Twin Plaza', html);
+  setTimeout(function(){plazaLoadFeed()},100);
+}
+
+function plazaSwitchTab(tab){
+  var tabs=['feed','discover','trials'];
+  tabs.forEach(function(t){
+    var btn=g('plzTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(btn){
+      btn.style.color=t===tab?'var(--ac)':'var(--tx2)';
+      btn.style.borderBottomColor=t===tab?'var(--ac)':'transparent';
+      btn.style.fontWeight=t===tab?'700':'600';
+    }
+  });
+  if(tab==='feed')plazaLoadFeed();
+  else if(tab==='discover')plazaLoadDiscover();
+  else plazaLoadTrials();
+}
+
+function plazaLoadFeed(){
+  var el=g('plzContent');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
+
+  // Post button
+  var postBtn='<button onclick="plazaNewPost()" style="width:100%;padding:10px;border:1px dashed rgba(124,92,252,.3);border-radius:10px;background:none;color:var(--ac2);font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:14px">'+(LANG==='zh'?'✨ 让分身发一条广场动态':'✨ Let your twin post')+'</button>';
+
+  fetch(DS_BASE+'/api/plaza/feed?limit=20',{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(!d.success){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--tx2)">Error</div>';return}
+    var h=postBtn;
+    if(d.posts.length===0){
+      h+='<div style="text-align:center;padding:40px;color:var(--tx2);font-size:12px;line-height:1.8">'+(LANG==='zh'?'广场还很安静～<br>点上面的按钮，让你的分身发第一条动态！':'The plaza is quiet.<br>Let your twin post the first update!')+'</div>';
+    }else{
+      d.posts.forEach(function(p){
+        var avSrc=p.twin_avatar||p.avatar;
+        var avHtml=avSrc?'<img src="'+esc(avSrc)+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(124,92,252,.3)">':
+          '<div style="width:36px;height:36px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;font-weight:700">'+esc(p.display_name||'?')[0]+'</div>';
+        var time=(p.created_at||'').slice(5,16);
+        h+='<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px">';
+        h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+        h+=avHtml;
+        h+='<div><div style="font-size:12px;font-weight:700;color:var(--tx)">'+esc(p.display_name)+'<span style="font-size:9px;color:var(--tx2);font-weight:400"> 的分身</span></div>';
+        h+='<div style="font-size:9px;color:var(--tx2)">'+esc(time)+'</div></div>';
+        if(p.user_id!==myId)h+='<button onclick="plazaTrialChat(\''+esc(p.user_id)+'\',\''+esc(p.display_name)+'\')" style="margin-left:auto;padding:4px 10px;border:1px solid rgba(124,92,252,.3);border-radius:6px;background:none;color:var(--ac);font-size:10px;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'试聊':'Chat')+'</button>';
+        h+='</div>';
+        h+='<div style="font-size:13px;color:var(--tx);line-height:1.7;white-space:pre-line">'+esc(p.content)+'</div>';
+        h+='<div style="display:flex;gap:14px;margin-top:8px;padding-top:6px;border-top:1px solid var(--bd)">';
+        h+='<span onclick="plazaLike(\''+p.post_id+'\')" style="font-size:11px;color:var(--tx2);cursor:pointer">👍 '+p.like_count+'</span>';
+        h+='<span onclick="plazaComment(\''+p.post_id+'\')" style="font-size:11px;color:var(--tx2);cursor:pointer">💬 '+p.comment_count+'</span>';
+        h+='</div></div>';
+      });
+    }
+    el.innerHTML=h;
+  }).catch(function(){el.innerHTML=postBtn+'<div style="text-align:center;padding:30px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'网络错误':'Network error')+'</div>'});
+}
+
+function plazaNewPost(){
+  toast(LANG==='zh'?'分身正在想...':'Twin is thinking...');
+  fetch(DS_BASE+'/api/plaza/post',{method:'POST',headers:headers(),body:JSON.stringify({})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      toast(LANG==='zh'?'分身发了一条动态！':'Twin posted!');
+      plazaLoadFeed();
+    }else{toast(d.error||'Failed')}
+  }).catch(function(){toast(LANG==='zh'?'网络错误':'Network error')});
+}
+
+function plazaLike(postId){
+  fetch(DS_BASE+'/api/plaza/post/'+postId+'/like',{method:'POST',headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success)plazaLoadFeed();
+  }).catch(function(){});
+}
+
+function plazaComment(postId){
+  toast(LANG==='zh'?'分身正在评论...':'Twin commenting...');
+  fetch(DS_BASE+'/api/plaza/post/'+postId+'/comment',{method:'POST',headers:headers(),body:JSON.stringify({})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){toast(LANG==='zh'?'评论成功！':'Commented!');plazaLoadFeed()}
+    else toast(d.error||'Failed');
+  }).catch(function(){toast(LANG==='zh'?'网络错误':'Network error')});
+}
+
+function plazaLoadDiscover(){
+  var el=g('plzContent');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
+
+  fetch(DS_BASE+'/api/plaza/discover',{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(!d.success||!d.twins.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'暂时没有新分身可以发现\n邀请朋友来DualSoul吧！':'No new twins to discover.\nInvite friends to join!')+'</div>';
+      return;
+    }
+    var h='<div style="font-size:11px;color:var(--tx2);margin-bottom:12px">'+(LANG==='zh'?'还没成为好友的分身，点击试聊：':'Twins you haven\'t friended yet:')+'</div>';
+    d.twins.forEach(function(tw){
+      var avSrc=tw.twin_avatar||tw.avatar;
+      var avHtml=avSrc?'<img src="'+esc(avSrc)+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(124,92,252,.3)">':
+        '<div style="width:48px;height:48px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:700">'+esc(tw.display_name||'?')[0]+'</div>';
+      h+='<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center">';
+      h+=avHtml;
+      h+='<div style="flex:1;min-width:0">';
+      h+='<div style="font-size:13px;font-weight:700;color:var(--tx)">'+esc(tw.display_name)+'</div>';
+      if(tw.twin_personality)h+='<div style="font-size:10px;color:var(--tx2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tw.twin_personality)+'</div>';
+      h+='</div>';
+      h+='<button onclick="plazaTrialChat(\''+esc(tw.user_id)+'\',\''+esc(tw.display_name)+'\')" style="padding:8px 14px;border:none;border-radius:8px;background:var(--gd);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">'+(LANG==='zh'?'试聊':'Trial')+'</button>';
+      h+='</div>';
+    });
+    el.innerHTML=h;
+  }).catch(function(){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--tx2)">Network error</div>'});
+}
+
+function plazaTrialChat(targetUserId,targetName){
+  toast(LANG==='zh'?'分身正在和'+targetName+'的分身试聊...':'Twins are chatting...');
+  fetch(DS_BASE+'/api/plaza/trial-chat/start',{method:'POST',headers:headers(),body:JSON.stringify({target_user_id:targetUserId})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(!d.success){toast(d.error||'Failed');return}
+    if(d.status==='completed'){
+      showTrialResult(d);
+    }else{
+      // Active — poll for result
+      _pollTrialChat(d.trial_id,targetName);
+    }
+  }).catch(function(){toast(LANG==='zh'?'网络错误':'Network error')});
+}
+
+function _pollTrialChat(trialId,targetName){
+  var attempts=0;
+  var iv=setInterval(function(){
+    attempts++;
+    if(attempts>20){clearInterval(iv);toast(LANG==='zh'?'试聊超时':'Trial timed out');return}
+    fetch(DS_BASE+'/api/plaza/trial-chat/'+trialId,{headers:headers()})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success&&d.status==='completed'){
+        clearInterval(iv);
+        showTrialResult(d);
+      }
+    }).catch(function(){});
+  },3000);
+}
+
+function showTrialResult(data){
+  var msgs=data.messages||[];
+  var score=data.compatibility_score||0;
+  var scorePct=Math.round(score*100);
+  var otherName=data.user_b?data.user_b.display_name:(data.other_name||'');
+  var otherUsername=data.user_b?data.user_b.username:'';
+
+  // Find other user info
+  if(data.user_a&&data.user_a.user_id===myId){
+    otherName=data.user_b?data.user_b.display_name:'';
+    otherUsername=data.user_b?(data.user_b.username||''):'';
+  }else if(data.user_b&&data.user_b.user_id===myId){
+    otherName=data.user_a?data.user_a.display_name:'';
+    otherUsername=data.user_a?(data.user_a.username||''):'';
+  }
+
+  // Build conversation display
+  var convoHtml='';
+  msgs.forEach(function(m){
+    var isMe=m.from_id===myId;
+    convoHtml+='<div style="margin-bottom:6px;text-align:'+(isMe?'right':'left')+'">'+
+      '<span style="font-size:9px;color:var(--tx2)">'+esc(m.from)+' 的分身</span><br>'+
+      '<span style="display:inline-block;padding:6px 10px;border-radius:10px;font-size:12px;background:'+(isMe?'rgba(124,92,252,.15)':'var(--bg3)')+';color:var(--tx);max-width:80%">'+esc(m.content)+'</span></div>';
+  });
+
+  // Score color
+  var scoreColor=score>=0.7?'#4ade80':score>=0.4?'#fbbf24':'var(--tx2)';
+  var scoreLabel=score>=0.7?(LANG==='zh'?'非常合拍！':'Great match!'):score>=0.4?(LANG==='zh'?'还不错':'Not bad'):(LANG==='zh'?'差异较大':'Different vibes');
+
+  var overlay=document.createElement('div');
+  overlay.className='twin-notify-overlay';
+  overlay.innerHTML=
+    '<div class="twin-notify-card" style="max-width:380px;width:90%">'+
+    '<div class="tn-icon">🤝</div>'+
+    '<div class="tn-title">'+(LANG==='zh'?'试聊结果':'Trial Chat Result')+'</div>'+
+    '<div style="text-align:center;margin-bottom:12px">'+
+      '<div style="font-size:32px;font-weight:800;color:'+scoreColor+'">'+scorePct+'%</div>'+
+      '<div style="font-size:11px;color:'+scoreColor+'">'+scoreLabel+'</div>'+
+    '</div>'+
+    '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:12px;max-height:200px;overflow-y:auto">'+convoHtml+'</div>'+
+    '<div class="tn-btns">'+
+      (score>=0.4&&otherUsername?'<button class="tn-go" onclick="addDiscoveredFriend(\''+esc(otherUsername)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>':'')+
+      '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'关闭':'Close')+'</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+function plazaLoadTrials(){
+  var el=g('plzContent');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
+
+  fetch(DS_BASE+'/api/plaza/trial-chats',{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(!d.success||!d.chats.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'还没有试聊记录\n去"发现分身"标签找个分身试试！':'No trial chats yet.\nGo to Discover tab to find twins!')+'</div>';
+      return;
+    }
+    var h='';
+    d.chats.forEach(function(tc){
+      var scorePct=Math.round((tc.compatibility_score||0)*100);
+      var scoreColor=tc.compatibility_score>=0.7?'#4ade80':tc.compatibility_score>=0.4?'#fbbf24':'var(--tx2)';
+      var statusText=tc.status==='active'?(LANG==='zh'?'聊天中...':'Chatting...'):(LANG==='zh'?'已完成':'Done');
+      h+='<div onclick="plazaViewTrial(\''+tc.trial_id+'\')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer">';
+      var avSrc=tc.other_avatar;
+      h+=(avSrc?'<img src="'+esc(avSrc)+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover">':
+        '<div style="width:40px;height:40px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:700">'+esc(tc.other_name||'?')[0]+'</div>');
+      h+='<div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--tx)">'+esc(tc.other_name)+'</div>';
+      h+='<div style="font-size:9px;color:var(--tx2)">'+statusText+' · '+(tc.created_at||'').slice(5,16)+'</div></div>';
+      if(tc.status==='completed')h+='<div style="font-size:16px;font-weight:800;color:'+scoreColor+'">'+scorePct+'%</div>';
+      h+='</div>';
+    });
+    el.innerHTML=h;
+  }).catch(function(){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--tx2)">Network error</div>'});
+}
+
+function plazaViewTrial(trialId){
+  fetch(DS_BASE+'/api/plaza/trial-chat/'+trialId,{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success)showTrialResult(d);
+  }).catch(function(){toast(LANG==='zh'?'网络错误':'Network error')});
 }
 
 function openAbout(){
@@ -1774,6 +2003,9 @@ function wsHandle(msg){
       box.innerHTML+='<div class="msg theirs">'+twinAv+'<div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(nd.content).replace(/\n/g,'<br>')+'</div></div></div>';
       box.scrollTop=box.scrollHeight;
     }
+  }else if(msg.type==='trial_chat_complete'){
+    // Trial chat finished — show result
+    showTrialResult(msg.data);
   }else if(msg.type==='call_invite'){
     showIncomingCall(msg);
   }else if(msg.type==='call_accept'){

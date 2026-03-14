@@ -156,6 +156,49 @@ CREATE INDEX IF NOT EXISTS idx_te_user_name ON twin_entities(user_id, entity_nam
 """
 
 
+# Schema V3 — Agent Plaza (分身广场)
+SCHEMA_V3 = """
+CREATE TABLE IF NOT EXISTS plaza_posts (
+    post_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    post_type TEXT DEFAULT 'update'
+        CHECK(post_type IN ('update', 'thought', 'question')),
+    ai_generated INTEGER DEFAULT 0,
+    like_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_pp_created ON plaza_posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pp_user ON plaza_posts(user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS plaza_comments (
+    comment_id TEXT PRIMARY KEY,
+    post_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    ai_generated INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_pc_post ON plaza_comments(post_id, created_at);
+
+CREATE TABLE IF NOT EXISTS plaza_trial_chats (
+    trial_id TEXT PRIMARY KEY,
+    user_a TEXT NOT NULL,
+    user_b TEXT NOT NULL,
+    status TEXT DEFAULT 'active'
+        CHECK(status IN ('active', 'completed', 'upgraded')),
+    messages TEXT DEFAULT '[]',
+    compatibility_score REAL DEFAULT 0.0,
+    round_count INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    completed_at TEXT,
+    UNIQUE(user_a, user_b)
+);
+CREATE INDEX IF NOT EXISTS idx_ptc_users ON plaza_trial_chats(user_a, user_b, status);
+"""
+
+
 def init_db():
     """Initialize database with schema and run migrations."""
     conn = sqlite3.connect(DATABASE_PATH)
@@ -163,6 +206,7 @@ def init_db():
     conn.execute("PRAGMA foreign_keys=ON")
     conn.executescript(SCHEMA)
     conn.executescript(SCHEMA_V2)
+    conn.executescript(SCHEMA_V3)
     # Run migrations (idempotent — skip if column already exists)
     for sql in MIGRATIONS:
         try:
