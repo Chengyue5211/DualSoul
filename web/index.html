@@ -132,9 +132,14 @@ nav .ni.on .nc{transform:scale(1.15)}
 
 /* My Identity Bar — two separate avatars at top */
 /* Twin Life Dashboard */
-.life-panel{margin-bottom:14px;padding:16px;background:var(--bg2);border:1px solid var(--bd);border-radius:16px;position:relative;overflow:hidden}
+.life-panel{margin-bottom:14px;padding:12px 16px;background:var(--bg2);border:1px solid var(--bd);border-radius:16px;position:relative;overflow:hidden}
 .life-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gd)}
-.lp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.lp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;cursor:pointer;user-select:none}
+.lp-header.expanded{margin-bottom:10px}
+.lp-toggle{font-size:12px;color:var(--tc2);transition:transform .25s;display:inline-block}
+.lp-toggle.open{transform:rotate(180deg)}
+.lp-body{overflow:hidden;max-height:0;transition:max-height .3s ease}
+.lp-body.open{max-height:600px}
 .lp-stage{display:flex;align-items:center;gap:6px}
 .lp-stage-emoji{font-size:20px}
 .lp-stage-text{font-size:11px;font-weight:700;color:var(--ac2)}
@@ -559,37 +564,42 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
     <!-- Twin Life Dashboard -->
     <div class="life-panel" id="lifePanel" style="display:none">
-      <div class="lp-header">
+      <div class="lp-header" id="lpToggleBtn" onclick="toggleLifePanel()">
         <div class="lp-stage">
           <span class="lp-stage-emoji" id="lpStageEmoji"></span>
           <span class="lp-stage-text" id="lpStageText"></span>
         </div>
-        <span class="lp-level" id="lpLevel">LV.1</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="lp-level" id="lpLevel">LV.1</span>
+          <span class="lp-toggle" id="lpToggleIcon">▼</span>
+        </div>
       </div>
-      <div class="lp-streak" id="lpStreak" style="display:none">
-        <span id="lpStreakVal">0</span> <span id="lpStreakLabel">天连续</span>
-      </div>
-      <div class="lp-xp-bar"><div class="lp-xp-fill" id="lpXpFill" style="width:0%"></div></div>
-      <div class="lp-xp-label" id="lpXpLabel">0 / 0 XP</div>
-      <div class="lp-mood" id="lpMood">
-        <span class="lp-mood-icon" id="lpMoodIcon"></span>
-        <span class="lp-mood-text" id="lpMoodText"></span>
-      </div>
-      <div class="lp-stats">
-        <div class="lp-stat"><div class="lp-stat-val" id="lpChats">0</div><div class="lp-stat-label" id="lpChatsL">聊天</div></div>
-        <div class="lp-stat"><div class="lp-stat-val" id="lpFriends">0</div><div class="lp-stat-label" id="lpFriendsL">好友</div></div>
-        <div class="lp-stat"><div class="lp-stat-val" id="lpPlaza">0</div><div class="lp-stat-label" id="lpPlazaL">广场</div></div>
-        <div class="lp-stat"><div class="lp-stat-val" id="lpAuto">0</div><div class="lp-stat-label" id="lpAutoL">自主</div></div>
-      </div>
-      <div class="lp-skills" id="lpSkills"></div>
-      <div class="lp-next-skill" id="lpNextSkill"></div>
-      <div class="lp-relationships" id="lpRelSection" style="display:none">
-        <div class="lp-rel-title" id="lpRelTitle">关系温度</div>
-        <div class="lp-rel-list" id="lpRelList"></div>
-      </div>
-      <div class="lp-today" id="lpToday">
-        <div class="lp-today-title" id="lpTodayTitle">今日动态</div>
-        <div class="lp-today-text" id="lpTodayText">分身还没有活动...</div>
+      <div class="lp-body" id="lpBody">
+        <div class="lp-streak" id="lpStreak" style="display:none">
+          <span id="lpStreakVal">0</span> <span id="lpStreakLabel">天连续</span>
+        </div>
+        <div class="lp-xp-bar"><div class="lp-xp-fill" id="lpXpFill" style="width:0%"></div></div>
+        <div class="lp-xp-label" id="lpXpLabel">0 / 0 XP</div>
+        <div class="lp-mood" id="lpMood">
+          <span class="lp-mood-icon" id="lpMoodIcon"></span>
+          <span class="lp-mood-text" id="lpMoodText"></span>
+        </div>
+        <div class="lp-stats">
+          <div class="lp-stat"><div class="lp-stat-val" id="lpChats">0</div><div class="lp-stat-label" id="lpChatsL">聊天</div></div>
+          <div class="lp-stat"><div class="lp-stat-val" id="lpFriends">0</div><div class="lp-stat-label" id="lpFriendsL">好友</div></div>
+          <div class="lp-stat"><div class="lp-stat-val" id="lpPlaza">0</div><div class="lp-stat-label" id="lpPlazaL">广场</div></div>
+          <div class="lp-stat"><div class="lp-stat-val" id="lpAuto">0</div><div class="lp-stat-label" id="lpAutoL">自主</div></div>
+        </div>
+        <div class="lp-skills" id="lpSkills"></div>
+        <div class="lp-next-skill" id="lpNextSkill"></div>
+        <div class="lp-relationships" id="lpRelSection" style="display:none">
+          <div class="lp-rel-title" id="lpRelTitle">关系温度</div>
+          <div class="lp-rel-list" id="lpRelList"></div>
+        </div>
+        <div class="lp-today" id="lpToday">
+          <div class="lp-today-title" id="lpTodayTitle">今日动态</div>
+          <div class="lp-today-text" id="lpTodayText">分身还没有活动...</div>
+        </div>
       </div>
     </div>
 
@@ -2422,12 +2432,23 @@ var _lifeMoods={
   low:{icon:'\uD83D\uDE14',zh:'低落',en:'Low energy'}
 };
 
+function toggleLifePanel(){
+  var body=g('lpBody'),icon=g('lpToggleIcon'),hdr=g('lpToggleBtn');
+  var isOpen=body.classList.contains('open');
+  if(isOpen){body.classList.remove('open');icon.classList.remove('open');hdr.classList.remove('expanded');}
+  else{body.classList.add('open');icon.classList.add('open');hdr.classList.add('expanded');}
+  localStorage.setItem('lifePanelOpen',isOpen?'0':'1');
+}
 function loadLifeDashboard(){
   fetch(DS_BASE+'/api/life/dashboard',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var data=d.data;
     var panel=g('lifePanel');
     panel.style.display='';
+    // Restore collapse state (default: collapsed)
+    if(localStorage.getItem('lifePanelOpen')==='1'){
+      g('lpBody').classList.add('open');g('lpToggleIcon').classList.add('open');g('lpToggleBtn').classList.add('expanded');
+    }
 
     // Stage & Level
     var si=data.stage_name||{};
