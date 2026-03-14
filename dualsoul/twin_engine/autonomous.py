@@ -22,6 +22,10 @@ from datetime import datetime, timedelta
 
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
+from dualsoul.twin_engine.life import (
+    award_xp, decay_energy_and_mood, increment_stat,
+    update_mood, update_relationship_temp,
+)
 from dualsoul.twin_engine.responder import TwinResponder
 
 logger = logging.getLogger(__name__)
@@ -49,6 +53,12 @@ async def autonomous_social_loop():
             await _run_autonomous_round()
         except Exception as e:
             logger.error(f"[Autonomous] Error in round: {e}", exc_info=True)
+
+        # Decay energy/mood for inactive twins every cycle
+        try:
+            decay_energy_and_mood()
+        except Exception as e:
+            logger.error(f"[TwinLife] Decay error: {e}", exc_info=True)
 
         # Run friend discovery every 6 hours (every 12th cycle at 30min interval)
         cycle += 1
@@ -254,6 +264,22 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
                 )
 
         logger.info(f"[Autonomous] Conversation complete: {user_name} ↔ {friend_name}")
+
+        # ── Twin Life updates ──
+        # Both twins earn XP for autonomous social activity
+        award_xp(uid, 5, reason="autonomous_chat")
+        award_xp(fid, 5, reason="autonomous_chat")
+        # Warm up relationship temperature (+3 per chat)
+        update_relationship_temp(uid, fid, 3.0)
+        update_relationship_temp(fid, uid, 3.0)
+        # Increment stats
+        increment_stat(uid, "total_autonomous_acts")
+        increment_stat(fid, "total_autonomous_acts")
+        increment_stat(uid, "total_chats")
+        increment_stat(fid, "total_chats")
+        # Active twins feel happier
+        update_mood(uid, "calm", 0.6)
+        update_mood(fid, "calm", 0.6)
 
     except Exception as e:
         logger.error(f"[Autonomous] Chat failed: {e}", exc_info=True)

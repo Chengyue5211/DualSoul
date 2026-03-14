@@ -12,6 +12,7 @@ from dualsoul.auth import get_current_user
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
 from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinChatRequest
+from dualsoul.twin_engine.life import award_xp, increment_stat, update_relationship_temp
 from dualsoul.twin_engine.responder import TwinResponder
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
@@ -145,6 +146,18 @@ async def respond_friend(req: RespondFriendRequest, user=Depends(get_current_use
             "UPDATE social_connections SET status=?, accepted_at=? WHERE conn_id=?",
             (new_status, accepted_at, req.conn_id),
         )
+        requester_id = conn["user_id"]
+
+    if new_status == "accepted":
+        # Twin Life: both earn XP for making a new friend
+        award_xp(uid, 20, reason="new_friend")
+        award_xp(requester_id, 20, reason="new_friend")
+        increment_stat(uid, "total_friends_made")
+        increment_stat(requester_id, "total_friends_made")
+        # Initialize relationship temperature at warm
+        update_relationship_temp(uid, requester_id, 50.0)
+        update_relationship_temp(requester_id, uid, 50.0)
+
     return {"success": True, "status": new_status}
 
 
@@ -301,6 +314,12 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
         )
 
     result = {"success": True, "msg_id": msg_id, "ai_reply": None}
+
+    # Twin Life: award XP for chatting and warm up relationship
+    award_xp(uid, 2, reason="send_message")
+    increment_stat(uid, "total_chats")
+    update_relationship_temp(uid, req.to_user_id, 1.0)
+    update_relationship_temp(req.to_user_id, uid, 0.5)
 
     # Push the new message to the recipient via WebSocket
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

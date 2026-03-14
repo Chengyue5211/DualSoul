@@ -19,6 +19,7 @@ from dualsoul.auth import get_current_user
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
+from dualsoul.twin_engine.life import award_xp, increment_stat
 from dualsoul.twin_engine.personality import get_twin_profile
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,10 @@ async def create_post(content: str = "", post_type: str = "update", user=Depends
             """,
             (post_id, uid, content, post_type, ai_generated),
         )
+
+    # Twin Life: earn XP for plaza activity
+    award_xp(uid, 10, reason="plaza_post")
+    increment_stat(uid, "total_plaza_posts")
 
     return {"success": True, "post_id": post_id, "content": content, "ai_generated": ai_generated}
 

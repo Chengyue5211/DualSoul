@@ -199,6 +199,55 @@ CREATE INDEX IF NOT EXISTS idx_ptc_users ON plaza_trial_chats(user_a, user_b, st
 """
 
 
+# Schema V4 — Twin Life System (分身生命系统)
+SCHEMA_V4 = """
+CREATE TABLE IF NOT EXISTS twin_life (
+    user_id TEXT PRIMARY KEY,
+    -- Mood & Energy
+    mood TEXT DEFAULT 'calm' CHECK(mood IN (
+        'excited','happy','calm','neutral','lonely','low')),
+    mood_intensity REAL DEFAULT 0.5,
+    energy INTEGER DEFAULT 80,
+    -- Growth
+    level INTEGER DEFAULT 1,
+    social_xp INTEGER DEFAULT 0,
+    stage TEXT DEFAULT 'sprout' CHECK(stage IN (
+        'sprout','growing','mature','awakened')),
+    -- Lifetime stats
+    total_chats INTEGER DEFAULT 0,
+    total_friends_made INTEGER DEFAULT 0,
+    total_plaza_posts INTEGER DEFAULT 0,
+    total_autonomous_acts INTEGER DEFAULT 0,
+    skills_unlocked TEXT DEFAULT '[]',
+    -- Streaks
+    streak_days INTEGER DEFAULT 0,
+    last_active_date TEXT DEFAULT '',
+    -- Relationship temperature map (JSON: {friend_id: temp 0-100})
+    relationship_temps TEXT DEFAULT '{}',
+    -- Timestamps
+    born_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS twin_daily_log (
+    log_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    log_date TEXT NOT NULL,
+    summary TEXT DEFAULT '',
+    mood_trend TEXT DEFAULT 'stable',
+    chats_count INTEGER DEFAULT 0,
+    new_friends INTEGER DEFAULT 0,
+    plaza_posts INTEGER DEFAULT 0,
+    autonomous_acts INTEGER DEFAULT 0,
+    xp_gained INTEGER DEFAULT 0,
+    highlights TEXT DEFAULT '[]',
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    UNIQUE(user_id, log_date)
+);
+CREATE INDEX IF NOT EXISTS idx_tdl_user_date ON twin_daily_log(user_id, log_date DESC);
+"""
+
+
 def init_db():
     """Initialize database with schema and run migrations."""
     conn = sqlite3.connect(DATABASE_PATH)
@@ -207,6 +256,7 @@ def init_db():
     conn.executescript(SCHEMA)
     conn.executescript(SCHEMA_V2)
     conn.executescript(SCHEMA_V3)
+    conn.executescript(SCHEMA_V4)
     # Run migrations (idempotent — skip if column already exists)
     for sql in MIGRATIONS:
         try:

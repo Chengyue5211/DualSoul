@@ -131,6 +131,45 @@ nav .ni.on .nc{transform:scale(1.15)}
 .add-friend button{padding:10px 18px;border-radius:10px;border:none;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
 
 /* My Identity Bar — two separate avatars at top */
+/* Twin Life Dashboard */
+.life-panel{margin-bottom:14px;padding:16px;background:var(--bg2);border:1px solid var(--bd);border-radius:16px;position:relative;overflow:hidden}
+.life-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gd)}
+.lp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.lp-stage{display:flex;align-items:center;gap:6px}
+.lp-stage-emoji{font-size:20px}
+.lp-stage-text{font-size:11px;font-weight:700;color:var(--ac2)}
+.lp-level{font-size:18px;font-weight:900;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.lp-xp-bar{height:6px;border-radius:3px;background:var(--bg3);margin-bottom:10px;overflow:hidden}
+.lp-xp-fill{height:100%;border-radius:3px;background:var(--gd);transition:width .6s ease}
+.lp-xp-label{font-size:9px;color:var(--tx2);text-align:right;margin-top:-2px;margin-bottom:8px}
+.lp-mood{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.lp-mood-icon{font-size:16px}
+.lp-mood-text{font-size:11px;color:var(--tx2)}
+.lp-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.lp-stat{text-align:center;padding:6px 2px;background:var(--bg3);border-radius:8px}
+.lp-stat-val{font-size:16px;font-weight:800;color:var(--tx)}
+.lp-stat-label{font-size:8px;color:var(--tx2);margin-top:2px}
+.lp-skills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.lp-skill{font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(124,92,252,.12);color:var(--ac2);font-weight:600}
+.lp-skill.locked{background:var(--bg3);color:var(--tx2);opacity:.5}
+.lp-next-skill{font-size:9px;color:var(--tx2);margin-bottom:8px}
+.lp-relationships{margin-top:8px}
+.lp-rel-title{font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:6px}
+.lp-rel-list{display:flex;flex-direction:column;gap:4px}
+.lp-rel-row{display:flex;align-items:center;gap:8px;font-size:11px}
+.lp-rel-name{flex:1;color:var(--tx);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-rel-bar{width:60px;height:4px;border-radius:2px;background:var(--bg3)}
+.lp-rel-fill{height:100%;border-radius:2px;transition:width .4s}
+.lp-rel-fill.hot{background:linear-gradient(90deg,#ff6b6b,#ff8c32)}
+.lp-rel-fill.warm{background:linear-gradient(90deg,#ff8c32,#ffd93d)}
+.lp-rel-fill.cool{background:linear-gradient(90deg,#5ca0fa,#5cc8fa)}
+.lp-rel-fill.cold{background:linear-gradient(90deg,#8a8594,#666)}
+.lp-rel-temp{font-size:9px;color:var(--tx2);min-width:28px;text-align:right}
+.lp-today{margin-top:10px;padding:10px;background:var(--bg3);border-radius:10px}
+.lp-today-title{font-size:10px;font-weight:700;color:var(--ac2);margin-bottom:4px}
+.lp-today-text{font-size:11px;color:var(--tx2);line-height:1.6}
+.lp-streak{position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:3px;font-size:10px;color:var(--tx2)}
+.lp-streak-val{font-weight:800;color:#ff8c32}
 .my-identity-bar{display:flex;gap:14px;align-items:center;padding:14px;margin-bottom:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:14px}
 .id-card{text-align:center;cursor:pointer;transition:transform .15s}
 .id-card:active{transform:scale(.95)}
@@ -518,6 +557,42 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div class="section-title">Friend Requests</div>
       <div class="friend-list" id="pendingList"></div>
     </div>
+    <!-- Twin Life Dashboard -->
+    <div class="life-panel" id="lifePanel" style="display:none">
+      <div class="lp-header">
+        <div class="lp-stage">
+          <span class="lp-stage-emoji" id="lpStageEmoji"></span>
+          <span class="lp-stage-text" id="lpStageText"></span>
+        </div>
+        <span class="lp-level" id="lpLevel">LV.1</span>
+      </div>
+      <div class="lp-streak" id="lpStreak" style="display:none">
+        <span id="lpStreakVal">0</span> <span id="lpStreakLabel">天连续</span>
+      </div>
+      <div class="lp-xp-bar"><div class="lp-xp-fill" id="lpXpFill" style="width:0%"></div></div>
+      <div class="lp-xp-label" id="lpXpLabel">0 / 0 XP</div>
+      <div class="lp-mood" id="lpMood">
+        <span class="lp-mood-icon" id="lpMoodIcon"></span>
+        <span class="lp-mood-text" id="lpMoodText"></span>
+      </div>
+      <div class="lp-stats">
+        <div class="lp-stat"><div class="lp-stat-val" id="lpChats">0</div><div class="lp-stat-label" id="lpChatsL">聊天</div></div>
+        <div class="lp-stat"><div class="lp-stat-val" id="lpFriends">0</div><div class="lp-stat-label" id="lpFriendsL">好友</div></div>
+        <div class="lp-stat"><div class="lp-stat-val" id="lpPlaza">0</div><div class="lp-stat-label" id="lpPlazaL">广场</div></div>
+        <div class="lp-stat"><div class="lp-stat-val" id="lpAuto">0</div><div class="lp-stat-label" id="lpAutoL">自主</div></div>
+      </div>
+      <div class="lp-skills" id="lpSkills"></div>
+      <div class="lp-next-skill" id="lpNextSkill"></div>
+      <div class="lp-relationships" id="lpRelSection" style="display:none">
+        <div class="lp-rel-title" id="lpRelTitle">关系温度</div>
+        <div class="lp-rel-list" id="lpRelList"></div>
+      </div>
+      <div class="lp-today" id="lpToday">
+        <div class="lp-today-title" id="lpTodayTitle">今日动态</div>
+        <div class="lp-today-text" id="lpTodayText">分身还没有活动...</div>
+      </div>
+    </div>
+
     <!-- My dual identity display: real | chat button | twin -->
     <div class="my-identity-bar" id="myIdentityBar">
       <div class="id-card" onclick="pickAvatar('real')">
@@ -2160,8 +2235,106 @@ function buildAvatar(name,size,mode,avatarUrl,twinAvatarUrl){
 })();
 
 // Friends
+// ─── Twin Life Dashboard ──────────────────────────────────────
+var _lifeMoods={
+  excited:{icon:'\u2728',zh:'兴奋',en:'Excited'},
+  happy:{icon:'\uD83D\uDE0A',zh:'开心',en:'Happy'},
+  calm:{icon:'\uD83D\uDE0C',zh:'平静',en:'Calm'},
+  neutral:{icon:'\uD83D\uDE10',zh:'一般',en:'Neutral'},
+  lonely:{icon:'\uD83E\uDD7A',zh:'有点孤单',en:'A bit lonely'},
+  low:{icon:'\uD83D\uDE14',zh:'低落',en:'Low energy'}
+};
+
+function loadLifeDashboard(){
+  fetch(DS_BASE+'/api/life/dashboard',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success)return;
+    var data=d.data;
+    var panel=g('lifePanel');
+    panel.style.display='';
+
+    // Stage & Level
+    var si=data.stage_name||{};
+    g('lpStageEmoji').textContent=si.emoji||'\uD83C\uDF31';
+    g('lpStageText').textContent=LANG==='zh'?(si.zh||'萌芽期'):(si.en||'Sprout');
+    g('lpLevel').textContent='LV.'+data.level;
+
+    // XP bar
+    g('lpXpFill').style.width=data.xp_percent+'%';
+    g('lpXpLabel').textContent=data.xp_progress+' / '+data.xp_needed+' XP';
+
+    // Streak
+    if(data.streak_days>0){
+      g('lpStreak').style.display='';
+      g('lpStreakVal').textContent=data.streak_days;
+      g('lpStreakLabel').textContent=LANG==='zh'?'天连续':'day streak';
+    }
+
+    // Mood
+    var mood=_lifeMoods[data.mood]||_lifeMoods.neutral;
+    g('lpMoodIcon').textContent=mood.icon;
+    g('lpMoodText').textContent=(LANG==='zh'?'心情：':'Mood: ')+(LANG==='zh'?mood.zh:mood.en);
+
+    // Stats
+    g('lpChats').textContent=data.total_chats;
+    g('lpFriends').textContent=data.total_friends_made;
+    g('lpPlaza').textContent=data.total_plaza_posts;
+    g('lpAuto').textContent=data.total_autonomous_acts;
+    g('lpChatsL').textContent=LANG==='zh'?'聊天':'Chats';
+    g('lpFriendsL').textContent=LANG==='zh'?'好友':'Friends';
+    g('lpPlazaL').textContent=LANG==='zh'?'广场':'Plaza';
+    g('lpAutoL').textContent=LANG==='zh'?'自主':'Auto';
+
+    // Skills
+    var skills=data.skills_unlocked||[];
+    var sh='';
+    skills.forEach(function(s){
+      sh+='<span class="lp-skill">'+(LANG==='zh'?s.name_zh:s.name_en)+'</span>';
+    });
+    g('lpSkills').innerHTML=sh;
+
+    // Next skill
+    var ns=data.next_skill;
+    if(ns){
+      g('lpNextSkill').textContent=(LANG==='zh'?'下一技能：':'Next: ')+(LANG==='zh'?ns.name_zh:ns.name_en)+' (LV.'+ns.level+')';
+    }else{
+      g('lpNextSkill').textContent=LANG==='zh'?'所有技能已解锁！':'All skills unlocked!';
+    }
+
+    // Relationships
+    var rels=data.relationships||[];
+    if(rels.length>0){
+      g('lpRelSection').style.display='';
+      g('lpRelTitle').textContent=LANG==='zh'?'关系温度':'Relationships';
+      var rh='';
+      rels.forEach(function(r){
+        rh+='<div class="lp-rel-row">';
+        rh+='<span class="lp-rel-name">'+esc(r.name)+'</span>';
+        rh+='<div class="lp-rel-bar"><div class="lp-rel-fill '+r.status+'" style="width:'+r.temperature+'%"></div></div>';
+        rh+='<span class="lp-rel-temp">'+Math.round(r.temperature)+'°</span>';
+        rh+='</div>';
+      });
+      g('lpRelList').innerHTML=rh;
+    }
+
+    // Today summary
+    var today=data.today||{};
+    var tt=g('lpTodayText');
+    g('lpTodayTitle').textContent=LANG==='zh'?'今日动态':'Today';
+    if(today.chats_count>0||today.autonomous_acts>0){
+      var parts=[];
+      if(today.chats_count>0)parts.push((LANG==='zh'?'聊了':'Chatted ')+today.chats_count+(LANG==='zh'?'次':' times'));
+      if(today.autonomous_acts>0)parts.push((LANG==='zh'?'自主活动':'Auto acts ')+today.autonomous_acts+(LANG==='zh'?'次':' times'));
+      if(today.xp_gained>0)parts.push('+'+today.xp_gained+' XP');
+      tt.textContent=parts.join(' · ');
+    }else{
+      tt.textContent=LANG==='zh'?'分身还没有活动，去聊天吧！':'No activity yet. Start chatting!';
+    }
+  }).catch(function(){});
+}
+
 function loadFriends(){
   // Ensure identity bar always shows current user's name
+  loadLifeDashboard();
   if(_profileName)refreshIdentityBar();
   fetch(DS_BASE+'/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
