@@ -1,7 +1,10 @@
 """Social router — friends, messages, and the four conversation modes."""
 
 import asyncio
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends
 
@@ -302,11 +305,14 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
                 "SELECT twin_auto_reply FROM users WHERE user_id=?", (req.to_user_id,)
             ).fetchone()
             twin_auto_enabled = bool(row and row["twin_auto_reply"])
+            logger.info(f"[Twin] receiver={req.to_user_id}, twin_auto_reply={row['twin_auto_reply'] if row else 'no user'}")
 
         if twin_auto_enabled:
             owner_online = manager.is_online(req.to_user_id)
+            logger.info(f"[Twin] auto_reply=1, owner_online={owner_online}, to={req.to_user_id}")
             if not owner_online:
                 # Owner offline → reply immediately
+                logger.info(f"[Twin] Owner offline, replying immediately")
                 asyncio.ensure_future(_do_twin_reply(
                     twin_owner_id=req.to_user_id, from_user_id=uid,
                     content=content, sender_mode=req.sender_mode,
@@ -314,6 +320,7 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
                 ))
             else:
                 # Owner online — wait 30s then check if they responded
+                logger.info(f"[Twin] Owner online, scheduling 30s delay")
                 asyncio.ensure_future(_delayed_twin_reply(
                     twin_owner_id=req.to_user_id, from_user_id=uid,
                     content=content, sender_mode=req.sender_mode,
@@ -481,30 +488,34 @@ async def _delayed_twin_reply(
     delay_seconds: int = 30,
 ):
     """Wait, then check if owner responded. If not, twin steps in."""
-    await asyncio.sleep(delay_seconds)
+    try:
+        logger.info(f"[Twin delay] Waiting {delay_seconds}s for {twin_owner_id} to reply to {from_user_id}")
+        await asyncio.sleep(delay_seconds)
 
-    # Check if the owner replied to this friend in the meantime
-    with get_db() as db:
-        recent = db.execute(
-            """
-            SELECT COUNT(*) AS cnt FROM social_messages
-            WHERE from_user_id=? AND to_user_id=? AND sender_mode='real'
-                AND ai_generated=0
-                AND created_at > datetime('now', 'localtime', '-{delay} seconds')
-            """.replace("{delay}", str(delay_seconds + 5)),
-            (twin_owner_id, from_user_id),
-        ).fetchone()
+        # Check if the owner replied to this friend in the meantime
+        with get_db() as db:
+            recent = db.execute(
+                """
+                SELECT COUNT(*) AS cnt FROM social_messages
+                WHERE from_user_id=? AND to_user_id=? AND sender_mode='real'
+                    AND ai_generated=0
+                    AND created_at > datetime('now', 'localtime', '-{delay} seconds')
+                """.replace("{delay}", str(delay_seconds + 5)),
+                (twin_owner_id, from_user_id),
+            ).fetchone()
 
-    if recent and recent["cnt"] > 0:
-        # Owner responded — twin stays quiet
-        return
+        if recent and recent["cnt"] > 0:
+            logger.info(f"[Twin delay] Owner {twin_owner_id} already replied, twin stays quiet")
+            return
 
-    # Owner didn't respond — twin steps in
-    await _do_twin_reply(
-        twin_owner_id=twin_owner_id, from_user_id=from_user_id,
-        content=content, sender_mode=sender_mode,
-        target_lang=target_lang, msg_id=msg_id,
-    )
+        logger.info(f"[Twin delay] Owner {twin_owner_id} didn't reply, twin stepping in")
+        await _do_twin_reply(
+            twin_owner_id=twin_owner_id, from_user_id=from_user_id,
+            content=content, sender_mode=sender_mode,
+            target_lang=target_lang, msg_id=msg_id,
+        )
+    except Exception as e:
+        logger.error(f"[Twin delay] Error: {e}", exc_info=True)
 
 
 async def _notify_owner_twin_replied(owner_id: str, friend_id: str, friend_msg: str, twin_reply: str):
