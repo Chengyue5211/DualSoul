@@ -3992,23 +3992,24 @@ function openShareModal(){
   document.body.appendChild(overlay);
 
   // Generate twin invite text
-  _loadShareText('wechat');
+  _loadShareText('wechat', link);
   // Load invite stats
   _loadShareStats();
 }
 
 var _shareText='';
-function _loadShareText(platform){
+function _loadShareText(platform, link){
+  var invLink=link||getInviteLink();
   fetch(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){
       _shareText=d.text;
       var el=g('shareTextPreview');
-      if(el)el.textContent=d.text;
+      if(el)el.textContent=d.text+'\n\n'+invLink;
     }
   }).catch(function(){
     _shareText=LANG==='zh'?'我在DualSoul上有个AI数字分身，来试试！':'I have an AI twin on DualSoul, try it!';
-    var el=g('shareTextPreview');if(el)el.textContent=_shareText;
+    var el=g('shareTextPreview');if(el)el.textContent=_shareText+'\n\n'+invLink;
   });
 }
 function _loadShareStats(){
@@ -4037,6 +4038,7 @@ function shareVia(channel){
       .then(function(r){return r.json()}).then(function(d){
         var txt=(d.success?d.text:text)+'\n\n'+link;
         _doCopy(txt);
+        var el=g('shareTextPreview');if(el)el.textContent=txt;
         toast(LANG==='zh'?'文案已复制！去'+{wechat:'微信',weibo:'微博',sms:'短信'}[channel]+'粘贴发送':'Copied! Paste in your app');
       }).catch(function(){_doCopy(fullText);toast(LANG==='zh'?'已复制':'Copied')});
     }else{
