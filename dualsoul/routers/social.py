@@ -441,6 +441,33 @@ async def unread_by_friend(user=Depends(get_current_user)):
     return {"unread": result}
 
 
+@router.get("/twin/activity")
+async def twin_activity(user=Depends(get_current_user)):
+    """Get recent twin auto-reply notifications (unread, twin→owner self-messages)."""
+    uid = user["user_id"]
+    with get_db() as db:
+        rows = db.execute(
+            """
+            SELECT msg_id, content, metadata, created_at FROM social_messages
+            WHERE from_user_id=? AND to_user_id=? AND sender_mode='twin'
+                AND ai_generated=1 AND is_read=0
+            ORDER BY created_at DESC LIMIT 10
+            """,
+            (uid, uid),
+        ).fetchall()
+        # Mark them as read
+        if rows:
+            db.execute(
+                """
+                UPDATE social_messages SET is_read=1
+                WHERE from_user_id=? AND to_user_id=? AND sender_mode='twin'
+                    AND ai_generated=1 AND is_read=0
+                """,
+                (uid, uid),
+            )
+    return {"success": True, "activities": [dict(r) for r in rows]}
+
+
 async def _do_twin_reply(
     twin_owner_id: str, from_user_id: str, content: str,
     sender_mode: str, target_lang: str, msg_id: str,
@@ -535,17 +562,19 @@ async def _notify_owner_twin_replied(owner_id: str, friend_id: str, friend_msg: 
             f"具体事情得你来定哦～"
         )
 
-        # Save notification as a twin self-chat message
+        # Save notification as a twin self-chat message (with friend_id in metadata)
+        import json as _json
         msg_id = gen_id("sm_")
+        meta = _json.dumps({"friend_id": friend_id, "friend_name": friend_name})
         with get_db() as db:
             db.execute(
                 """
                 INSERT INTO social_messages
                 (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
-                 content, msg_type, ai_generated)
-                VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1)
+                 content, msg_type, ai_generated, metadata)
+                VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1, ?)
                 """,
-                (msg_id, owner_id, owner_id, notify_text),
+                (msg_id, owner_id, owner_id, notify_text, meta),
             )
 
         # Push via WebSocket

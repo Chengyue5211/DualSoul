@@ -947,6 +947,24 @@ function enterApp(){
   loadProfile();loadFriends();
   wsConnect();
   checkInviteParam();
+  checkTwinActivity();
+}
+
+function checkTwinActivity(){
+  fetch(DS_BASE+'\api\social\twin\activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success||!d.activities||!d.activities.length)return;
+    // Show each twin activity as a notification card
+    d.activities.forEach(function(a){
+      var meta={};
+      try{meta=JSON.parse(a.metadata||'{}')}catch(e){}
+      showTwinNotify({
+        content:a.content,
+        friend_id:meta.friend_id||'',
+        friend_name:meta.friend_name||'',
+        created_at:a.created_at
+      });
+    });
+  }).catch(function(){});
 }
 
 // --- Onboarding ---
