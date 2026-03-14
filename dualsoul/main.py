@@ -1,5 +1,6 @@
 """DualSoul — Dual Identity Social Protocol server."""
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -15,13 +16,21 @@ from dualsoul import __version__
 from dualsoul.config import CORS_ORIGINS, HOST, PORT
 from dualsoul.database import init_db
 from dualsoul.routers import auth, identity, social, twin_import, ws
+from dualsoul.twin_engine.autonomous import autonomous_social_loop
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     print(f"[DualSoul v{__version__}] Database initialized")
+    task = asyncio.create_task(autonomous_social_loop())
+    print("[DualSoul] Autonomous twin social engine started")
     yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 
 app = FastAPI(
