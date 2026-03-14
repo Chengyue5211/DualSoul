@@ -13,6 +13,7 @@ Falls back to template responses when no AI backend is configured.
 """
 
 import logging
+import random
 
 import httpx
 
@@ -264,10 +265,59 @@ class TwinResponder:
                         "messages": messages,
                     },
                 )
-                return resp.json()["choices"][0]["message"]["content"].strip()
+                reply_text = resp.json()["choices"][0]["message"]["content"].strip()
         except Exception as e:
             logger.warning(f"Twin self-chat failed: {e}")
             return None
+
+        if not reply_text:
+            return None
+
+        # ~20% chance: append proactive relationship maintenance hint
+        if random.random() < 0.20:
+            try:
+                cold = self._check_cold_friends(owner_id)
+                if cold:
+                    fname, days = cold[0]
+                    reply_text += f"\n\n对了，你已经{days}天没跟{fname}聊了，要不要我帮你打个招呼？"
+            except Exception:
+                pass  # Best-effort, don't break main reply
+
+        return reply_text
+
+    def _check_cold_friends(self, owner_id: str) -> list[tuple[str, int]]:
+        """Find friends the owner hasn't messaged in 7+ days.
+
+        Returns list of (friend_display_name, days_since_last_msg), limited to top 1.
+        """
+        with get_db() as db:
+            rows = db.execute(
+                """
+                SELECT u.display_name, u.username,
+                    CAST(julianday('now','localtime')
+                         - julianday(MAX(sm.created_at)) AS INTEGER) AS days_ago
+                FROM social_connections sc
+                JOIN users u ON u.user_id = CASE
+                    WHEN sc.user_id=? THEN sc.friend_id
+                    ELSE sc.user_id END
+                LEFT JOIN social_messages sm
+                    ON ((sm.from_user_id=? AND sm.to_user_id=u.user_id)
+                     OR (sm.from_user_id=u.user_id AND sm.to_user_id=?))
+                WHERE (sc.user_id=? OR sc.friend_id=?)
+                  AND sc.status='accepted'
+                GROUP BY u.user_id
+                HAVING days_ago >= 7 OR days_ago IS NULL
+                ORDER BY days_ago DESC
+                LIMIT 1
+                """,
+                (owner_id, owner_id, owner_id, owner_id, owner_id),
+            ).fetchall()
+        result = []
+        for r in rows:
+            name = r["display_name"] or r["username"]
+            days = r["days_ago"] if r["days_ago"] is not None else 99
+            result.append((name, days))
+        return result
 
     def _get_friends_context(self, owner_id: str) -> str:
         """Build a friend list context string for the twin's awareness."""

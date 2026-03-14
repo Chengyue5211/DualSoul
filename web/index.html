@@ -510,6 +510,23 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div class="twin-styles" id="profTwinStyles"></div>
     </div>
   </div>
+  <!-- Twin Growth Stats -->
+  <div id="twinGrowthCard" style="margin:14px 0;padding:16px;background:var(--bg2);border:1px solid var(--bd);border-radius:14px">
+    <h3 style="font-size:12px;font-weight:700;color:var(--ac2);margin-bottom:10px" id="twinGrowthTitle">Twin Growth</h3>
+    <div id="twinGrowthStats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:var(--tx)" id="gConv">-</div><div style="font-size:9px;color:var(--tx2)" id="gConvL">Conversations</div></div>
+      <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:var(--tx)" id="gFriends">-</div><div style="font-size:9px;color:var(--tx2)" id="gFriendsL">Friends helped</div></div>
+      <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:var(--tx)" id="gActions">-</div><div style="font-size:9px;color:var(--tx2)" id="gActionsL">Actions</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--bd)">
+      <div style="font-size:10px;color:var(--tx2)"><span id="gDaysL">Days active</span>: <span id="gDays" style="color:var(--tx);font-weight:700">-</span></div>
+      <div style="font-size:10px" id="gStyle"><span style="color:var(--tx2)">-</span></div>
+    </div>
+  </div>
+  <!-- Share Twin Card -->
+  <div style="margin:0 0 14px">
+    <button onclick="shareTwinCard()" id="shareTwinCardBtn" style="width:100%;padding:10px;border:1px solid rgba(124,92,252,.3);border-radius:10px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Share Twin Card</button>
+  </div>
   <div class="profile-section">
     <div class="collapse-header" onclick="toggleCollapse(this)">
       <h3>Twin Personality</h3>
@@ -667,6 +684,9 @@ var I18N={
     inviteCopy:'复制邀请链接',
     inviteQuick:'📤 分享邀请链接给微信好友',
     inviteCopied:'链接已复制！发给朋友吧',
+    twinGrowth:'分身成长',
+    growthConversations:'对话数',growthFriendsHelped:'帮助好友',growthActions:'代办操作',growthDaysActive:'活跃天数',growthStyleLearned:'风格已学习',growthStyleNotLearned:'风格未设置',
+    shareTwinCard:'分享分身名片',twinCardCopied:'名片链接已复制！',
     langSwitch:'EN'
   },
   en:{
@@ -728,6 +748,9 @@ var I18N={
     inviteCopy:'Copy Invite Link',
     inviteQuick:'📤 Share invite link',
     inviteCopied:'Link copied! Send it to a friend',
+    twinGrowth:'Twin Growth',
+    growthConversations:'Conversations',growthFriendsHelped:'Friends helped',growthActions:'Actions taken',growthDaysActive:'Days active',growthStyleLearned:'Style learned',growthStyleNotLearned:'Style not set',
+    shareTwinCard:'Share Twin Card',twinCardCopied:'Card link copied!',
     langSwitch:'中文'
   }
 };
@@ -775,6 +798,13 @@ function applyLang(){
   var ivd=g('inviteDesc');if(ivd)ivd.textContent=t('inviteDesc');
   var ivc=g('inviteCopyBtn');if(ivc)ivc.textContent=t('inviteCopy');
   var ivq=g('inviteQuickBtn');if(ivq)ivq.textContent=t('inviteQuick');
+  // Twin Growth
+  var tgt=g('twinGrowthTitle');if(tgt)tgt.textContent=t('twinGrowth');
+  var gcl=g('gConvL');if(gcl)gcl.textContent=t('growthConversations');
+  var gfl=g('gFriendsL');if(gfl)gfl.textContent=t('growthFriendsHelped');
+  var gal=g('gActionsL');if(gal)gal.textContent=t('growthActions');
+  var gdl=g('gDaysL');if(gdl)gdl.textContent=t('growthDaysActive');
+  var stcb=g('shareTwinCardBtn');if(stcb)stcb.textContent=t('shareTwinCard');
   // About
   var abt=document.querySelector('#tabAbout .tab-header h2');if(abt)abt.textContent=t('aboutTitle');
   var abh=document.querySelector('.about h3');if(abh)abh.textContent=t('aboutProto');
@@ -1835,7 +1865,31 @@ function loadProfile(){
     // Populate style template cards in profile
     populateProfileStyleCards();
     populateProfileTwinStyles();
+    loadTwinGrowth();
   }).catch(function(){});
+}
+
+function loadTwinGrowth(){
+  fetch(DS_BASE+'/api/identity/twin/growth',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success)return;
+    var s=d.data;
+    var gc=g('gConv');if(gc)gc.textContent=s.total_conversations;
+    var gf=g('gFriends');if(gf)gf.textContent=s.friends_helped;
+    var ga=g('gActions');if(ga)ga.textContent=s.actions_executed;
+    var gd=g('gDays');if(gd)gd.textContent=s.days_active;
+    var gs=g('gStyle');
+    if(gs)gs.innerHTML=s.style_learned?'<span style="color:#4ade80">&#10003; '+t('growthStyleLearned')+'</span>':'<span style="color:var(--tx2)">&#9675; '+t('growthStyleNotLearned')+'</span>';
+  }).catch(function(){});
+}
+
+function shareTwinCard(){
+  if(!_profileUsername)return;
+  var url=location.origin+DS_BASE+'/api/identity/twin/card/'+_profileUsername;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(function(){toast(t('twinCardCopied'))});
+  }else{
+    prompt(t('shareTwinCard'),url);
+  }
 }
 
 var _styleTemplates={

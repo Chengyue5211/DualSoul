@@ -1,11 +1,12 @@
-"""Identity router — switch mode, profile management, twin preview, avatar upload, style learning."""
+"""Identity router — switch mode, profile management, twin preview, avatar upload, style learning, twin growth, twin card."""
 
 import base64
 import hashlib
 import os
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from dualsoul.auth import get_current_user
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
@@ -243,3 +244,184 @@ async def apply_learned_style(user=Depends(get_current_user)):
             "min_required": result.get("required", 10),
         }
     return {"success": True, "data": result}
+
+
+@router.get("/twin/growth")
+async def twin_growth(user=Depends(get_current_user)):
+    """Return stats about the twin's growth."""
+    uid = user["user_id"]
+    with get_db() as db:
+        # total conversations where user's twin was sender
+        total_row = db.execute(
+            "SELECT COUNT(*) AS cnt FROM social_messages "
+            "WHERE from_user_id=? AND sender_mode='twin'",
+            (uid,),
+        ).fetchone()
+        total_conversations = total_row["cnt"] if total_row else 0
+
+        # distinct friends the twin has auto-replied to
+        friends_row = db.execute(
+            "SELECT COUNT(DISTINCT to_user_id) AS cnt FROM social_messages "
+            "WHERE from_user_id=? AND sender_mode='twin' AND ai_generated=1 "
+            "AND to_user_id!=?",
+            (uid, uid),
+        ).fetchone()
+        friends_helped = friends_row["cnt"] if friends_row else 0
+
+        # actions: twin sent to others on behalf of owner
+        actions_row = db.execute(
+            "SELECT COUNT(*) AS cnt FROM social_messages "
+            "WHERE from_user_id=? AND sender_mode='twin' AND ai_generated=1 "
+            "AND to_user_id!=?",
+            (uid, uid),
+        ).fetchone()
+        actions_executed = actions_row["cnt"] if actions_row else 0
+
+        # style learned?
+        user_row = db.execute(
+            "SELECT twin_personality, twin_speech_style, created_at "
+            "FROM users WHERE user_id=?",
+            (uid,),
+        ).fetchone()
+        style_learned = bool(
+            user_row
+            and (user_row["twin_personality"] or "").strip()
+            and (user_row["twin_speech_style"] or "").strip()
+        )
+
+        # days active
+        days_active = 0
+        if user_row and user_row["created_at"]:
+            days_row = db.execute(
+                "SELECT CAST(julianday('now','localtime') - julianday(?) AS INTEGER) AS d",
+                (user_row["created_at"],),
+            ).fetchone()
+            days_active = max(days_row["d"], 0) if days_row else 0
+
+    return {
+        "success": True,
+        "data": {
+            "total_conversations": total_conversations,
+            "friends_helped": friends_helped,
+            "actions_executed": actions_executed,
+            "style_learned": style_learned,
+            "days_active": days_active,
+        },
+    }
+
+
+@router.get("/twin/card/{username}")
+async def twin_card(username: str, request: Request):
+    """Public twin business card. Returns HTML for browsers, JSON for API clients."""
+    with get_db() as db:
+        row = db.execute(
+            "SELECT user_id, username, display_name, twin_personality, "
+            "twin_speech_style, preferred_lang, avatar, twin_avatar "
+            "FROM users WHERE username=?",
+            (username,),
+        ).fetchone()
+    if not row:
+        return JSONResponse({"success": False, "error": "User not found"}, status_code=404)
+
+    display_name = row["display_name"] or row["username"]
+    personality = row["twin_personality"] or ""
+    speech_style = row["twin_speech_style"] or ""
+    preferred_lang = row["preferred_lang"] or ""
+    avatar = row["avatar"] or ""
+    twin_avatar = row["twin_avatar"] or ""
+    invite_link = f"?invite={row['username']}"
+
+    # Generate a greeting
+    greeting = ""
+    if AI_BASE_URL and AI_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                prompt = (
+                    f"You are {display_name}'s digital twin.\n"
+                    f"Personality: {personality}\n"
+                    f"Speech style: {speech_style}\n\n"
+                    f"Write a one-sentence self-introduction greeting for your business card. "
+                    f"Keep it under 25 words, natural and inviting. "
+                    f"Output only the greeting text."
+                )
+                resp = await client.post(
+                    f"{AI_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": AI_MODEL,
+                        "max_tokens": 60,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                )
+                greeting = resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception:
+            pass
+    if not greeting:
+        greeting = f"Hi, I'm {display_name}'s digital twin. Nice to meet you!"
+
+    card_data = {
+        "display_name": display_name,
+        "twin_personality": personality,
+        "twin_speech_style": speech_style,
+        "preferred_lang": preferred_lang,
+        "avatar": avatar,
+        "twin_avatar": twin_avatar,
+        "greeting": greeting,
+        "invite_link": invite_link,
+    }
+
+    # Check Accept header: JSON or HTML
+    accept = request.headers.get("accept", "")
+    if "application/json" in accept and "text/html" not in accept:
+        return {"success": True, "data": card_data}
+
+    # Return styled HTML card
+    avatar_src = twin_avatar or avatar
+    if avatar_src:
+        avatar_img = f'<img src="{avatar_src}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(92,200,250,.4);box-shadow:0 0 20px rgba(124,92,252,.3)">'
+    else:
+        avatar_img = f'<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:700">{display_name[0] if display_name else "?"}</div>'
+
+    from html import escape as h
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{h(display_name)}'s Twin - DualSoul</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;background:#0a0a10;color:#e8e4de;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}}
+.card{{background:#14141e;border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:32px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4)}}
+.avatar{{margin:0 auto 16px}}
+.name{{font-size:22px;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+.greeting{{font-size:14px;color:#8a8594;margin:12px 0 16px;line-height:1.6;font-style:italic}}
+.meta{{text-align:left;margin:16px 0;padding:14px;background:#1e1e2c;border-radius:12px}}
+.meta-row{{display:flex;gap:8px;margin-bottom:8px;font-size:12px;align-items:flex-start}}
+.meta-row:last-child{{margin-bottom:0}}
+.meta-label{{color:#8a8594;min-width:60px;flex-shrink:0}}
+.meta-value{{color:#e8e4de}}
+.invite-btn{{display:inline-block;margin-top:16px;padding:12px 28px;border-radius:12px;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;font-size:14px;font-weight:700;text-decoration:none;transition:opacity .2s}}
+.invite-btn:hover{{opacity:.9}}
+.footer{{margin-top:16px;font-size:10px;color:#555}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="avatar">{avatar_img}</div>
+  <div class="name">{h(display_name)}'s Twin</div>
+  <div class="greeting">"{h(greeting)}"</div>
+  <div class="meta">
+    {"<div class='meta-row'><span class='meta-label'>Personality</span><span class='meta-value'>" + h(personality) + "</span></div>" if personality else ""}
+    {"<div class='meta-row'><span class='meta-label'>Style</span><span class='meta-value'>" + h(speech_style) + "</span></div>" if speech_style else ""}
+    {"<div class='meta-row'><span class='meta-label'>Language</span><span class='meta-value'>" + h(preferred_lang) + "</span></div>" if preferred_lang else ""}
+  </div>
+  <a class="invite-btn" href="{h(invite_link)}">Chat with {h(display_name)}'s Twin</a>
+  <div class="footer">Powered by DualSoul - The Fourth Kind of Social</div>
+</div>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content)
