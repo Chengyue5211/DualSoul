@@ -409,7 +409,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <button onclick="addFriend()">Add</button>
     </div>
     <div style="margin-bottom:14px">
-      <button onclick="copyInviteLink()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(124,92,252,.3);border-radius:10px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">📤 分享邀请链接给微信好友</button>
+      <button onclick="copyInviteLink()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
     </div>
     <div id="pendingSection" style="display:none">
       <div class="section-title">Friend Requests</div>
@@ -525,13 +525,13 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   </div>
   <!-- Share Twin Card -->
   <div style="margin:0 0 14px">
-    <button onclick="shareTwinCard()" id="shareTwinCardBtn" style="width:100%;padding:10px;border:1px solid rgba(124,92,252,.3);border-radius:10px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Share Twin Card</button>
-    <div id="twinCardPanel" style="display:none;margin-top:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">
-      <p style="font-size:10px;color:var(--tx2);margin-bottom:8px" id="twinCardDesc">把这个链接发给别人，对方可以认识你的分身：</p>
+    <button onclick="shareTwinCard()" id="shareTwinCardBtn" style="width:100%;padding:10px;border:1px solid rgba(92,200,250,.3);border-radius:10px;background:rgba(92,200,250,.08);color:#5cc8fa;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🪪 分享分身名片</button>
+    <div id="twinCardPanel" style="display:none;margin-top:8px;padding:12px;background:var(--bg3);border:1px solid rgba(92,200,250,.15);border-radius:10px">
+      <p style="font-size:10px;color:var(--tx2);margin-bottom:8px" id="twinCardDesc">展示你的分身形象给别人看（不需要注册也能看）：</p>
       <div style="padding:8px;background:var(--bg2);border-radius:8px;word-break:break-all;font-size:11px;color:var(--ac2);margin-bottom:10px" id="twinCardUrl"></div>
       <div style="display:flex;gap:8px">
-        <button onclick="copyTwinCardUrl()" style="flex:1;padding:8px;border:none;border-radius:8px;background:var(--gd);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardCopyBtn">复制链接</button>
-        <button onclick="previewTwinCard()" style="flex:1;padding:8px;border:none;border-radius:8px;background:rgba(124,92,252,.15);color:var(--ac2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardPreviewBtn">预览名片</button>
+        <button onclick="copyTwinCardUrl()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#5cc8fa,#4ab8e8);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardCopyBtn">复制链接</button>
+        <button onclick="previewTwinCard()" style="flex:1;padding:8px;border:none;border-radius:8px;background:rgba(92,200,250,.15);color:#5cc8fa;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardPreviewBtn">预览名片</button>
       </div>
     </div>
   </div>
@@ -597,10 +597,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
   </div>
   <div class="profile-section">
-    <h3 id="inviteTitle">邀请好友</h3>
-    <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px" id="inviteDesc">分享链接给朋友，对方打开注册后自动加你为好友</p>
-    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="inviteLink"></div>
-    <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
+    <h3 id="inviteTitle" style="color:#ff8c32">🎁 邀请好友</h3>
+    <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px" id="inviteDesc">对方点链接注册后自动加你为好友（和名片不同，这个是注册邀请）</p>
+    <div style="background:var(--bg3);border:1px solid rgba(255,140,50,.15);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="inviteLink"></div>
+    <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
     <a href="/guide" target="_blank" style="display:block;text-align:center;margin-top:8px;font-size:11px;color:var(--ac)">查看分身接入指南 (开发者/平台对接)</a>
   </div>
   <button id="langBtn2" onclick="setLang(LANG==='zh'?'en':'zh')" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px">Language / 语言切换</button>
@@ -686,14 +686,14 @@ var I18N={
     learnApply:'应用到分身',
     learnApplied:'已应用！分身现在更像你了',
     learnSamples:'分析了{n}条消息',
-    inviteTitle:'邀请好友',
-    inviteDesc:'分享链接给朋友，对方打开注册后自动加你为好友',
+    inviteTitle:'🎁 邀请好友',
+    inviteDesc:'对方点链接注册后自动加你为好友（和名片不同，这个是注册邀请）',
     inviteCopy:'复制邀请链接',
-    inviteQuick:'📤 分享邀请链接给微信好友',
+    inviteQuick:'🎁 邀请好友注册DualSoul',
     inviteCopied:'链接已复制！发给朋友吧',
     twinGrowth:'分身成长',
     growthConversations:'对话数',growthFriendsHelped:'帮助好友',growthActions:'代办操作',growthDaysActive:'活跃天数',growthStyleLearned:'风格已学习',growthStyleNotLearned:'风格未设置',
-    shareTwinCard:'分享分身名片',twinCardCopied:'名片链接已复制！',twinCardDesc:'把这个链接发给别人，对方可以认识你的分身：',twinCardCopy:'复制链接',twinCardPreview:'预览名片',
+    shareTwinCard:'🪪 分享分身名片',twinCardCopied:'名片链接已复制！',twinCardDesc:'展示你的分身形象给别人看（不需要注册也能看）：',twinCardCopy:'复制链接',twinCardPreview:'预览名片',
     langSwitch:'EN'
   },
   en:{
@@ -750,14 +750,14 @@ var I18N={
     learnApply:'Apply to twin',
     learnApplied:'Applied! Your twin is now more like you',
     learnSamples:'Analyzed {n} messages',
-    inviteTitle:'Invite Friends',
-    inviteDesc:'Share this link — they register and you\'re automatically friends',
+    inviteTitle:'🎁 Invite Friends',
+    inviteDesc:'They click this link to register and you\'re auto-friended (this is NOT the twin card)',
     inviteCopy:'Copy Invite Link',
-    inviteQuick:'📤 Share invite link',
+    inviteQuick:'🎁 Invite friends to DualSoul',
     inviteCopied:'Link copied! Send it to a friend',
     twinGrowth:'Twin Growth',
     growthConversations:'Conversations',growthFriendsHelped:'Friends helped',growthActions:'Actions taken',growthDaysActive:'Days active',growthStyleLearned:'Style learned',growthStyleNotLearned:'Style not set',
-    shareTwinCard:'Share Twin Card',twinCardCopied:'Card link copied!',twinCardDesc:'Share this link so others can meet your twin:',twinCardCopy:'Copy Link',twinCardPreview:'Preview Card',
+    shareTwinCard:'🪪 Share Twin Card',twinCardCopied:'Card link copied!',twinCardDesc:'Show your twin\'s profile to anyone (no registration needed):',twinCardCopy:'Copy Link',twinCardPreview:'Preview Card',
     langSwitch:'中文'
   }
 };
