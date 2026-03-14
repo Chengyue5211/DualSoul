@@ -386,41 +386,61 @@ async def twin_card(username: str, request: Request):
         avatar_img = f'<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:700">{display_name[0] if display_name else "?"}</div>'
 
     from html import escape as h
+
+    # Language-aware labels
+    lang_names = {
+        "zh": "中文", "en": "English", "ja": "日本語", "ko": "한국어",
+        "fr": "Français", "de": "Deutsch", "es": "Español",
+    }
+    lang_display = lang_names.get(preferred_lang, preferred_lang) if preferred_lang else ""
+    is_zh = preferred_lang == "zh" or not preferred_lang
+
+    lbl_personality = "性格特征" if is_zh else "Personality"
+    lbl_style = "说话风格" if is_zh else "Speech Style"
+    lbl_lang = "语言" if is_zh else "Language"
+    lbl_chat = f"和{h(display_name)}的分身聊天" if is_zh else f"Chat with {h(display_name)}'s Twin"
+    lbl_title = f"{h(display_name)} 的数字分身" if is_zh else f"{h(display_name)}'s Twin"
+    lbl_back = "返回" if is_zh else "Back"
+    lbl_footer = "DualSoul — 第四种社交" if is_zh else "DualSoul — The Fourth Kind of Social"
+
     html_content = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{'zh' if is_zh else 'en'}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{h(display_name)}'s Twin - DualSoul</title>
+<title>{lbl_title} - DualSoul</title>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
 body{{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;background:#0a0a10;color:#e8e4de;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}}
+.back{{position:fixed;top:16px;left:16px;padding:8px 16px;border-radius:8px;background:rgba(255,255,255,.08);color:#8a8594;font-size:13px;text-decoration:none;border:1px solid rgba(255,255,255,.1);z-index:10}}
+.back:hover{{background:rgba(255,255,255,.12)}}
 .card{{background:#14141e;border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:32px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4)}}
 .avatar{{margin:0 auto 16px}}
 .name{{font-size:22px;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}}
 .greeting{{font-size:14px;color:#8a8594;margin:12px 0 16px;line-height:1.6;font-style:italic}}
 .meta{{text-align:left;margin:16px 0;padding:14px;background:#1e1e2c;border-radius:12px}}
-.meta-row{{display:flex;gap:8px;margin-bottom:8px;font-size:12px;align-items:flex-start}}
+.meta-row{{display:flex;gap:8px;margin-bottom:10px;font-size:13px;align-items:flex-start}}
 .meta-row:last-child{{margin-bottom:0}}
-.meta-label{{color:#8a8594;min-width:60px;flex-shrink:0}}
-.meta-value{{color:#e8e4de}}
+.meta-label{{color:#7c5cfc;min-width:65px;flex-shrink:0;font-weight:600;font-size:11px}}
+.meta-value{{color:#e8e4de;line-height:1.5}}
 .invite-btn{{display:inline-block;margin-top:16px;padding:12px 28px;border-radius:12px;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;font-size:14px;font-weight:700;text-decoration:none;transition:opacity .2s}}
 .invite-btn:hover{{opacity:.9}}
 .footer{{margin-top:16px;font-size:10px;color:#555}}
 </style>
 </head>
 <body>
+<a class="back" href="javascript:history.back()">&larr; {lbl_back}</a>
 <div class="card">
   <div class="avatar">{avatar_img}</div>
-  <div class="name">{h(display_name)}'s Twin</div>
+  <div class="name">{lbl_title}</div>
   <div class="greeting">"{h(greeting)}"</div>
   <div class="meta">
-    {"<div class='meta-row'><span class='meta-label'>Personality</span><span class='meta-value'>" + h(personality) + "</span></div>" if personality else ""}
-    {"<div class='meta-row'><span class='meta-label'>Style</span><span class='meta-value'>" + h(speech_style) + "</span></div>" if speech_style else ""}
-    {"<div class='meta-row'><span class='meta-label'>Language</span><span class='meta-value'>" + h(preferred_lang) + "</span></div>" if preferred_lang else ""}
+    {"<div class='meta-row'><span class='meta-label'>" + lbl_personality + "</span><span class='meta-value'>" + h(personality) + "</span></div>" if personality else ""}
+    {"<div class='meta-row'><span class='meta-label'>" + lbl_style + "</span><span class='meta-value'>" + h(speech_style) + "</span></div>" if speech_style else ""}
+    {"<div class='meta-row'><span class='meta-label'>" + lbl_lang + "</span><span class='meta-value'>" + h(lang_display) + "</span></div>" if lang_display else ""}
   </div>
-  <a class="invite-btn" href="{h(invite_link)}">Chat with {h(display_name)}'s Twin</a>
-  <div class="footer">Powered by DualSoul - The Fourth Kind of Social</div>
+  <a class="invite-btn" href="{h(invite_link)}">{lbl_chat}</a>
+  <div class="footer">{lbl_footer}</div>
 </div>
 </body>
 </html>"""
