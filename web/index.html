@@ -3985,6 +3985,8 @@ function openShareModal(){
       '<div class="sm-ch" onclick="shareVia(\'email\')"><div class="sm-ch-icon" style="background:#ea4335">📧</div><div class="sm-ch-name">'+(LANG==='zh'?'邮件':'Email')+'</div></div>'+
     '</div>'+
     '<div class="sm-stats" id="shareStats"></div>'+
+    '<div style="margin:8px 0 4px;font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'邀请链接（复制后一起发给朋友）：':'Invite link:')+'</div>'+
+    '<div style="background:var(--bg2);border-radius:6px;padding:7px 10px;font-size:11px;color:var(--ac);word-break:break-all;user-select:all;cursor:pointer" id="smInviteLink" onclick="copyInvite(\''+link+'\');toast(LANG===\'zh\'?\'链接已复制！\':\'Copied!\')">'+link+'</div>'+
     '<div class="sm-qr" id="shareQrWrap" style="display:none"><canvas id="shareQrCanvas" width="160" height="160"></canvas><div style="font-size:9px;color:var(--tx2);margin-top:4px">'+(LANG==='zh'?'扫码加入DualSoul':'Scan to join DualSoul')+'</div></div>'+
     '<button class="sm-cancel" onclick="this.closest(\'.share-modal-overlay\').remove()">'+(LANG==='zh'?'取消':'Cancel')+'</button>';
 
