@@ -65,6 +65,7 @@ class TwinChatRequest(BaseModel):
 # Social
 class AddFriendRequest(BaseModel):
     friend_username: str
+    auto_accept: bool = False  # True = skip pending, become friends directly (invite link)
 
 
 class RespondFriendRequest(BaseModel):

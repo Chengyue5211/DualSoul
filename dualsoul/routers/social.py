@@ -17,9 +17,10 @@ _twin = TwinResponder()
 
 @router.post("/friends/add")
 async def add_friend(req: AddFriendRequest, user=Depends(get_current_user)):
-    """Send a friend request by username."""
+    """Send a friend request by username. If auto_accept, skip pending and become friends directly."""
     uid = user["user_id"]
     username = req.friend_username.strip()
+    auto_accept = getattr(req, 'auto_accept', False)
     if not username:
         return {"success": False, "error": "Username required"}
 
@@ -38,21 +39,82 @@ async def add_friend(req: AddFriendRequest, user=Depends(get_current_user)):
             (uid, fid, fid, uid),
         ).fetchone()
         if exists:
+            if exists["status"] == "deleted":
+                # Re-add a deleted friend — set back to accepted
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                db.execute(
+                    "UPDATE social_connections SET status='accepted', accepted_at=? WHERE conn_id=?",
+                    (now, exists["conn_id"]),
+                )
+                return {"success": True, "conn_id": exists["conn_id"], "status": "accepted"}
             return {"success": False, "error": f"Connection already exists ({exists['status']})"}
 
         conn_id = gen_id("sc_")
-        db.execute(
-            "INSERT INTO social_connections (conn_id, user_id, friend_id, status) "
-            "VALUES (?, ?, ?, 'pending')",
-            (conn_id, uid, fid),
-        )
+        if auto_accept:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            db.execute(
+                "INSERT INTO social_connections (conn_id, user_id, friend_id, status, accepted_at) "
+                "VALUES (?, ?, ?, 'accepted', ?)",
+                (conn_id, uid, fid, now),
+            )
+        else:
+            db.execute(
+                "INSERT INTO social_connections (conn_id, user_id, friend_id, status) "
+                "VALUES (?, ?, ?, 'pending')",
+                (conn_id, uid, fid),
+            )
 
     # Notify the recipient via WebSocket
-    await manager.send_to(fid, {
-        "type": "friend_request",
-        "data": {"conn_id": conn_id, "from_user_id": uid, "username": username},
-    })
-    return {"success": True, "conn_id": conn_id}
+    if auto_accept:
+        my_info = None
+        with get_db() as db:
+            my_info = db.execute("SELECT username, display_name FROM users WHERE user_id=?", (uid,)).fetchone()
+        await manager.send_to(fid, {
+            "type": "friend_added",
+            "data": {"conn_id": conn_id, "user_id": uid,
+                     "username": my_info["username"] if my_info else "",
+                     "display_name": my_info["display_name"] if my_info else ""},
+        })
+    else:
+        await manager.send_to(fid, {
+            "type": "friend_request",
+            "data": {"conn_id": conn_id, "from_user_id": uid, "username": username},
+        })
+    return {"success": True, "conn_id": conn_id, "status": "accepted" if auto_accept else "pending"}
+
+
+@router.post("/friends/delete")
+async def delete_friend(req: RespondFriendRequest, user=Depends(get_current_user)):
+    """Delete a friend (one-way, like WeChat). The other person still has you in their list."""
+    uid = user["user_id"]
+    with get_db() as db:
+        conn = db.execute(
+            "SELECT conn_id, user_id, friend_id, status FROM social_connections WHERE conn_id=?",
+            (req.conn_id,),
+        ).fetchone()
+        if not conn:
+            return {"success": False, "error": "Connection not found"}
+        if conn["user_id"] != uid and conn["friend_id"] != uid:
+            return {"success": False, "error": "Not authorized"}
+        db.execute("UPDATE social_connections SET status='deleted' WHERE conn_id=?", (req.conn_id,))
+    return {"success": True}
+
+
+@router.post("/friends/block")
+async def block_friend(req: RespondFriendRequest, user=Depends(get_current_user)):
+    """Block a friend. They can't message you."""
+    uid = user["user_id"]
+    with get_db() as db:
+        conn = db.execute(
+            "SELECT conn_id, user_id, friend_id, status FROM social_connections WHERE conn_id=?",
+            (req.conn_id,),
+        ).fetchone()
+        if not conn:
+            return {"success": False, "error": "Connection not found"}
+        if conn["user_id"] != uid and conn["friend_id"] != uid:
+            return {"success": False, "error": "Not authorized"}
+        db.execute("UPDATE social_connections SET status='blocked' WHERE conn_id=?", (req.conn_id,))
+    return {"success": True}
 
 
 @router.post("/friends/respond")

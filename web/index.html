@@ -1542,7 +1542,7 @@ function loadFriends(){
         }
         var uc=_friendUnread[f.user_id]||0;
         var ubadge='<span class="fi-unread" data-fid="'+esc(f.user_id)+'" style="display:'+(uc?'inline-block':'none')+'">'+(uc>99?'99+':uc)+'</span>';
-        return '<div class="friend-item" onclick="openChat(\''+esc(f.user_id)+'\',\''+esc(f.display_name)+'\',\''+esc(f.current_mode)+'\')">'+
+        return '<div class="friend-item" onclick="openChat(\''+esc(f.user_id)+'\',\''+esc(f.display_name)+'\',\''+esc(f.current_mode)+'\')" oncontextmenu="event.preventDefault();showFriendMenu(\''+esc(f.conn_id)+'\',\''+esc(f.display_name)+'\',event)">'+
           buildAvatar(f.display_name,44,f.current_mode)+
           '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+srcBadge+'</div><div class="fi-mode">'+ml+'</div></div>'+
           ubadge+'</div>';
@@ -1551,6 +1551,43 @@ function loadFriends(){
   }).catch(function(){});
   loadUnread();
   loadFriendUnread();
+}
+
+function showFriendMenu(connId,name,e){
+  e.stopPropagation();
+  var label1=LANG==='zh'?'删除好友':'Delete Friend';
+  var label2=LANG==='zh'?'拉黑':'Block';
+  var label3=LANG==='zh'?'取消':'Cancel';
+  // Simple action sheet overlay
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
+  ov.innerHTML='<div style="width:100%;max-width:360px;padding:0 12px 24px"><div style="background:var(--bg2);border-radius:14px;overflow:hidden">'+
+    '<div style="padding:14px;text-align:center;font-size:12px;color:var(--tx2);border-bottom:1px solid var(--bd)">'+name+'</div>'+
+    '<div onclick="deleteFriend(\''+connId+'\',\''+name+'\')" style="padding:14px;text-align:center;font-size:14px;color:#ff4444;cursor:pointer;border-bottom:1px solid var(--bd)">'+label1+'</div>'+
+    '<div onclick="blockFriend(\''+connId+'\',\''+name+'\')" style="padding:14px;text-align:center;font-size:14px;color:#ff4444;cursor:pointer">'+label2+'</div>'+
+    '</div><div onclick="this.parentElement.parentElement.remove()" style="background:var(--bg2);border-radius:14px;margin-top:8px;padding:14px;text-align:center;font-size:14px;font-weight:600;color:var(--tx);cursor:pointer">'+label3+'</div></div>';
+  ov.onclick=function(ev){if(ev.target===ov)ov.remove()};
+  document.body.appendChild(ov);
+  // Long-press support for mobile
+  window._friendMenuOv=ov;
+}
+function deleteFriend(connId,name){
+  if(window._friendMenuOv)window._friendMenuOv.remove();
+  var msg=LANG==='zh'?'确定删除好友 '+name+' 吗？':'Delete friend '+name+'?';
+  if(!confirm(msg))return;
+  fetch(DS_BASE+'/api/social/friends/delete',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:connId,action:'delete'})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){toast(LANG==='zh'?'已删除':'Deleted');loadFriends()}else toast(d.error||'Failed');
+  }).catch(function(){toast(t('networkError'))});
+}
+function blockFriend(connId,name){
+  if(window._friendMenuOv)window._friendMenuOv.remove();
+  var msg=LANG==='zh'?'确定拉黑 '+name+' 吗？拉黑后对方无法给你发消息。':'Block '+name+'? They won\'t be able to message you.';
+  if(!confirm(msg))return;
+  fetch(DS_BASE+'/api/social/friends/block',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:connId,action:'block'})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){toast(LANG==='zh'?'已拉黑':'Blocked');loadFriends()}else toast(d.error||'Failed');
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function addFriend(){
@@ -2337,8 +2374,8 @@ function checkInviteParam(){
   var params=new URLSearchParams(location.search);
   var inviter=params.get('invite');
   if(inviter&&token){
-    // Auto-send friend request to inviter
-    fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:inviter})})
+    // Auto-add inviter as friend (skip pending, directly accepted)
+    fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:inviter,auto_accept:true})})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success)toast(LANG==='zh'?'已自动添加 '+inviter+' 为好友！':'Auto-added '+inviter+' as friend!');
     }).catch(function(){});

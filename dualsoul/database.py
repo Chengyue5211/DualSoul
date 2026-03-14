@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS social_connections (
     user_id TEXT NOT NULL,
     friend_id TEXT NOT NULL,
     status TEXT DEFAULT 'pending'
-        CHECK(status IN ('pending', 'accepted', 'blocked')),
+        CHECK(status IN ('pending', 'accepted', 'blocked', 'deleted')),
     created_at TEXT DEFAULT (datetime('now','localtime')),
     accepted_at TEXT,
     UNIQUE(user_id, friend_id)
@@ -167,6 +167,29 @@ def init_db():
             conn.execute(sql)
         except sqlite3.OperationalError:
             pass  # Column already exists
+    # Migrate social_connections: add 'deleted' to status CHECK constraint
+    # SQLite can't ALTER CHECK, so recreate table if needed
+    try:
+        conn.execute("UPDATE social_connections SET status='deleted' WHERE 0", ())
+    except sqlite3.IntegrityError:
+        # CHECK constraint doesn't include 'deleted' — recreate table
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS social_connections_new (
+                conn_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                friend_id TEXT NOT NULL,
+                status TEXT DEFAULT 'pending'
+                    CHECK(status IN ('pending', 'accepted', 'blocked', 'deleted')),
+                created_at TEXT DEFAULT (datetime('now','localtime')),
+                accepted_at TEXT,
+                UNIQUE(user_id, friend_id)
+            );
+            INSERT OR IGNORE INTO social_connections_new SELECT * FROM social_connections;
+            DROP TABLE social_connections;
+            ALTER TABLE social_connections_new RENAME TO social_connections;
+            CREATE INDEX IF NOT EXISTS idx_sc_user ON social_connections(user_id, status);
+            CREATE INDEX IF NOT EXISTS idx_sc_friend ON social_connections(friend_id, status);
+        """)
     conn.commit()
     conn.close()
 
