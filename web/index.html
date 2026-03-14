@@ -1177,6 +1177,52 @@ function goTwinNotifyChat(friendId,friendName){
   openChat(friendId,friendName,'real');
 }
 
+// Daily Report — warm, personal morning message from the twin
+function showDailyReport(nd){
+  var existing=document.querySelector('.twin-notify-overlay');if(existing)existing.remove();
+  var content=nd.content||'';
+  var coldFriends=nd.cold_friends||[];
+
+  var coldHtml='';
+  if(coldFriends.length>0){
+    coldHtml='<div style="margin-top:10px;padding:10px;background:rgba(255,140,50,.08);border:1px solid rgba(255,140,50,.15);border-radius:10px">';
+    coldHtml+='<div style="font-size:10px;color:#ff8c32;font-weight:700;margin-bottom:6px">'+(LANG==='zh'?'需要关心的朋友':'Friends to reach out to')+'</div>';
+    coldFriends.forEach(function(cf){
+      coldHtml+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+      coldHtml+='<span style="font-size:11px;color:var(--tx)">'+esc(cf.name)+' <span style="color:var(--tx2);font-size:9px">'+cf.temp+'\u00B0C</span></span>';
+      coldHtml+='<button onclick="warmFriend(\''+cf.fid+'\',\''+esc(cf.name)+'\');this.textContent=\''+(LANG==='zh'?'已发送':'Sent')+'!\';this.disabled=true" style="padding:3px 10px;border:1px solid rgba(124,92,252,.3);border-radius:6px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:9px;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'让分身问候':'Send greeting')+'</button>';
+      coldHtml+='</div>';
+    });
+    coldHtml+='</div>';
+  }
+
+  var overlay=document.createElement('div');
+  overlay.className='twin-notify-overlay';
+  overlay.innerHTML='<div class="twin-notify-card" style="max-width:340px">'+
+    '<div style="text-align:center;margin-bottom:8px"><span style="font-size:28px">\u2600\uFE0F</span></div>'+
+    '<div class="tn-title" style="font-size:14px">'+(LANG==='zh'?'分身日报':'Daily Report')+'</div>'+
+    '<div class="tn-body" style="max-height:40vh;overflow-y:auto;line-height:1.8;font-size:13px">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
+    coldHtml+
+    '<div class="tn-btns">'+
+      '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'收到！':'Got it!')+'</button>'+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  if(navigator.vibrate)navigator.vibrate([100,50,100]);
+  // Refresh life dashboard after receiving daily report
+  loadLifeDashboard();
+}
+
+// Let twin warm up a cold relationship on demand
+function warmFriend(friendId,friendName){
+  fetch(DS_BASE+'/api/social/messages',{
+    method:'POST',headers:{'Content-Type':'application/json',...headers()},
+    body:JSON.stringify({to_user_id:friendId,content:'[分身自动问候]',sender_mode:'twin',receiver_mode:'twin'})
+  }).then(function(){
+    toast(LANG==='zh'?'分身已去问候'+friendName:'Twin greeted '+friendName);
+  });
+}
+
 // Auth
 function toggleAuthMode(){
   isRegister=!isRegister;
@@ -2066,6 +2112,8 @@ function wsHandle(msg){
     // Check if this is a friend discovery notification
     if(nd.friend_discovery){
       handleFriendDiscovery(nd);
+    }else if(nd.daily_report){
+      showDailyReport(nd);
     }else{
       // Show persistent notification card
       showTwinNotify(nd);

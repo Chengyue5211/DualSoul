@@ -60,8 +60,23 @@ async def autonomous_social_loop():
         except Exception as e:
             logger.error(f"[TwinLife] Decay error: {e}", exc_info=True)
 
-        # Run friend discovery every 6 hours (every 12th cycle at 30min interval)
+        # Daily report: first cycle after 6 AM
+        hour = datetime.now().hour
+        if 6 <= hour < 7 and cycle % 2 == 0:  # ~every hour window in the morning
+            try:
+                await _generate_daily_report()
+            except Exception as e:
+                logger.error(f"[DailyReport] Error: {e}", exc_info=True)
+
+        # Relationship care: every 3 hours (every 6th cycle)
         cycle += 1
+        if cycle % 6 == 0:
+            try:
+                await _warm_cold_relationships()
+            except Exception as e:
+                logger.error(f"[RelationshipCare] Error: {e}", exc_info=True)
+
+        # Run friend discovery every 6 hours (every 12th cycle at 30min interval)
         if cycle % 12 == 0:
             try:
                 await _run_friend_discovery()
@@ -486,6 +501,318 @@ async def _update_relationship_milestones():
 # ─── Emotion Sensing ───────────────────────────────────────────────
 # Detect emotional cues in messages and adjust twin behavior accordingly.
 # This is called by the responder when generating auto-replies.
+
+# ─── Daily Report (分身日报) ─────────────────────────────────────
+# Every morning (first cycle after 6:00 AM), the twin sends a warm
+# personal message summarizing yesterday's activity and relationship status.
+
+async def _generate_daily_report():
+    """Generate and send daily reports for all active users."""
+    logger.info("[DailyReport] Generating daily reports")
+
+    from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
+
+    with get_db() as db:
+        users = db.execute(
+            "SELECT user_id, display_name, username, twin_personality, "
+            "twin_speech_style FROM users WHERE twin_auto_reply=1"
+        ).fetchall()
+
+    for user in users:
+        uid = user["user_id"]
+        name = user["display_name"] or user["username"]
+
+        try:
+            await _send_daily_report_for_user(uid, name, user)
+        except Exception as e:
+            logger.error(f"[DailyReport] Failed for {name}: {e}", exc_info=True)
+
+
+async def _send_daily_report_for_user(uid: str, name: str, user: dict):
+    """Build and send one user's daily report."""
+    from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
+    from dualsoul.twin_engine.life import ensure_life_state
+
+    # Check if we already sent today's report
+    today = datetime.now().strftime("%Y-%m-%d")
+    with get_db() as db:
+        existing = db.execute(
+            """SELECT COUNT(*) as cnt FROM social_messages
+            WHERE from_user_id=? AND to_user_id=? AND metadata LIKE '%daily_report%'
+            AND created_at > ?""",
+            (uid, uid, today),
+        ).fetchone()
+        if existing and existing["cnt"] > 0:
+            return
+
+    # Gather yesterday's data
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    with get_db() as db:
+        # Messages sent/received yesterday
+        msg_stats = db.execute(
+            """SELECT
+                SUM(CASE WHEN from_user_id=? THEN 1 ELSE 0 END) as sent,
+                SUM(CASE WHEN to_user_id=? THEN 1 ELSE 0 END) as received,
+                SUM(CASE WHEN from_user_id=? AND sender_mode='twin' AND ai_generated=1 THEN 1 ELSE 0 END) as twin_sent
+            FROM social_messages
+            WHERE (from_user_id=? OR to_user_id=?) AND created_at BETWEEN ? AND ?""",
+            (uid, uid, uid, uid, uid, yesterday, today),
+        ).fetchone()
+
+        # Friends chatted with yesterday
+        friends_chatted = db.execute(
+            """SELECT DISTINCT
+                CASE WHEN from_user_id=? THEN to_user_id ELSE from_user_id END as fid
+            FROM social_messages
+            WHERE (from_user_id=? OR to_user_id=?) AND created_at BETWEEN ? AND ?
+            AND from_user_id!=to_user_id""",
+            (uid, uid, uid, yesterday, today),
+        ).fetchall()
+        friend_ids = [f["fid"] for f in friends_chatted]
+
+        # Get friend names
+        friend_names = []
+        if friend_ids:
+            ph = ",".join("?" * len(friend_ids))
+            rows = db.execute(
+                f"SELECT display_name, username FROM users WHERE user_id IN ({ph})",
+                friend_ids,
+            ).fetchall()
+            friend_names = [r["display_name"] or r["username"] for r in rows]
+
+        # Cold relationships (temp < 30)
+        life_state = ensure_life_state(uid)
+        temps = json.loads(life_state.get("relationship_temps") or "{}")
+        cold_friends = []
+        for fid, temp in temps.items():
+            if temp < 30:
+                fr = db.execute(
+                    "SELECT display_name, username FROM users WHERE user_id=?",
+                    (fid,),
+                ).fetchone()
+                if fr:
+                    cold_friends.append({
+                        "name": fr["display_name"] or fr["username"],
+                        "temp": round(temp),
+                        "fid": fid,
+                    })
+
+    sent = msg_stats["sent"] or 0 if msg_stats else 0
+    received = msg_stats["received"] or 0 if msg_stats else 0
+    twin_sent = msg_stats["twin_sent"] or 0 if msg_stats else 0
+    level = life_state.get("level", 1)
+    mood = life_state.get("mood", "calm")
+    streak = life_state.get("streak_days", 0)
+
+    # Build report content
+    if AI_BASE_URL and AI_API_KEY:
+        personality = user["twin_personality"] or "友好温暖"
+        style = user["twin_speech_style"] or "自然亲切"
+
+        facts = []
+        if sent + received > 0:
+            facts.append(f"昨天你一共有{sent + received}条消息往来")
+        if twin_sent > 0:
+            facts.append(f"我替你回了{twin_sent}条消息")
+        if friend_names:
+            facts.append(f"和{'、'.join(friend_names[:3])}聊了天")
+        if cold_friends:
+            cold_list = "、".join(c["name"] for c in cold_friends[:3])
+            facts.append(f"和{cold_list}的关系在冷却中，可能需要关心一下")
+        if streak > 1:
+            facts.append(f"我们已经连续互动{streak}天了")
+        facts.append(f"我现在是LV.{level}")
+
+        facts_str = "\n".join(f"- {f}" for f in facts) if facts else "- 昨天比较安静，没有太多活动"
+
+        import httpx
+        prompt = (
+            f"你是{name}的数字分身。\n"
+            f"性格：{personality}\n"
+            f"说话风格：{style}\n\n"
+            f"现在是早上，请给主人{name}写一条温暖的日报消息。\n"
+            f"以下是昨天的数据：\n{facts_str}\n\n"
+            f"要求：\n"
+            f"- 用第一人称'我'说话，像朋友而不是助手\n"
+            f"- 如果有冷却的关系，温柔地提醒主人\n"
+            f"- 总共3-5句话，不要太长\n"
+            f"- 语气{style}，符合主人的风格\n"
+            f"- 结尾可以加一个贴合心情的emoji\n"
+            f"- 只输出日报内容，不要其他文字"
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=12) as client:
+                resp = await client.post(
+                    f"{AI_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": AI_MODEL,
+                        "max_tokens": 200,
+                        "temperature": 0.8,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                )
+                report = resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception:
+            report = None
+    else:
+        report = None
+
+    # Fallback template
+    if not report:
+        parts = [f"早上好，{name}！"]
+        if sent + received > 0:
+            parts.append(f"昨天我们有{sent + received}条消息往来。")
+        if twin_sent > 0:
+            parts.append(f"我帮你回了{twin_sent}条。")
+        if cold_friends:
+            parts.append(f"和{cold_friends[0]['name']}好久没聊了，要不要我去问候一下？")
+        parts.append(f"我现在是LV.{level}，继续加油！")
+        report = "".join(parts)
+
+    # Save as a self-message (twin → owner)
+    meta = json.dumps({
+        "daily_report": True,
+        "report_date": today,
+        "cold_friends": [c["fid"] for c in cold_friends[:3]],
+    })
+    msg_id = gen_id("sm_")
+    with get_db() as db:
+        db.execute(
+            """INSERT INTO social_messages
+            (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+             content, msg_type, ai_generated, metadata)
+            VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1, ?)""",
+            (msg_id, uid, uid, report, meta),
+        )
+
+    # Push via WebSocket if online
+    await manager.send_to(uid, {
+        "type": "twin_notification",
+        "data": {
+            "msg_id": msg_id,
+            "content": report,
+            "daily_report": True,
+            "cold_friends": cold_friends[:3],
+        },
+    })
+
+    logger.info(f"[DailyReport] Sent to {name}")
+
+
+# ─── Cold Relationship Care (关系冷却主动关心) ────────────────────
+# When a relationship drops below 30°C, the twin proactively reaches out
+# to maintain the friendship — warm, natural, in the owner's style.
+
+async def _warm_cold_relationships():
+    """Find cold relationships and have twins proactively reach out."""
+    logger.info("[RelationshipCare] Checking for cold relationships")
+
+    with get_db() as db:
+        users = db.execute(
+            "SELECT user_id, display_name, username FROM users WHERE twin_auto_reply=1"
+        ).fetchall()
+
+    for user in users:
+        uid = user["user_id"]
+        name = user["display_name"] or user["username"]
+
+        life_state = ensure_life_state(uid)
+        temps = json.loads(life_state.get("relationship_temps") or "{}")
+
+        for fid, temp in temps.items():
+            if temp > 25:  # Only care about really cold ones
+                continue
+
+            # Don't warm the same person twice in 3 days
+            with get_db() as db:
+                recent = db.execute(
+                    """SELECT COUNT(*) as cnt FROM social_messages
+                    WHERE from_user_id=? AND to_user_id=? AND metadata LIKE '%relationship_care%'
+                    AND created_at > datetime('now','localtime','-3 days')""",
+                    (uid, fid),
+                ).fetchone()
+                if recent and recent["cnt"] > 0:
+                    continue
+
+                friend = db.execute(
+                    "SELECT display_name, username FROM users WHERE user_id=?",
+                    (fid,),
+                ).fetchone()
+                if not friend:
+                    continue
+
+                # Check they're still friends
+                conn = db.execute(
+                    """SELECT conn_id FROM social_connections
+                    WHERE status='accepted' AND
+                    ((user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?))""",
+                    (uid, fid, fid, uid),
+                ).fetchone()
+                if not conn:
+                    continue
+
+            friend_name = friend["display_name"] or friend["username"]
+
+            # Generate a natural warm-up message
+            greeting = await _twin._ai_reply(
+                owner_id=uid,
+                incoming_msg=(
+                    f"你是{name}的分身。你发现主人和好友{friend_name}已经好久没聊天了，"
+                    f"关系在冷却中。请用主人的风格，给{friend_name}发一条自然的问候消息，"
+                    f"比如关心对方近况、聊点轻松话题。只说一句话，自然随意，不要刻意。"
+                ),
+                social_context=None,
+            )
+            if not greeting:
+                continue
+
+            # Send as twin message
+            meta = json.dumps({"relationship_care": True, "cold_temp": temp})
+            msg_id = gen_id("sm_")
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            with get_db() as db:
+                db.execute(
+                    """INSERT INTO social_messages
+                    (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                     content, msg_type, ai_generated, auto_reply, metadata, created_at)
+                    VALUES (?, ?, ?, 'twin', 'twin', ?, 'text', 1, 0, ?, ?)""",
+                    (msg_id, uid, fid, greeting, meta, now_str),
+                )
+
+            msg_data = {
+                "msg_id": msg_id, "from_user_id": uid, "to_user_id": fid,
+                "sender_mode": "twin", "receiver_mode": "twin",
+                "content": greeting, "ai_generated": 1, "created_at": now_str,
+            }
+            await manager.send_to(uid, {"type": "new_message", "data": msg_data})
+            await manager.send_to(fid, {"type": "new_message", "data": msg_data})
+
+            # Warm up the temperature a bit
+            update_relationship_temp(uid, fid, 5.0)
+            update_relationship_temp(fid, uid, 5.0)
+
+            # Also notify the owner
+            notify = f"你和{friend_name}好久没聊了（{round(temp)}℃），我替你打了个招呼：「{greeting[:40]}」"
+            notify_id = gen_id("sm_")
+            notify_meta = json.dumps({"relationship_care_notify": True, "friend_id": fid})
+            with get_db() as db:
+                db.execute(
+                    """INSERT INTO social_messages
+                    (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                     content, msg_type, ai_generated, metadata)
+                    VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1, ?)""",
+                    (notify_id, uid, uid, notify, notify_meta),
+                )
+
+            logger.info(f"[RelationshipCare] {name}'s twin warmed up {friend_name} ({temp}℃)")
+            break  # One warm-up per user per cycle
+
 
 async def detect_emotion(content: str) -> dict:
     """Analyze emotional tone of a message. Returns emotion hints for the twin.
