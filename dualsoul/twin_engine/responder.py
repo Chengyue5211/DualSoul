@@ -593,11 +593,7 @@ class TwinResponder:
                     from_user_id=owner_id,
                     incoming_msg=msg_content,
                     sender_mode="twin",
-                    social_context=(
-                        "你是分身，主人不在。你只需要回复一句简短的话，例如：'好的，我跟主人说一声～'\n\n"
-                        "【禁止】不要说'在吗'。不要用问号复述对方的话。不要替主人做决定。\n"
-                        "【格式】只输出一句话，不要分行，不要超过20个字。"
-                    ),
+                    social_context="auto_reply",
                 )
                 if reply:
                     # Push twin reply to both parties
@@ -873,14 +869,17 @@ class TwinResponder:
         personality_block = profile.build_personality_prompt()
 
         if social_context:
-            # When auto-replying for owner, use minimal prompt with hard constraints
+            # When auto-replying for owner, use minimal prompt with pattern + examples
             system_prompt = (
-                f"你是{profile.display_name}的数字分身，主人不在。\n"
-                f"收到好友消息后，你只回一句话，格式固定：先说'好的'或'收到'，再说'我跟主人说一声'。\n"
-                f"示例回复：'好的～我跟主人说一声再回你！'\n"
-                f"示例回复：'收到，我跟主人说一声再回你～'\n\n"
-                f"绝对禁止：说'在吗'、用问号复述对方的话、替主人做决定、输出多行。\n"
-                f"只输出一句回复，不超过20字。"
+                f"你是{profile.display_name}的数字分身，主人现在不在。\n"
+                f"{personality_block}\n"
+                f"回复模式：针对对方说的内容简短回应，然后告诉对方你会转告主人。\n\n"
+                f"不同场景的示例：\n"
+                f"对方说'这周见一面' → '好的～我跟主人说一声再回你！'\n"
+                f"对方说'最近怎么样' → '主人挺好的～等他回来自己跟你聊哈'\n"
+                f"对方说'帮我带个东西' → '收到～我转告主人再回你！'\n"
+                f"对方说'生日快乐' → '谢谢你～我替主人收下啦，他回来肯定开心！'\n\n"
+                f"规则：只输出一句话，不超过25字。不要说'在吗'，不要用问号复述对方的话，不能替主人做决定。"
             )
         else:
             system_prompt = (

@@ -384,11 +384,7 @@ async def _do_twin_reply(
             incoming_msg=content,
             sender_mode=sender_mode,
             target_lang=target_lang,
-            social_context=(
-                "你是分身，主人不在。你只需要回复一句简短的话，例如：'好的，我跟主人说一声～'\n\n"
-                "【禁止】不要说'在吗'。不要用问号复述对方的话。不要替主人做决定。\n"
-                "【格式】只输出一句话，不要分行，不要超过20个字。"
-            ),
+            social_context="auto_reply",
         )
         if reply:
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
