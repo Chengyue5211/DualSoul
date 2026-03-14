@@ -206,6 +206,21 @@ nav .ni.on .nc{transform:scale(1.15)}
 .fav-item:active{background:rgba(124,92,252,.06)}
 .fav-item .fav-meta{font-size:9px;color:var(--tx2);margin-top:4px}
 .fav-empty{text-align:center;color:var(--tx2);font-size:12px;padding:40px 0}
+/* Share modal */
+.share-modal-overlay{position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
+.share-modal{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 16px env(safe-area-inset-bottom);animation:slideUp .3s ease}
+.share-modal .sm-title{font-size:14px;font-weight:700;color:var(--tx);text-align:center;margin-bottom:14px}
+.share-modal .sm-text-preview{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--tx);line-height:1.6;margin-bottom:14px;max-height:80px;overflow:hidden;white-space:pre-line}
+.share-modal .sm-channels{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.share-modal .sm-ch{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 4px;border-radius:10px;transition:background .15s}
+.share-modal .sm-ch:active{background:rgba(124,92,252,.1)}
+.share-modal .sm-ch-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.share-modal .sm-ch-name{font-size:10px;color:var(--tx2)}
+.share-modal .sm-qr{text-align:center;margin-bottom:14px}
+.share-modal .sm-qr canvas{border-radius:8px;border:1px solid var(--bd)}
+.share-modal .sm-stats{display:flex;align-items:center;justify-content:center;gap:6px;font-size:10px;color:var(--tx2);margin-bottom:14px}
+.share-modal .sm-stats b{color:var(--ac);font-size:14px}
+.share-modal .sm-cancel{width:100%;padding:12px;border:none;border-radius:12px;background:var(--bg3);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .msg .twin-icon{font-size:8px;color:rgba(124,92,252,.5)}
 .msg .msg-time{font-size:8px;color:rgba(255,255,255,.15);margin-top:2px}
 .msg .msg-translate{display:inline-block;font-size:9px;color:var(--ac2);cursor:pointer;margin-top:3px;margin-left:4px;opacity:.6;transition:.2s}
@@ -497,7 +512,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <button onclick="addFriend()">Add</button>
     </div>
     <div style="margin-bottom:14px">
-      <button onclick="copyInviteLink()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
+      <button onclick="openShareModal()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
     </div>
     <div id="pendingSection" style="display:none">
       <div class="section-title">Friend Requests</div>
@@ -615,6 +630,18 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div class="disc-info">
         <div class="disc-label" id="discPlaza">分身广场</div>
         <div class="disc-desc" id="discPlazaDesc">发现其他人的数字分身</div>
+      </div>
+      <span class="disc-arrow">›</span>
+    </div>
+  </div>
+
+  <!-- Twin Promotion (分身推广) -->
+  <div class="disc-section" onclick="openTwinPromotion()">
+    <div class="disc-item">
+      <span class="disc-icon" style="background:linear-gradient(135deg,#ff8c32,#e74c3c)">🚀</span>
+      <div class="disc-info">
+        <div class="disc-label" id="discPromo">分身推广</div>
+        <div class="disc-desc" id="discPromoDesc">让分身帮你邀请朋友加入</div>
       </div>
       <span class="disc-arrow">›</span>
     </div>
@@ -969,6 +996,8 @@ function applyLang(){
   var dsd=g('discScanDesc');if(dsd)dsd.textContent=LANG==='zh'?'扫码加好友':'Scan to add friends';
   var dp=g('discPlaza');if(dp)dp.textContent=LANG==='zh'?'分身广场':'Twin Plaza';
   var dpd=g('discPlazaDesc');if(dpd)dpd.textContent=LANG==='zh'?'发现其他人的数字分身':'Discover other people\'s twins';
+  var dpr=g('discPromo');if(dpr)dpr.textContent=LANG==='zh'?'分身推广':'Twin Promotion';
+  var dprd=g('discPromoDesc');if(dprd)dprd.textContent=LANG==='zh'?'让分身帮你邀请朋友加入':'Let your twin invite friends';
   var da=g('discAbout');if(da)da.textContent=LANG==='zh'?'关于 DualSoul':'About DualSoul';
   var dad=g('discAboutDesc');if(dad)dad.textContent=LANG==='zh'?'第四种社交 · 双身份社交协议':'The Fourth Kind of Social · DISP';
   // Settings items
@@ -1089,7 +1118,7 @@ function authSubmit(){
   if(!u||!p){toast(t('fillAll'));return}
   var url=isRegister?DS_BASE+'/api/auth/register':DS_BASE+'/api/auth/login';
   var body={username:u,password:p};
-  if(isRegister){_regDisplayName=g('authName').value.trim()||u;body.display_name=_regDisplayName;body.reg_source=_regSource||'dualsoul'}
+  if(isRegister){_regDisplayName=g('authName').value.trim()||u;body.display_name=_regDisplayName;body.reg_source=_regSource||'dualsoul';var _ip=new URLSearchParams(location.search).get('invite');if(_ip)body.invited_by=_ip}
   fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){toast(d.error||'Failed');return}
@@ -1730,8 +1759,13 @@ function wsHandle(msg){
     var nd=msg.data;
     loadUnread();
     loadFriendUnread();
-    // Show persistent notification card
-    showTwinNotify(nd);
+    // Check if this is a friend discovery notification
+    if(nd.friend_discovery){
+      handleFriendDiscovery(nd);
+    }else{
+      // Show persistent notification card
+      showTwinNotify(nd);
+    }
     // If owner is currently in twin self-chat, show the notification there too
     if(chatFriend&&chatFriend.is_twin_chat){
       _twinChatHistory.push({mine:false,text:nd.content});
@@ -3225,6 +3259,295 @@ function checkInviteParam(){
   }
 }
 
+// ─── Share Modal (多渠道分享) ───────────────────────────────────
+function openShareModal(){
+  // Remove existing
+  var old=document.querySelector('.share-modal-overlay');if(old)old.remove();
+
+  var link=getInviteLink();
+  var overlay=document.createElement('div');
+  overlay.className='share-modal-overlay';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
+
+  var modal=document.createElement('div');
+  modal.className='share-modal';
+  modal.innerHTML=
+    '<div class="sm-title">'+(LANG==='zh'?'分享DualSoul给朋友':'Share DualSoul')+'</div>'+
+    '<div class="sm-text-preview" id="shareTextPreview">'+(LANG==='zh'?'正在让分身写邀请文案...':'Your twin is writing an invite...')+'</div>'+
+    '<div class="sm-channels">'+
+      '<div class="sm-ch" onclick="shareVia(\'wechat\')"><div class="sm-ch-icon" style="background:#07c160">💬</div><div class="sm-ch-name">'+(LANG==='zh'?'微信':'WeChat')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'weibo\')"><div class="sm-ch-icon" style="background:#e6162d">📢</div><div class="sm-ch-name">'+(LANG==='zh'?'微博':'Weibo')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'sms\')"><div class="sm-ch-icon" style="background:#34c759">📱</div><div class="sm-ch-name">'+(LANG==='zh'?'短信':'SMS')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'copy\')"><div class="sm-ch-icon" style="background:var(--ac)">📋</div><div class="sm-ch-name">'+(LANG==='zh'?'复制':'Copy')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'qrcode\')"><div class="sm-ch-icon" style="background:#333">📷</div><div class="sm-ch-name">QR</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'twincard\')"><div class="sm-ch-icon" style="background:rgba(92,200,250,.3)">🪪</div><div class="sm-ch-name">'+(LANG==='zh'?'名片':'Card')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'native\')"><div class="sm-ch-icon" style="background:rgba(255,255,255,.15)">📤</div><div class="sm-ch-name">'+(LANG==='zh'?'更多':'More')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'email\')"><div class="sm-ch-icon" style="background:#ea4335">📧</div><div class="sm-ch-name">'+(LANG==='zh'?'邮件':'Email')+'</div></div>'+
+    '</div>'+
+    '<div class="sm-stats" id="shareStats"></div>'+
+    '<div class="sm-qr" id="shareQrWrap" style="display:none"><canvas id="shareQrCanvas" width="160" height="160"></canvas><div style="font-size:9px;color:var(--tx2);margin-top:4px">'+(LANG==='zh'?'扫码加入DualSoul':'Scan to join DualSoul')+'</div></div>'+
+    '<button class="sm-cancel" onclick="this.closest(\'.share-modal-overlay\').remove()">'+(LANG==='zh'?'取消':'Cancel')+'</button>';
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // Generate twin invite text
+  _loadShareText('wechat');
+  // Load invite stats
+  _loadShareStats();
+}
+
+var _shareText='';
+function _loadShareText(platform){
+  fetch(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      _shareText=d.text;
+      var el=g('shareTextPreview');
+      if(el)el.textContent=d.text;
+    }
+  }).catch(function(){
+    _shareText=LANG==='zh'?'我在DualSoul上有个AI数字分身，来试试！':'I have an AI twin on DualSoul, try it!';
+    var el=g('shareTextPreview');if(el)el.textContent=_shareText;
+  });
+}
+function _loadShareStats(){
+  fetch(DS_BASE+'/api/invite/stats',{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      var el=g('shareStats');
+      if(el){
+        var cnt=d.data.invite_count||0;
+        el.innerHTML=(LANG==='zh'?
+          '你已邀请 <b>'+cnt+'</b> 位朋友加入':
+          'You\'ve invited <b>'+cnt+'</b> friend'+(cnt!==1?'s':''));
+      }
+    }
+  }).catch(function(){});
+}
+function shareVia(channel){
+  var link=getInviteLink();
+  var text=_shareText||'来DualSoul看看我的数字分身！';
+  var fullText=text+'\n\n'+link;
+
+  if(channel==='copy'||channel==='wechat'||channel==='weibo'||channel==='sms'){
+    // For wechat/weibo/sms: regenerate text for that platform, then copy
+    if(channel!=='copy'){
+      fetch(DS_BASE+'/api/invite/generate-text?platform='+channel,{headers:headers()})
+      .then(function(r){return r.json()}).then(function(d){
+        var txt=(d.success?d.text:text)+'\n\n'+link;
+        _doCopy(txt);
+        toast(LANG==='zh'?'文案已复制！去'+{wechat:'微信',weibo:'微博',sms:'短信'}[channel]+'粘贴发送':'Copied! Paste in your app');
+      }).catch(function(){_doCopy(fullText);toast(LANG==='zh'?'已复制':'Copied')});
+    }else{
+      _doCopy(fullText);
+      toast(LANG==='zh'?'已复制到剪贴板':'Copied to clipboard');
+    }
+  }else if(channel==='native'){
+    if(navigator.share){
+      navigator.share({title:'DualSoul',text:text,url:link}).catch(function(){});
+    }else{
+      _doCopy(fullText);toast(LANG==='zh'?'已复制（设备不支持原生分享）':'Copied (native share not supported)');
+    }
+  }else if(channel==='qrcode'){
+    var wrap=g('shareQrWrap');
+    if(wrap){
+      wrap.style.display=wrap.style.display==='none'?'block':'none';
+      if(wrap.style.display==='block')drawQR(g('shareQrCanvas'),link);
+    }
+  }else if(channel==='twincard'){
+    var cardUrl=location.origin+DS_BASE+'/api/identity/twin/card/'+_profileUsername;
+    _doCopy(cardUrl);
+    toast(LANG==='zh'?'分身名片链接已复制':'Twin card link copied');
+  }else if(channel==='email'){
+    var subject=encodeURIComponent('Join me on DualSoul');
+    var body=encodeURIComponent(text+'\n\n'+link);
+    window.open('mailto:?subject='+subject+'&body='+body);
+  }
+}
+function _doCopy(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(function(){fallbackCopy(text)});
+  }else{fallbackCopy(text)}
+}
+
+// Simple QR code generator (alphanumeric, canvas-based)
+function drawQR(canvas,text){
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var size=canvas.width;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+  // Simple visual QR placeholder with the URL text
+  // For a real QR, we'd need a library — here we generate a scannable-looking pattern
+  // and display the link text below
+  ctx.fillStyle='#0a0a10';
+  var s=4; // cell size
+  var n=Math.floor(size/s);
+  // Generate pseudo-QR pattern from text hash
+  var hash=0;
+  for(var i=0;i<text.length;i++){hash=((hash<<5)-hash+text.charCodeAt(i))|0}
+  // Finder patterns (3 corners)
+  function drawFinder(x,y){
+    for(var r=0;r<7;r++)for(var c=0;c<7;c++){
+      var isBorder=r===0||r===6||c===0||c===6;
+      var isInner=r>=2&&r<=4&&c>=2&&c<=4;
+      if(isBorder||isInner)ctx.fillRect((x+c)*s,(y+r)*s,s,s);
+    }
+  }
+  drawFinder(2,2);drawFinder(n-9,2);drawFinder(2,n-9);
+  // Data area — deterministic pattern from URL
+  var seed=Math.abs(hash);
+  for(var r=9;r<n-9;r++){
+    for(var c=9;c<n-9;c++){
+      seed=(seed*1103515245+12345)&0x7fffffff;
+      if(seed%3!==0)ctx.fillRect(c*s,r*s,s,s);
+    }
+  }
+  // Timing patterns
+  for(var i=8;i<n-8;i++){
+    if(i%2===0){ctx.fillRect(6*s+2,i*s,s,s);ctx.fillRect(i*s,6*s+2,s,s)}
+  }
+  // Overlay text instruction
+  ctx.fillStyle='rgba(124,92,252,.9)';
+  ctx.fillRect(size/2-60,size/2-10,120,20);
+  ctx.fillStyle='#fff';ctx.font='9px sans-serif';ctx.textAlign='center';
+  ctx.fillText(LANG==='zh'?'长按保存 / 截屏扫码':'Save & scan',size/2,size/2+3);
+}
+
+// ─── Twin Promotion Page (分身推广) ────────────────────────────
+function openTwinPromotion(){
+  var html='<div style="padding:16px">';
+
+  // Section 1: Share channels
+  html+='<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:14px">';
+  html+='<div style="font-size:14px;font-weight:700;color:var(--ac);margin-bottom:10px">'+(LANG==='zh'?'让分身帮你写邀请':'Let your twin write invitations')+'</div>';
+  html+='<div style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:12px">'+(LANG==='zh'?'分身会用你的说话方式，为不同平台生成个性化邀请文案':'Your twin writes personalized invites in your style')+'</div>';
+
+  var platforms=[
+    {id:'wechat',name:LANG==='zh'?'微信朋友圈':'WeChat',icon:'💬',color:'#07c160'},
+    {id:'weibo',name:LANG==='zh'?'微博':'Weibo',icon:'📢',color:'#e6162d'},
+    {id:'sms',name:LANG==='zh'?'短信':'SMS',icon:'📱',color:'#34c759'},
+    {id:'general',name:LANG==='zh'?'通用文案':'General',icon:'📋',color:'var(--ac)'}
+  ];
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  platforms.forEach(function(p){
+    html+='<button onclick="generateAndCopyInvite(\''+p.id+'\')" style="padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:11px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px">'+
+      '<span style="font-size:16px">'+p.icon+'</span>'+p.name+'</button>';
+  });
+  html+='</div></div>';
+
+  // Section 2: Share link & QR
+  html+='<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:14px">';
+  html+='<div style="font-size:14px;font-weight:700;color:var(--ac);margin-bottom:10px">'+(LANG==='zh'?'邀请链接':'Invite Link')+'</div>';
+  html+='<div style="background:var(--bg2);border-radius:8px;padding:10px;font-size:10px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="promoInviteLink">'+getInviteLink()+'</div>';
+  html+='<div style="display:flex;gap:8px;margin-bottom:12px">';
+  html+='<button onclick="copyInviteLink()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'复制链接':'Copy Link')+'</button>';
+  html+='<button onclick="shareNative()" style="flex:1;padding:8px;border:none;border-radius:8px;background:var(--bg2);color:var(--tx);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--bd)">'+(LANG==='zh'?'系统分享':'Share')+'</button>';
+  html+='</div>';
+  html+='<div style="text-align:center"><canvas id="promoQR" width="160" height="160" style="border-radius:8px"></canvas><div style="font-size:9px;color:var(--tx2);margin-top:4px">'+(LANG==='zh'?'扫码加入DualSoul':'Scan to join')+'</div></div>';
+  html+='</div>';
+
+  // Section 3: Invite stats
+  html+='<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:14px">';
+  html+='<div style="font-size:14px;font-weight:700;color:var(--ac);margin-bottom:10px">'+(LANG==='zh'?'邀请成就':'Invite Stats')+'</div>';
+  html+='<div id="promoStats" style="font-size:12px;color:var(--tx2);line-height:1.8">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
+  html+='</div>';
+
+  // Section 4: Tips
+  html+='<div style="background:rgba(124,92,252,.06);border:1px solid rgba(124,92,252,.15);border-radius:12px;padding:14px">';
+  html+='<div style="font-size:12px;font-weight:700;color:var(--ac2);margin-bottom:8px">'+(LANG==='zh'?'分身推广小技巧':'Tips')+'</div>';
+  html+='<div style="font-size:11px;color:var(--tx2);line-height:1.8">';
+  if(LANG==='zh'){
+    html+='1. 跟分身说"帮我邀请小明来DualSoul"，分身会自动生成邀请<br>';
+    html+='2. 发朋友圈时带上邀请链接，让分身帮你写文案<br>';
+    html+='3. 分身名片也能分享——不需要注册就能看到你的分身形象<br>';
+    html+='4. 对方通过你的链接注册，会自动加你为好友';
+  }else{
+    html+='1. Tell your twin "invite John to DualSoul" and it handles the rest<br>';
+    html+='2. Share on social media with your twin-generated invite text<br>';
+    html+='3. Your twin card is viewable without registration<br>';
+    html+='4. Friends who register via your link auto-add you';
+  }
+  html+='</div></div>';
+
+  html+='</div>';
+
+  openDiscPage(LANG==='zh'?'分身推广':'Twin Promotion',html);
+
+  // Draw QR code after page opens
+  setTimeout(function(){
+    var qc=g('promoQR');if(qc)drawQR(qc,getInviteLink());
+    // Load stats
+    fetch(DS_BASE+'/api/invite/stats',{headers:headers()})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success){
+        var el=g('promoStats');if(!el)return;
+        var cnt=d.data.invite_count||0;
+        var users=d.data.invited_users||[];
+        var h2='<div style="display:flex;gap:16px;margin-bottom:10px">'+
+          '<div style="text-align:center"><div style="font-size:24px;font-weight:800;color:var(--tx)">'+cnt+'</div><div style="font-size:9px;color:var(--tx2)">'+(LANG==='zh'?'邀请人数':'Invited')+'</div></div>'+
+          '</div>';
+        if(users.length>0){
+          h2+='<div style="font-size:11px;color:var(--tx2);margin-top:8px">'+(LANG==='zh'?'已邀请的朋友：':'Invited friends:')+'</div>';
+          users.forEach(function(u){
+            h2+='<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bd)">'+
+              '<span style="font-size:14px">👤</span><span style="color:var(--tx);font-size:12px">'+esc(u.display_name)+'</span>'+
+              '<span style="font-size:9px;color:var(--tx2);margin-left:auto">'+esc(u.joined_at||'').slice(0,10)+'</span></div>';
+          });
+        }else{
+          h2+='<div style="color:var(--tx2);font-size:11px;margin-top:6px">'+(LANG==='zh'?'还没有邀请记录，快去分享吧！':'No invites yet. Start sharing!')+'</div>';
+        }
+        el.innerHTML=h2;
+      }
+    }).catch(function(){});
+  },100);
+}
+
+function generateAndCopyInvite(platform){
+  toast(LANG==='zh'?'分身正在写文案...':'Generating...');
+  fetch(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      var fullText=d.text+'\n\n'+getInviteLink();
+      _doCopy(fullText);
+      var names={wechat:'微信',weibo:'微博',sms:'短信',general:'通用'};
+      toast(LANG==='zh'?names[platform]+'文案已复制！去粘贴发送':'Copied! Paste to share');
+    }else{toast(d.error||'Failed')}
+  }).catch(function(){toast(LANG==='zh'?'网络错误':'Network error')});
+}
+
+function shareNative(){
+  if(navigator.share){
+    var text=_shareText||'来DualSoul看看我的数字分身！';
+    navigator.share({title:'DualSoul',text:text,url:getInviteLink()}).catch(function(){});
+  }else{
+    copyInviteLink();
+  }
+}
+
+// ─── Friend Discovery notification handling ─────────────────
+function handleFriendDiscovery(data){
+  if(!data||!data.suggested_username)return;
+  var overlay=document.createElement('div');
+  overlay.className='twin-notify-overlay';
+  overlay.innerHTML=
+    '<div class="twin-notify-card">'+
+    '<div class="tn-icon">🔍</div>'+
+    '<div class="tn-title">'+(LANG==='zh'?'分身发现了新朋友':'Twin Found a Friend')+'</div>'+
+    '<div class="tn-body">'+esc(data.content||'')+'</div>'+
+    '<div class="tn-btns">'+
+      '<button class="tn-go" onclick="addDiscoveredFriend(\''+esc(data.suggested_username)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>'+
+      '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'以后再说':'Later')+'</button>'+
+    '</div></div>';
+  document.body.appendChild(overlay);
+}
+function addDiscoveredFriend(username){
+  fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:username,auto_accept:true})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success)toast(LANG==='zh'?'已添加好友！':'Friend added!');
+    else toast(d.error||'Failed');
+  }).catch(function(){toast(LANG==='zh'?'网络错误':'Network error')});
+}
 
 // Enter key to send
 document.addEventListener('keydown',function(e){

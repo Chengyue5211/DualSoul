@@ -32,12 +32,19 @@ async def register(req: RegisterRequest):
             return {"success": False, "error": "Username already taken"}
 
         user_id = gen_id("u_")
+        inviter_username = (req.invited_by or "").strip()
         db.execute(
-            "INSERT INTO users (user_id, username, password_hash, display_name, reg_source) "
-            "VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO users (user_id, username, password_hash, display_name, reg_source, invited_by) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
             (user_id, username, hash_password(req.password), req.display_name or username,
-             req.reg_source or "dualsoul"),
+             req.reg_source or "dualsoul", inviter_username),
         )
+        # Increment inviter's invite_count
+        if inviter_username:
+            db.execute(
+                "UPDATE users SET invite_count = invite_count + 1 WHERE username=?",
+                (inviter_username,),
+            )
 
     token = create_token(user_id, username)
     return {

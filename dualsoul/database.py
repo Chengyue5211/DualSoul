@@ -69,6 +69,8 @@ MIGRATIONS = [
     "ALTER TABLE users ADD COLUMN twin_source TEXT DEFAULT 'local'",
     "ALTER TABLE users ADD COLUMN gender TEXT DEFAULT ''",
     "ALTER TABLE users ADD COLUMN reg_source TEXT DEFAULT 'dualsoul'",
+    "ALTER TABLE users ADD COLUMN invited_by TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN invite_count INTEGER DEFAULT 0",
 ]
 
 

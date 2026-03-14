@@ -9,6 +9,7 @@ class RegisterRequest(BaseModel):
     password: str
     display_name: str = ""
     reg_source: str = "dualsoul"  # Registration source: dualsoul, nianlun, openclaw, etc.
+    invited_by: str = ""  # Username of the person who invited this user
 
 
 class LoginRequest(BaseModel):

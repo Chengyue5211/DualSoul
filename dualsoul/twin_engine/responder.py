@@ -869,10 +869,23 @@ class TwinResponder:
         personality_block = profile.build_personality_prompt()
 
         if social_context:
+            # Emotion-aware auto-reply: detect sender's emotional state
+            emotion_hint = ""
+            try:
+                from dualsoul.twin_engine.autonomous import detect_emotion
+                emo = await detect_emotion(incoming_msg)
+                if emo["emotion"] not in ("neutral",) and emo["intensity"] > 0.5:
+                    emotion_hint = (
+                        f"\n注意：对方的情绪是「{emo['emotion']}」(强度{emo['intensity']:.1f})。"
+                        f"{emo['suggestion']}\n"
+                    )
+            except Exception:
+                pass  # Emotion detection is best-effort
+
             # When auto-replying for owner, use minimal prompt with pattern + examples
             system_prompt = (
                 f"你是{profile.display_name}的数字分身，主人现在不在。\n"
-                f"{personality_block}\n"
+                f"{personality_block}\n{emotion_hint}"
                 f"回复模式：针对对方说的内容简短回应，然后告诉对方你会转告主人。\n\n"
                 f"不同场景的示例：\n"
                 f"对方说'这周见一面' → '好的～我跟主人说一声再回你！'\n"
