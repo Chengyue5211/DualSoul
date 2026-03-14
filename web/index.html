@@ -3986,6 +3986,7 @@ function openShareModal(){
       '<div class="sm-ch" onclick="shareVia(\'native\')"><div class="sm-ch-icon" style="background:rgba(255,255,255,.15)">📤</div><div class="sm-ch-name">'+(LANG==='zh'?'更多':'More')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'email\')"><div class="sm-ch-icon" style="background:#ea4335">📧</div><div class="sm-ch-name">'+(LANG==='zh'?'邮件':'Email')+'</div></div>'+
     '</div>'+
+    '<div id="smChannelTip" style="display:none;background:rgba(7,193,96,.12);border:1px solid rgba(7,193,96,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--tx);white-space:pre-line;margin-bottom:6px"></div>'+
     '<div class="sm-stats" id="shareStats"></div>'+
     '<div class="sm-qr" id="shareQrWrap" style="display:none"><canvas id="shareQrCanvas" width="160" height="160"></canvas><div style="font-size:9px;color:var(--tx2);margin-top:4px">'+(LANG==='zh'?'扫码加入DualSoul':'Scan to join DualSoul')+'</div></div>'+
     '<button class="sm-cancel" onclick="this.closest(\'.share-modal-overlay\').remove()">'+(LANG==='zh'?'取消':'Cancel')+'</button>';
@@ -4102,7 +4103,12 @@ function shareVia(channel){
         var txt=(d.success?d.text:text)+'\n\n'+link;
         _doCopy(txt);
         var el=g('shareTextPreview');if(el)el.textContent=txt;
-        toast(LANG==='zh'?'文案已复制！去'+{wechat:'微信',weibo:'微博',sms:'短信'}[channel]+'粘贴发送':'Copied! Paste in your app');
+        var tips={wechat:'✅ 文案+链接已复制！\n打开微信 → 粘贴发给朋友',weibo:'✅ 文案+链接已复制！\n打开微博 → 粘贴发布',sms:'✅ 文案+链接已复制！\n打开短信 → 粘贴发送'};
+        var msg=LANG==='zh'?(tips[channel]||'已复制！'):'Copied! Paste in your app';
+        // Show inline tip in modal
+        var tipEl=document.getElementById('smChannelTip');
+        if(tipEl){tipEl.textContent=msg;tipEl.style.display='block';}
+        else toast(msg);
       }).catch(function(){_doCopy(fullText);toast(LANG==='zh'?'已复制':'Copied')});
     }else{
       _doCopy(fullText);
