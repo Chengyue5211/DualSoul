@@ -637,6 +637,7 @@ var _profileName='';
 var _myAvatar='';
 var _myTwinAvatar='';
 var isRegister=false;
+var _regSource='dualsoul';
 var ws=null;
 var wsRetry=0;
 
@@ -1455,7 +1456,7 @@ function loadFriendUnread(){
   // Show invite banner if ?invite= is in URL
   var _inviteParams=new URLSearchParams(location.search);
   var _inviter=_inviteParams.get('invite');
-  var _regSource=_inviteParams.get('source')||'dualsoul';
+  _regSource=_inviteParams.get('source')||'dualsoul';
   if(_inviter){
     var ib=g('inviteBanner');
     if(ib){ib.style.display='block';ib.textContent=LANG==='zh'?_inviter+' 邀请你加入 DualSoul！注册后自动成为好友':''+_inviter+' invited you to DualSoul! Register to become friends';
