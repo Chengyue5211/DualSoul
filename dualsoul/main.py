@@ -1,7 +1,10 @@
 """DualSoul — Dual Identity Social Protocol server."""
 
+import logging
 import os
 from contextlib import asynccontextmanager
+
+logging.basicConfig(level=logging.INFO)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
