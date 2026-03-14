@@ -1911,7 +1911,22 @@ function copyTwinCardUrl(){
 }
 function previewTwinCard(){
   var url=g('twinCardUrl').textContent;
-  window.open(url,'_blank');
+  // Show in-app overlay instead of new tab (avoids back-button issues on mobile)
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;flex-direction:column';
+  var topBar=document.createElement('div');
+  topBar.style.cssText='padding:12px 16px;display:flex;justify-content:flex-end';
+  var closeBtn=document.createElement('button');
+  closeBtn.textContent=LANG==='zh'?'✕ 关闭':'✕ Close';
+  closeBtn.style.cssText='padding:8px 18px;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit';
+  closeBtn.onclick=function(){overlay.remove()};
+  topBar.appendChild(closeBtn);
+  overlay.appendChild(topBar);
+  var frame=document.createElement('iframe');
+  frame.src=url;
+  frame.style.cssText='flex:1;border:none;border-radius:12px;margin:0 12px 12px';
+  overlay.appendChild(frame);
+  document.body.appendChild(overlay);
 }
 
 var _styleTemplates={
