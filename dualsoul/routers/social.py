@@ -222,7 +222,7 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
 
     # Determine if twin should auto-reply:
     # 1. Explicit: receiver_mode is 'twin'
-    # 2. Auto-reply enabled: twin_auto_reply is on (regardless of online status)
+    # 2. Auto-reply enabled AND owner not actively chatting with this friend
     should_twin_reply = req.receiver_mode == "twin"
     if not should_twin_reply and req.receiver_mode == "real":
         with get_db() as db:
@@ -230,7 +230,21 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
                 "SELECT twin_auto_reply FROM users WHERE user_id=?", (req.to_user_id,)
             ).fetchone()
             if row and row["twin_auto_reply"]:
-                should_twin_reply = True
+                # Check if owner recently sent a real message to this friend (last 2 min)
+                # If so, owner is actively chatting — twin should stay quiet
+                recent = db.execute(
+                    """
+                    SELECT COUNT(*) AS cnt FROM social_messages
+                    WHERE from_user_id=? AND to_user_id=? AND sender_mode='real'
+                        AND ai_generated=0
+                        AND created_at > datetime('now', 'localtime', '-2 minutes')
+                    """,
+                    (req.to_user_id, uid),
+                ).fetchone()
+                if recent and recent["cnt"] > 0:
+                    should_twin_reply = False  # Owner is active, twin stays quiet
+                else:
+                    should_twin_reply = True
 
     if should_twin_reply:
         try:
@@ -240,6 +254,12 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
                 incoming_msg=content,
                 sender_mode=req.sender_mode,
                 target_lang=req.target_lang,
+                social_context=(
+                    "你是分身，主人现在不在线。你不能替主人做任何决定！"
+                    "不能替主人定时间、定地点、答应事情。"
+                    "你只能说：我帮你问问主人/我跟主人说一声/等主人回来定。"
+                    "语气轻松自然，像朋友聊天。"
+                ),
             )
             result["ai_reply"] = reply
             # Push twin reply to both sender and recipient
@@ -256,8 +276,17 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
                 }
                 await manager.send_to(uid, twin_msg)
                 await manager.send_to(req.to_user_id, twin_msg)
-        except Exception:
-            pass  # Twin reply is best-effort
+
+                # Notify the owner about the twin's auto-reply
+                asyncio.ensure_future(_notify_owner_twin_replied(
+                    owner_id=req.to_user_id,
+                    friend_id=uid,
+                    friend_msg=content,
+                    twin_reply=reply["content"],
+                ))
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Twin auto-reply failed: {e}")
 
     return result
 
@@ -370,6 +399,52 @@ async def unread_by_friend(user=Depends(get_current_user)):
     for r in rows:
         result[r["from_user_id"]] = r["cnt"]
     return {"unread": result}
+
+
+async def _notify_owner_twin_replied(owner_id: str, friend_id: str, friend_msg: str, twin_reply: str):
+    """Notify the owner that their twin auto-replied to a friend."""
+    try:
+        # Get friend's display name
+        with get_db() as db:
+            friend = db.execute(
+                "SELECT display_name, username FROM users WHERE user_id=?",
+                (friend_id,),
+            ).fetchone()
+        friend_name = (friend["display_name"] or friend["username"]) if friend else "好友"
+
+        notify_text = (
+            f"刚才{friend_name}找你，说：「{friend_msg[:50]}」\n"
+            f"我替你回了：「{twin_reply[:50]}」\n"
+            f"具体事情得你来定哦～"
+        )
+
+        # Save notification as a twin self-chat message
+        msg_id = gen_id("sm_")
+        with get_db() as db:
+            db.execute(
+                """
+                INSERT INTO social_messages
+                (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                 content, msg_type, ai_generated)
+                VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1)
+                """,
+                (msg_id, owner_id, owner_id, notify_text),
+            )
+
+        # Push via WebSocket
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        await manager.send_to(owner_id, {
+            "type": "twin_notification",
+            "data": {
+                "msg_id": msg_id,
+                "content": notify_text,
+                "friend_id": friend_id,
+                "friend_name": friend_name,
+                "created_at": now,
+            },
+        })
+    except Exception:
+        pass  # Notification is best-effort
 
 
 async def _auto_detect_and_push_translation(recipient_id: str, content: str, for_msg_id: str):

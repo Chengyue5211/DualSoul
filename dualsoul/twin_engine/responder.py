@@ -69,6 +69,7 @@ class TwinResponder:
             reply_text = await self._ai_reply(
                 profile, incoming_msg, sender_mode, effective_target_lang,
                 social_context=social_context,
+                from_user_id=from_user_id,
             )
         else:
             reply_text = self._fallback_reply(profile, incoming_msg, effective_target_lang)
@@ -823,9 +824,30 @@ class TwinResponder:
 
         return msg.strip()
 
+    def _get_recent_chat_history(self, owner_id: str, friend_id: str, limit: int = 6) -> list[dict]:
+        """Fetch recent messages between owner and friend for context."""
+        with get_db() as db:
+            rows = db.execute(
+                """
+                SELECT from_user_id, content, sender_mode FROM social_messages
+                WHERE ((from_user_id=? AND to_user_id=?) OR (from_user_id=? AND to_user_id=?))
+                    AND msg_type='text' AND content != ''
+                ORDER BY created_at DESC LIMIT ?
+                """,
+                (owner_id, friend_id, friend_id, owner_id, limit),
+            ).fetchall()
+        history = []
+        for r in reversed(rows):
+            if r["from_user_id"] == owner_id:
+                role = "assistant"  # owner's messages (real or twin)
+            else:
+                role = "user"  # friend's messages
+            history.append({"role": role, "content": r["content"]})
+        return history
+
     async def _ai_reply(
         self, profile, incoming_msg: str, sender_mode: str, target_lang: str = "",
-        social_context: str = "",
+        social_context: str = "", from_user_id: str = "",
     ) -> str | None:
         """Generate reply using an OpenAI-compatible API, with optional translation."""
         sender_label = "their real self" if sender_mode == "real" else "their digital twin"
@@ -849,15 +871,30 @@ class TwinResponder:
             )
 
         personality_block = profile.build_personality_prompt()
-        prompt = (
+        system_prompt = (
             f"You are {profile.display_name}'s digital twin.\n"
             f"{personality_block}\n"
-            f"Someone ({sender_label}) says: \"{incoming_msg}\"\n\n"
             f"Reply as {profile.display_name}'s twin. Keep it under 50 words, "
-            f"natural and authentic. Output only the reply text."
+            f"natural and authentic. Output only the reply text. "
+            f"Only respond to the LATEST message, do not recap previous messages."
             f"{lang_instruction}"
             f"{context_instruction}"
         )
+
+        # Build messages with conversation history
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Add recent conversation history for context
+        if from_user_id:
+            history = self._get_recent_chat_history(
+                profile.user_id, from_user_id, limit=6
+            )
+            # Don't include the current incoming_msg (it'll be added separately)
+            if history and history[-1].get("content") == incoming_msg:
+                history = history[:-1]
+            messages.extend(history)
+
+        messages.append({"role": "user", "content": incoming_msg})
 
         try:
             async with httpx.AsyncClient(timeout=15) as client:
@@ -870,7 +907,7 @@ class TwinResponder:
                     json={
                         "model": AI_MODEL,
                         "max_tokens": 100,
-                        "messages": [{"role": "user", "content": prompt}],
+                        "messages": messages,
                     },
                 )
                 return resp.json()["choices"][0]["message"]["content"].strip()
