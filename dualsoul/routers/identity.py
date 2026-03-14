@@ -12,7 +12,7 @@ from dualsoul.auth import get_current_user
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from dualsoul.database import get_db
 from dualsoul.models import AvatarGenerateRequest, AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest, VoiceUploadRequest
-from dualsoul.twin_engine.learner import analyze_style, get_message_count, learn_and_update
+from dualsoul.twin_engine.learner import MIN_MESSAGES_FOR_LEARNING, analyze_style, get_message_count, learn_and_update
 
 _AVATAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "avatars")
 os.makedirs(_AVATAR_DIR, exist_ok=True)
@@ -80,7 +80,10 @@ async def update_profile(req: UpdateProfileRequest, user=Depends(get_current_use
     if req.twin_speech_style:
         updates.append("twin_speech_style=?")
         params.append(req.twin_speech_style)
+    _VALID_LANGS = {"", "zh", "en", "ja", "ko", "fr", "de", "es", "pt", "ru", "ar", "hi", "th", "vi", "id", "auto"}
     if req.preferred_lang:
+        if req.preferred_lang not in _VALID_LANGS:
+            return {"success": False, "error": f"Invalid language code: {req.preferred_lang}"}
         updates.append("preferred_lang=?")
         params.append(req.preferred_lang)
     if req.twin_auto_reply is not None:
@@ -115,6 +118,11 @@ async def upload_avatar(req: AvatarUploadRequest, user=Depends(get_current_user)
 
     if len(raw) > 2 * 1024 * 1024:  # 2MB limit
         return {"success": False, "error": "Image too large (max 2MB)"}
+
+    # Validate magic bytes — must be a real image (PNG, JPEG, GIF, WebP)
+    _IMAGE_SIGNATURES = [b'\x89PNG', b'\xff\xd8\xff', b'GIF8', b'RIFF', b'\x00\x00\x01\x00']
+    if not any(raw.startswith(sig) for sig in _IMAGE_SIGNATURES):
+        return {"success": False, "error": "File must be a valid image (PNG, JPEG, GIF, WebP)"}
 
     # Save file
     name_hash = hashlib.md5(f"{uid}_{req.type}".encode()).hexdigest()[:12]
@@ -243,12 +251,11 @@ async def learn_status(user=Depends(get_current_user)):
     """Check if enough messages exist for style learning."""
     uid = user["user_id"]
     count = get_message_count(uid)
-    min_required = 10
     return {
         "success": True,
         "message_count": count,
-        "min_required": min_required,
-        "ready": count >= min_required,
+        "min_required": MIN_MESSAGES_FOR_LEARNING,
+        "ready": count >= MIN_MESSAGES_FOR_LEARNING,
     }
 
 

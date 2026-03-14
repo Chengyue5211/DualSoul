@@ -243,6 +243,7 @@ async def list_friends(user=Depends(get_current_user)):
 async def get_messages(friend_id: str = "", limit: int = 50, user=Depends(get_current_user)):
     """Get conversation history with a friend."""
     uid = user["user_id"]
+    limit = min(max(1, limit), 100)  # Clamp between 1 and 100
     if not friend_id:
         return {"success": False, "error": "friend_id required"}
 

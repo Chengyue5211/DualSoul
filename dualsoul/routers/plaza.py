@@ -226,7 +226,7 @@ async def start_trial_chat(target_user_id: str = "", user=Depends(get_current_us
         existing = db.execute(
             """
             SELECT conn_id FROM social_connections
-            WHERE (user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?)
+            WHERE ((user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?))
                 AND status IN ('accepted', 'pending')
             """,
             (uid, target_user_id, target_user_id, uid),

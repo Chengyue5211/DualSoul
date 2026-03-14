@@ -1312,7 +1312,7 @@ function enterApp(isNewUser){
 }
 
 function checkTwinActivity(){
-  fetch(DS_BASE+'\api\social\twin\activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetch(DS_BASE+'/api/social/twin/activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success||!d.activities||!d.activities.length)return;
     // Merge all activities into one summary notification
     var items=d.activities;
@@ -3358,7 +3358,7 @@ function chatSendLocation(){
     box.scrollTop=box.scrollHeight;
     // Send as a text message with location prefix
     if(chatFriend&&!chatFriend.is_twin_chat){
-      fetch(DS_BASE+'\api\social\messages\send',{method:'POST',headers:headers(),body:JSON.stringify({
+      fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
         to_user_id:chatFriend.user_id,content:locText,sender_mode:'real',receiver_mode:'real'
       })}).then(function(r){return r.json()}).then(function(d){
         if(!d.success)toast(d.error||'Send failed');

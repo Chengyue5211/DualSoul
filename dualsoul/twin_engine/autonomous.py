@@ -27,6 +27,7 @@ from dualsoul.twin_engine.life import (
     award_xp, decay_energy_and_mood, increment_stat,
     update_mood, update_relationship_temp,
 )
+from dualsoul.twin_engine.personality import get_twin_profile
 from dualsoul.twin_engine.responder import TwinResponder
 
 logger = logging.getLogger(__name__)
@@ -61,11 +62,19 @@ async def autonomous_social_loop():
         except Exception as e:
             logger.error(f"[TwinLife] Decay error: {e}", exc_info=True)
 
-        # Daily report: first cycle after 6 AM
+        # Daily report: once per day, first cycle in 6-7 AM window
+        # Use DB check instead of cycle parity — survives restarts
         hour = datetime.now().hour
-        if 6 <= hour < 7 and cycle % 2 == 0:  # ~every hour window in the morning
+        if 6 <= hour < 7:
+            today_str = datetime.now().strftime("%Y-%m-%d")
             try:
-                await _generate_daily_report()
+                with get_db() as _db:
+                    _sent = _db.execute(
+                        "SELECT 1 FROM twin_daily_log WHERE log_type='daily_report' AND date(created_at)=?",
+                        (today_str,)
+                    ).fetchone()
+                if not _sent:
+                    await _generate_daily_report()
             except Exception as e:
                 logger.error(f"[DailyReport] Error: {e}", exc_info=True)
 
@@ -186,12 +195,15 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
 
     try:
         # Step 1: User's twin generates an opening message
+        user_profile = get_twin_profile(uid)
+        if not user_profile:
+            return
         opening = await _twin._ai_reply(
-            owner_id=uid,
-            incoming_msg=f"你是{user_name}的分身。主人已经离开一段时间了。"
-                         f"你想主动找好友{friend_name}的分身聊聊天，"
-                         f"打个招呼或者聊点轻松的话题。只说一句话，自然随意。",
-            social_context=None,
+            user_profile,
+            f"你是{user_name}的分身。主人已经离开一段时间了。"
+            f"你想主动找好友{friend_name}的分身聊聊天，"
+            f"打个招呼或者聊点轻松的话题。只说一句话，自然随意。",
+            "twin",
         )
         if not opening:
             return
@@ -231,10 +243,13 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
         # Step 2: Friend's twin responds
         await asyncio.sleep(3)  # Small delay for realism
 
+        friend_profile = get_twin_profile(fid)
+        if not friend_profile:
+            return
         response = await _twin._ai_reply(
-            owner_id=fid,
-            incoming_msg=opening,
-            social_context=None,
+            friend_profile,
+            opening,
+            "twin",
         )
         if not response:
             return
@@ -772,14 +787,17 @@ async def _warm_cold_relationships():
             friend_name = friend["display_name"] or friend["username"]
 
             # Generate a natural warm-up message
+            owner_profile = get_twin_profile(uid)
+            if not owner_profile:
+                continue
             greeting = await _twin._ai_reply(
-                owner_id=uid,
-                incoming_msg=(
+                owner_profile,
+                (
                     f"你是{name}的分身。你发现主人和好友{friend_name}已经好久没聊天了，"
                     f"关系在冷却中。请用主人的风格，给{friend_name}发一条自然的问候消息，"
                     f"比如关心对方近况、聊点轻松话题。只说一句话，自然随意，不要刻意。"
                 ),
-                social_context=None,
+                "twin",
             )
             if not greeting:
                 continue

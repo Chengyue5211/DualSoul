@@ -1,6 +1,7 @@
 """DualSoul — Dual Identity Social Protocol server."""
 
 import asyncio
+import json
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -136,7 +137,7 @@ li{{margin:4px 0;font-size:13px}}
 <div class="wrap" id="content"></div>
 <a class="cta" href="/?source=guide">注册 DualSoul，让你的分身社交</a>
 <script>
-var md = {repr(md_content)};
+var md = {json.dumps(md_content)};
 document.getElementById('content').innerHTML = marked.parse(md);
 </script>
 </body>

@@ -39,12 +39,16 @@ async def register(req: RegisterRequest):
             (user_id, username, hash_password(req.password), req.display_name or username,
              req.reg_source or "dualsoul", inviter_username),
         )
-        # Increment inviter's invite_count
+        # Increment inviter's invite_count (only if inviter actually exists)
         if inviter_username:
-            db.execute(
-                "UPDATE users SET invite_count = invite_count + 1 WHERE username=?",
-                (inviter_username,),
-            )
+            inviter = db.execute(
+                "SELECT user_id FROM users WHERE username=?", (inviter_username,)
+            ).fetchone()
+            if inviter:
+                db.execute(
+                    "UPDATE users SET invite_count = invite_count + 1 WHERE username=?",
+                    (inviter_username,),
+                )
 
     token = create_token(user_id, username)
     return {
@@ -84,8 +88,8 @@ async def login(req: LoginRequest):
 async def change_password(req: ChangePasswordRequest, user=Depends(get_current_user)):
     """Change password for the logged-in user."""
     uid = user["user_id"]
-    if len(req.new_password) < 4:
-        return {"success": False, "error": "Password must be at least 4 characters"}
+    if len(req.new_password) < 6:
+        return {"success": False, "error": "Password must be at least 6 characters"}
 
     with get_db() as db:
         row = db.execute(
