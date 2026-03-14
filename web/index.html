@@ -940,23 +940,23 @@ function toast(msg,ms){
 function headers(){return{'Content-Type':'application/json','Authorization':'Bearer '+token}}
 
 function showTwinNotify(nd){
+  // Remove any existing notification overlay first (prevent stacking)
+  var existing=document.querySelector('.twin-notify-overlay');if(existing)existing.remove();
   var friendName=nd.friend_name||'好友';
   var friendId=nd.friend_id||'';
   var content=nd.content||'';
-  // Parse "刚才XX找你，说：「xxx」\n我替你回了：「xxx」\n具体事情得你来定哦～"
   var overlay=document.createElement('div');
   overlay.className='twin-notify-overlay';
   overlay.innerHTML='<div class="twin-notify-card">'+
     '<div class="tn-icon">👻</div>'+
     '<div class="tn-title">'+(LANG==='zh'?'你的分身替你回了消息':'Your twin replied for you')+'</div>'+
-    '<div class="tn-body">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="tn-body" style="max-height:40vh;overflow-y:auto">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
     '<div class="tn-btns">'+
       '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'知道了':'OK')+'</button>'+
       (friendId?'<button class="tn-go" onclick="goTwinNotifyChat(\''+esc(friendId)+'\',\''+esc(friendName)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'查看对话':'View Chat')+'</button>':'')+
     '</div>'+
   '</div>';
   document.body.appendChild(overlay);
-  // Also play a subtle sound or vibrate
   if(navigator.vibrate)navigator.vibrate(200);
 }
 
@@ -1008,17 +1008,18 @@ function enterApp(){
 function checkTwinActivity(){
   fetch(DS_BASE+'\api\social\twin\activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success||!d.activities||!d.activities.length)return;
-    // Show each twin activity as a notification card
-    d.activities.forEach(function(a){
-      var meta={};
-      try{meta=JSON.parse(a.metadata||'{}')}catch(e){}
-      showTwinNotify({
-        content:a.content,
-        friend_id:meta.friend_id||'',
-        friend_name:meta.friend_name||'',
-        created_at:a.created_at
+    // Merge all activities into one summary notification
+    var items=d.activities;
+    if(items.length===1){
+      var meta={};try{meta=JSON.parse(items[0].metadata||'{}')}catch(e){}
+      showTwinNotify({content:items[0].content,friend_id:meta.friend_id||'',friend_name:meta.friend_name||''});
+    }else{
+      var summary=(LANG==='zh'?'你不在的时候，分身替你回了'+items.length+'条消息：\n\n':'Your twin replied '+items.length+' messages while you were away:\n\n');
+      items.forEach(function(a){
+        summary+=a.content+'\n───\n';
       });
-    });
+      showTwinNotify({content:summary.trim(),friend_id:'',friend_name:''});
+    }
   }).catch(function(){});
 }
 
