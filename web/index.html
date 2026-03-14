@@ -526,6 +526,14 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   <!-- Share Twin Card -->
   <div style="margin:0 0 14px">
     <button onclick="shareTwinCard()" id="shareTwinCardBtn" style="width:100%;padding:10px;border:1px solid rgba(124,92,252,.3);border-radius:10px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Share Twin Card</button>
+    <div id="twinCardPanel" style="display:none;margin-top:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">
+      <p style="font-size:10px;color:var(--tx2);margin-bottom:8px" id="twinCardDesc">把这个链接发给别人，对方可以认识你的分身：</p>
+      <div style="padding:8px;background:var(--bg2);border-radius:8px;word-break:break-all;font-size:11px;color:var(--ac2);margin-bottom:10px" id="twinCardUrl"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="copyTwinCardUrl()" style="flex:1;padding:8px;border:none;border-radius:8px;background:var(--gd);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardCopyBtn">复制链接</button>
+        <button onclick="previewTwinCard()" style="flex:1;padding:8px;border:none;border-radius:8px;background:rgba(124,92,252,.15);color:var(--ac2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardPreviewBtn">预览名片</button>
+      </div>
+    </div>
   </div>
   <div class="profile-section">
     <div class="collapse-header" onclick="toggleCollapse(this)">
@@ -685,7 +693,7 @@ var I18N={
     inviteCopied:'链接已复制！发给朋友吧',
     twinGrowth:'分身成长',
     growthConversations:'对话数',growthFriendsHelped:'帮助好友',growthActions:'代办操作',growthDaysActive:'活跃天数',growthStyleLearned:'风格已学习',growthStyleNotLearned:'风格未设置',
-    shareTwinCard:'分享分身名片',twinCardCopied:'名片链接已复制！',
+    shareTwinCard:'分享分身名片',twinCardCopied:'名片链接已复制！',twinCardDesc:'把这个链接发给别人，对方可以认识你的分身：',twinCardCopy:'复制链接',twinCardPreview:'预览名片',
     langSwitch:'EN'
   },
   en:{
@@ -749,7 +757,7 @@ var I18N={
     inviteCopied:'Link copied! Send it to a friend',
     twinGrowth:'Twin Growth',
     growthConversations:'Conversations',growthFriendsHelped:'Friends helped',growthActions:'Actions taken',growthDaysActive:'Days active',growthStyleLearned:'Style learned',growthStyleNotLearned:'Style not set',
-    shareTwinCard:'Share Twin Card',twinCardCopied:'Card link copied!',
+    shareTwinCard:'Share Twin Card',twinCardCopied:'Card link copied!',twinCardDesc:'Share this link so others can meet your twin:',twinCardCopy:'Copy Link',twinCardPreview:'Preview Card',
     langSwitch:'中文'
   }
 };
@@ -804,6 +812,9 @@ function applyLang(){
   var gal=g('gActionsL');if(gal)gal.textContent=t('growthActions');
   var gdl=g('gDaysL');if(gdl)gdl.textContent=t('growthDaysActive');
   var stcb=g('shareTwinCardBtn');if(stcb)stcb.textContent=t('shareTwinCard');
+  var tcd=g('twinCardDesc');if(tcd)tcd.textContent=t('twinCardDesc');
+  var tccp=g('twinCardCopyBtn');if(tccp)tccp.textContent=t('twinCardCopy');
+  var tcpv=g('twinCardPreviewBtn');if(tcpv)tcpv.textContent=t('twinCardPreview');
   // About
   var abt=document.querySelector('#tabAbout .tab-header h2');if(abt)abt.textContent=t('aboutTitle');
   var abh=document.querySelector('.about h3');if(abh)abh.textContent=t('aboutProto');
@@ -1883,12 +1894,24 @@ function loadTwinGrowth(){
 
 function shareTwinCard(){
   if(!_profileUsername)return;
-  var url=location.origin+DS_BASE+'/api/identity/twin/card/'+_profileUsername;
+  var panel=g('twinCardPanel');
+  if(panel.style.display==='none'){
+    var url=location.origin+DS_BASE+'/api/identity/twin/card/'+_profileUsername;
+    g('twinCardUrl').textContent=url;
+    panel.style.display='block';
+  }else{
+    panel.style.display='none';
+  }
+}
+function copyTwinCardUrl(){
+  var url=g('twinCardUrl').textContent;
   if(navigator.clipboard){
     navigator.clipboard.writeText(url).then(function(){toast(t('twinCardCopied'))});
-  }else{
-    prompt(t('shareTwinCard'),url);
-  }
+  }else{fallbackCopy(url)}
+}
+function previewTwinCard(){
+  var url=g('twinCardUrl').textContent;
+  window.open(url,'_blank');
 }
 
 var _styleTemplates={
