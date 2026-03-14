@@ -529,12 +529,11 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   </div>
   <div class="profile-section">
     <div class="collapse-header" onclick="toggleCollapse(this)">
-      <h3>Twin Personality</h3>
+      <h3 style="display:flex;align-items:center;gap:8px">Twin Personality <span id="labelQuickStyle" style="font-size:10px;color:var(--ac2);font-weight:400">点击展开选择风格模板</span></h3>
       <span class="collapse-arrow">&#9660;</span>
     </div>
     <div class="collapse-body" id="twinSettingsBody">
       <div id="profStyleCards" style="margin-bottom:12px">
-        <label id="labelQuickStyle" style="font-size:11px;color:var(--tx2);margin-bottom:6px;display:block">快速选择风格模板</label>
         <div class="style-cards" id="profileStyleCards" style="gap:6px"></div>
       </div>
       <div class="profile-field">
@@ -561,17 +560,17 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
           <span id="arDot" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--tx2);transition:.3s"></span>
         </label>
       </div>
-      <button class="profile-save" onclick="saveProfile()">Save Twin Settings</button>
-      <div id="learnSection" style="margin-top:16px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:12px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:18px">🧠</span>
-          <span id="learnTitle" style="font-size:13px;font-weight:700;color:var(--tx)">从聊天记录学习</span>
-        </div>
-        <p id="learnDesc" style="font-size:10px;color:var(--tx2);line-height:1.5;margin-bottom:10px">分析你发过的消息，自动提炼说话风格，让分身更像你</p>
-        <div id="learnStatus" style="font-size:10px;color:var(--tx2);margin-bottom:8px"></div>
-        <button id="learnBtn" onclick="learnStyle()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">让分身学习我的风格</button>
-        <div id="learnResult" style="display:none;margin-top:10px;padding:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;font-size:11px;line-height:1.6"></div>
+    </div>
+    <button class="profile-save" onclick="saveProfile()" style="margin-top:10px">Save Twin Settings</button>
+    <div id="learnSection" style="margin-top:12px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:18px">🧠</span>
+        <span id="learnTitle" style="font-size:13px;font-weight:700;color:var(--tx)">从聊天记录学习</span>
       </div>
+      <p id="learnDesc" style="font-size:10px;color:var(--tx2);line-height:1.5;margin-bottom:10px">分析你发过的消息，自动提炼说话风格，让分身更像你</p>
+      <div id="learnStatus" style="font-size:10px;color:var(--tx2);margin-bottom:8px"></div>
+      <button id="learnBtn" onclick="learnStyle()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">让分身学习我的风格</button>
+      <div id="learnResult" style="display:none;margin-top:10px;padding:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;font-size:11px;line-height:1.6"></div>
     </div>
   </div>
   <div class="profile-section">
@@ -778,7 +777,7 @@ function applyLang(){
   var ps=document.querySelector('.profile-section h3');if(ps)ps.textContent=t('twinPersonality');
   var pp=g('profPersonality');if(pp)pp.placeholder=t('personalityPh');
   var pst=g('profStyle');if(pst)pst.placeholder=t('stylePh');
-  var lqs=g('labelQuickStyle');if(lqs)lqs.textContent=LANG==='zh'?'快速选择风格模板':'Quick style template';
+  var lqs=g('labelQuickStyle');if(lqs)lqs.textContent=LANG==='zh'?'点击展开选择风格模板':'Tap to pick a style template';
   var lp=g('labelPersonality');if(lp)lp.textContent=t('personalityLabel');
   populateProfileStyleCards();
   var lst=g('labelStyle');if(lst)lst.textContent=t('speechStyle');
