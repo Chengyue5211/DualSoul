@@ -565,7 +565,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <button onclick="addFriend()">Add</button>
     </div>
     <div style="margin-bottom:14px">
-      <button onclick="quickCopyInvite()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
+      <button onclick="openShareModal()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
     </div>
     <div id="pendingSection" style="display:none">
       <div class="section-title">Friend Requests</div>
@@ -3961,7 +3961,6 @@ function checkInviteParam(){
 
 // ─── Share Modal (多渠道分享) ───────────────────────────────────
 function openShareModal(){
-  // Remove existing
   var old=document.querySelector('.share-modal-overlay');if(old)old.remove();
 
   var overlay=document.createElement('div');
@@ -3971,21 +3970,17 @@ function openShareModal(){
   var modal=document.createElement('div');
   modal.className='share-modal';
   modal.innerHTML=
-    '<div class="sm-title">'+(LANG==='zh'?'分享DualSoul给朋友':'Share DualSoul')+'</div>'+
-    // Link block at the TOP — always visible before AI text loads
-    '<div style="margin-bottom:10px">'+
-      '<div style="font-size:10px;color:var(--tx2);margin-bottom:4px">'+(LANG==='zh'?'你的专属邀请链接（点击复制）：':'Your invite link (tap to copy):')+'</div>'+
-      '<div style="background:var(--bg2);border:1px solid rgba(92,200,250,.25);border-radius:8px;padding:9px 12px;font-size:11px;color:var(--ac);word-break:break-all;cursor:pointer;line-height:1.5" id="smInviteLink" onclick="_copySmLink()">'+
-        (LANG==='zh'?'加载中...':'Loading...')+
-      '</div>'+
-      '<button style="margin-top:6px;width:100%;padding:9px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="_copySmLink()">'+(LANG==='zh'?'📋 复制链接':'📋 Copy Link')+'</button>'+
-    '</div>'+
-    '<div class="sm-text-preview" id="shareTextPreview">'+(LANG==='zh'?'正在让分身写邀请文案...':'Your twin is writing an invite...')+'</div>'+
+    '<div class="sm-title">'+(LANG==='zh'?'邀请好友注册DualSoul':'Invite Friends')+'</div>'+
+    // AI text preview — shows text+link together
+    '<div style="background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--tx);line-height:1.7;white-space:pre-wrap;word-break:break-all;min-height:70px;margin-bottom:10px" id="shareTextPreview">'+(LANG==='zh'?'正在让分身写邀请文案...':'Your twin is writing an invite...')+'</div>'+
+    // Single copy button
+    '<button style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px" id="smCopyAllBtn">'+(LANG==='zh'?'📋 复制文案+链接':'📋 Copy Text+Link')+'</button>'+
+    // Share channels
     '<div class="sm-channels">'+
       '<div class="sm-ch" onclick="shareVia(\'wechat\')"><div class="sm-ch-icon" style="background:#07c160">💬</div><div class="sm-ch-name">'+(LANG==='zh'?'微信':'WeChat')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'weibo\')"><div class="sm-ch-icon" style="background:#e6162d">📢</div><div class="sm-ch-name">'+(LANG==='zh'?'微博':'Weibo')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'sms\')"><div class="sm-ch-icon" style="background:#34c759">📱</div><div class="sm-ch-name">'+(LANG==='zh'?'短信':'SMS')+'</div></div>'+
-      '<div class="sm-ch" onclick="shareVia(\'copy\')"><div class="sm-ch-icon" style="background:var(--ac)">📋</div><div class="sm-ch-name">'+(LANG==='zh'?'复制全文':'Copy All')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'copy\')"><div class="sm-ch-icon" style="background:var(--ac)">📋</div><div class="sm-ch-name">'+(LANG==='zh'?'复制':'Copy')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'qrcode\')"><div class="sm-ch-icon" style="background:#333">📷</div><div class="sm-ch-name">QR</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'twincard\')"><div class="sm-ch-icon" style="background:rgba(92,200,250,.3)">🪪</div><div class="sm-ch-name">'+(LANG==='zh'?'名片':'Card')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'native\')"><div class="sm-ch-icon" style="background:rgba(255,255,255,.15)">📤</div><div class="sm-ch-name">'+(LANG==='zh'?'更多':'More')+'</div></div>'+
@@ -3998,29 +3993,17 @@ function openShareModal(){
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
-  // Fetch username fresh from API — don't rely on _profileUsername being cached
+  // Fetch username fresh, then load AI text with link
   fetch(DS_BASE+'/api/identity/me',{headers:headers()})
     .then(function(r){return r.json()}).then(function(d){
-      var uname=(d.success&&d.data)?d.data.username:'';
-      if(uname)_profileUsername=uname;
+      if(d.success&&d.data&&d.data.username)_profileUsername=d.data.username;
       var link=getInviteLink();
-      var el=document.getElementById('smInviteLink');
-      if(el){
-        el.textContent=link;
-        el.onclick=function(){_copySmLink(link)};
-      }
-      var btn=modal.querySelector('button[onclick*="_copySmLink"]');
-      if(btn)btn.onclick=function(){_copySmLink(link)};
-      // Now load AI text with the real link
       _loadShareText('wechat', link);
+      _loadShareStats();
     }).catch(function(){
-      var link=getInviteLink();
-      var el=document.getElementById('smInviteLink');
-      if(el)el.textContent=link||'（登录后可见）';
-      _loadShareText('wechat', link);
+      _loadShareText('wechat', getInviteLink());
+      _loadShareStats();
     });
-
-  _loadShareStats();
 }
 function _copySmLink(link){
   var l=link||getInviteLink();
@@ -4029,19 +4012,47 @@ function _copySmLink(link){
   toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!');
 }
 function quickCopyInvite(){
-  // If username already loaded, copy immediately
-  if(_profileUsername){
-    copyInvite(getInviteLink());
-    toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!');
-    return;
-  }
-  // Otherwise fetch username first
+  var doInvite=function(link){
+    // Copy link immediately
+    copyInvite(link);
+    toast(LANG==='zh'?'链接已复制！':'Link copied!');
+    // Show simple text preview modal
+    var old=document.querySelector('.share-modal-overlay');if(old)old.remove();
+    var overlay=document.createElement('div');
+    overlay.className='share-modal-overlay';
+    overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
+    var modal=document.createElement('div');
+    modal.className='share-modal';
+    modal.innerHTML=
+      '<div class="sm-title" style="font-size:14px">'+(LANG==='zh'?'📋 邀请文案 + 链接':'Invite Text + Link')+'</div>'+
+      '<div style="font-size:10px;color:var(--tx2);margin-bottom:6px">'+(LANG==='zh'?'链接已复制。下方是AI写的文案，可一起发给朋友：':'Link copied. You can also send this text:')+'</div>'+
+      '<div style="background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--tx);line-height:1.7;white-space:pre-wrap;word-break:break-all;user-select:all;min-height:60px" id="inviteFullPreview">'+
+        (LANG==='zh'?'正在生成文案...':'Generating...')+
+      '</div>'+
+      '<button style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyAllBtn">'+(LANG==='zh'?'📋 复制文案+链接':'Copy Text+Link')+'</button>'+
+      '<button class="sm-cancel" style="margin-top:6px" onclick="this.closest(\'.share-modal-overlay\').remove()">'+(LANG==='zh'?'关闭':'Close')+'</button>';
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    // Load AI text then fill preview
+    fetch(DS_BASE+'/api/invite/generate-text?platform=wechat',{headers:headers()})
+      .then(function(r){return r.json()}).then(function(d){
+        var txt=(d.success?d.text:'真人+AI分身，第四种社交。你不在时它替你聊，跨语言自动翻，说话像你本人～')+'\n\n'+link;
+        var el=document.getElementById('inviteFullPreview');if(el)el.textContent=txt;
+        var btn=document.getElementById('inviteCopyAllBtn');
+        if(btn)btn.onclick=function(){copyInvite(txt);toast(LANG==='zh'?'文案+链接已复制！':'Copied!')};
+      }).catch(function(){
+        var txt='真人+AI分身，第四种社交。你不在时它替你聊，跨语言自动翻，说话像你本人～\n\n'+link;
+        var el=document.getElementById('inviteFullPreview');if(el)el.textContent=txt;
+        var btn=document.getElementById('inviteCopyAllBtn');
+        if(btn)btn.onclick=function(){copyInvite(txt);toast(LANG==='zh'?'已复制！':'Copied!')};
+      });
+  };
+  if(_profileUsername){doInvite(getInviteLink());return;}
   fetch(DS_BASE+'/api/identity/me',{headers:headers()})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success&&d.data&&d.data.username)_profileUsername=d.data.username;
-      copyInvite(getInviteLink());
-      toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!');
-    }).catch(function(){toast(LANG==='zh'?'复制失败，请重试':'Copy failed')});
+      doInvite(getInviteLink());
+    }).catch(function(){toast(LANG==='zh'?'请先登录':'Please login first')});
 }
 
 var _shareText='';
@@ -4049,14 +4060,19 @@ function _loadShareText(platform, link){
   var invLink=link||getInviteLink();
   fetch(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
-    if(d.success){
-      _shareText=d.text;
-      var el=g('shareTextPreview');
-      if(el)el.textContent=d.text+'\n\n'+invLink;
-    }
+    var txt=(d.success?d.text:(LANG==='zh'?'我在DualSoul上有个AI数字分身，来试试！':'I have an AI twin on DualSoul, try it!'));
+    _shareText=txt;
+    var full=txt+'\n\n'+invLink;
+    var el=g('shareTextPreview');if(el)el.textContent=full;
+    // Wire up the single copy button
+    var btn=document.getElementById('smCopyAllBtn');
+    if(btn)btn.onclick=function(){copyInvite(full);toast(LANG==='zh'?'文案+链接已复制！':'Copied!');};
   }).catch(function(){
     _shareText=LANG==='zh'?'我在DualSoul上有个AI数字分身，来试试！':'I have an AI twin on DualSoul, try it!';
-    var el=g('shareTextPreview');if(el)el.textContent=_shareText+'\n\n'+invLink;
+    var full=_shareText+'\n\n'+invLink;
+    var el=g('shareTextPreview');if(el)el.textContent=full;
+    var btn=document.getElementById('smCopyAllBtn');
+    if(btn)btn.onclick=function(){copyInvite(full);toast(LANG==='zh'?'已复制！':'Copied!');};
   });
 }
 function _loadShareStats(){
