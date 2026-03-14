@@ -429,7 +429,7 @@ body{{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;background
 </style>
 </head>
 <body>
-<a class="back" href="javascript:history.back()">&larr; {lbl_back}</a>
+<a class="back" href="javascript:void(0)" onclick="if(history.length>1)history.back();else window.close()">&larr; {lbl_back}</a>
 <div class="card">
   <div class="avatar">{avatar_img}</div>
   <div class="name">{lbl_title}</div>
