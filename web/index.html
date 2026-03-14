@@ -1534,7 +1534,14 @@ function sendTwinChat(text,imageDataUrl){
     var rIdx='tc_'+(_twinChatHistory.length-1);
     var rTrBtn='<span class="msg-translate" onclick="translateMsg(this,\''+rIdx+'\')" title="Translate">&#x1F310;</span>';
     var twinAv='<div class="msg-av">'+buildAvatar(_profileName||'?',34,'twin')+'</div>';
-    box.innerHTML+='<div class="msg theirs">'+twinAv+'<div><div class="bubble" data-msgid="'+rIdx+'" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(reply).replace(/\n/g,'<br>')+'</div><div class="msg-time">'+rTrBtn+'</div></div></div>';
+    // Convert invite links to clickable copy buttons
+    var replyHtml=esc(reply).replace(/\n/g,'<br>');
+    var inviteMatch=reply.match(/\?invite=\S+/);
+    if(inviteMatch){
+      var fullLink=location.origin+location.pathname+inviteMatch[0];
+      replyHtml=replyHtml.replace(esc(inviteMatch[0]),'<a href="javascript:void(0)" onclick="copyInvite(\''+fullLink+'\')" style="color:var(--ac);text-decoration:underline;word-break:break-all">'+esc(fullLink)+'</a> <span onclick="copyInvite(\''+fullLink+'\')" style="cursor:pointer">📋</span>');
+    }
+    box.innerHTML+='<div class="msg theirs">'+twinAv+'<div><div class="bubble" data-msgid="'+rIdx+'" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+replyHtml+'</div><div class="msg-time">'+rTrBtn+'</div></div></div>';
     box.scrollTop=box.scrollHeight;
   }).catch(function(){
     var typing=g('twinTyping');if(typing)typing.remove();
@@ -2080,6 +2087,11 @@ function copyInviteLink(){
   var link=getInviteLink();
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(link).then(function(){toast(t('inviteCopied'))}).catch(function(){fallbackCopy(link)});
+  }else{fallbackCopy(link)}
+}
+function copyInvite(link){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).then(function(){toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!')}).catch(function(){fallbackCopy(link)});
   }else{fallbackCopy(link)}
 }
 function fallbackCopy(text){

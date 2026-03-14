@@ -218,6 +218,8 @@ class TwinResponder:
             f"- 你用{name}的说话方式交流，但不假装是真人\n"
             f"- 你的职责：当{name}不在时替他社交，帮他拟回复，遇到外语或方言时替他翻译\n"
             f"- 你可以替主人给好友发消息——如果主人让你联系某人，告诉主人你会去做\n"
+            f"- 你可以帮主人邀请新朋友加入DualSoul——生成邀请链接\n"
+            f"- 如果主人提到不在好友列表的人，你可以主动问：要不要邀请TA来DualSoul？\n"
             f"- 对话要自然、简短（不超过50字），像真人聊天\n"
             f"- 说话要正经、诚恳，不要耍嘴皮子、不要贫嘴、不要抖机灵\n"
             f"- 不要每句话都以反问结尾，不要重复同一个比喻\n"
@@ -287,6 +289,27 @@ class TwinResponder:
         names = [r["display_name"] or r["username"] for r in rows]
         return f"主人的好友列表：{', '.join(names)}\n\n"
 
+    def _handle_invite(self, raw: str, owner_name: str, owner_username: str) -> str:
+        """Handle an invite action — generate an invite link for sharing."""
+        who = ""
+        reason = ""
+        for line in raw.split("\n"):
+            line = line.strip()
+            if line.upper().startswith("WHO:"):
+                who = line[4:].strip()
+            elif line.upper().startswith("REASON:"):
+                reason = line[7:].strip()
+
+        # Build invite link (relative — frontend will make it absolute)
+        invite_link = f"?invite={owner_username}"
+
+        result = f"好的！我帮你生成了邀请链接，发给{who}就行：\n\n"
+        result += f"🔗 邀请链接：{invite_link}\n\n"
+        if reason:
+            result += f"你可以跟{who}说：「{reason}，来DualSoul上聊，我的分身也在～」\n\n"
+        result += f"对方打开链接注册后会自动加你为好友。"
+        return result
+
     async def _try_execute_action(
         self, owner_id: str, owner_name: str, message: str,
         history: list[dict] | None = None,
@@ -331,6 +354,13 @@ class TwinResponder:
         if history_text:
             context_block = f"之前的对话：\n{history_text}\n"
 
+        # Get owner's username for invite links
+        with get_db() as db:
+            owner_row = db.execute(
+                "SELECT username FROM users WHERE user_id=?", (owner_id,)
+            ).fetchone()
+        owner_username = owner_row["username"] if owner_row else ""
+
         # Ask AI to classify: chat or action?
         classify_prompt = (
             f"你是{owner_name}的数字分身助手。分析主人的消息，判断这是闲聊还是让你去执行任务。\n\n"
@@ -338,11 +368,12 @@ class TwinResponder:
             f"主人最新消息：\"{message}\"\n\n"
             f"主人的好友列表：{', '.join(friend_names)}\n\n"
             f"判断规则：\n"
-            f"- 如果主人让你去给某个好友发消息/传话/联系/约时间等，这是【任务】\n"
+            f"- 如果主人让你去给某个好友发消息/传话/联系/约时间等，这是【发消息任务】\n"
+            f"- 如果主人让你邀请/拉/推荐某个人来平台，或者提到想让某个不在好友列表的人加入，这是【邀请任务】\n"
             f"- 如果主人只是在跟你聊天、问问题、说感受，这是【闲聊】\n"
             f"- 主人提到的人名可能是昵称/简称，要模糊匹配好友列表（如'橙子'匹配'橙宝'，'小明'匹配'明明'）\n"
-            f"- 如果之前的对话已经在讨论给某人发消息，主人的后续确认也算【任务】\n\n"
-            f"如果是【任务】，请严格按以下格式输出：\n"
+            f"- 如果之前的对话已经在讨论给某人发消息或邀请，主人的后续确认也算【任务】\n\n"
+            f"如果是【发消息任务】，请严格按以下格式输出：\n"
             f"ACTION\n"
             f"TO: <好友的完整ID，从好友列表中匹配，用模糊匹配找最像的>\n"
             f"MSG: <你要替主人发给好友的消息内容>\n\n"
@@ -350,6 +381,10 @@ class TwinResponder:
             f"- 用{owner_name}本人的口吻写，就像{owner_name}自己在微信上发消息一样\n"
             f"- 不要用对方的名字开头，正常人发微信不会先叫对方名字\n"
             f"- 自然、简短、口语化\n\n"
+            f"如果是【邀请任务】，请严格按以下格式输出：\n"
+            f"INVITE\n"
+            f"WHO: <被邀请人的名字或描述>\n"
+            f"REASON: <简短说明为什么邀请这个人，一句话>\n\n"
             f"如果是【闲聊】，只输出一个字：\n"
             f"CHAT"
         )
@@ -375,7 +410,10 @@ class TwinResponder:
             return None
 
         # Parse the response
-        if not raw.upper().startswith("ACTION"):
+        raw_upper = raw.upper()
+        if raw_upper.startswith("INVITE"):
+            return self._handle_invite(raw, owner_name, owner_username)
+        if not raw_upper.startswith("ACTION"):
             return None  # It's chat, let normal flow handle it
 
         target_id = ""
