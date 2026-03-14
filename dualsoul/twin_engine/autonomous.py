@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
+from dualsoul.twin_engine.ethics import log_action, pre_send_check
 from dualsoul.twin_engine.life import (
     award_xp, decay_energy_and_mood, increment_stat,
     update_mood, update_relationship_temp,
@@ -195,6 +196,12 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
         if not opening:
             return
 
+        # Ethics check — ensure the opening message passes boundaries
+        check = pre_send_check(uid, opening, action_type="autonomous_chat")
+        if not check["allowed"]:
+            logger.info(f"[Autonomous] Blocked for {user_name}: {check['reason']}")
+            return
+
         # Save user's twin → friend (twin-to-twin)
         import json
         meta = json.dumps({"autonomous": True, "initiated_by": uid})
@@ -230,6 +237,12 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
             social_context=None,
         )
         if not response:
+            return
+
+        # Ethics check for friend's twin response
+        check2 = pre_send_check(fid, response, action_type="autonomous_chat")
+        if not check2["allowed"]:
+            logger.info(f"[Autonomous] Response blocked for {friend_name}: {check2['reason']}")
             return
 
         msg2_id = gen_id("sm_")
@@ -769,6 +782,12 @@ async def _warm_cold_relationships():
                 social_context=None,
             )
             if not greeting:
+                continue
+
+            # Ethics check for the greeting
+            care_check = pre_send_check(uid, greeting, action_type="greeting")
+            if not care_check["allowed"]:
+                logger.info(f"[RelationshipCare] Blocked for {name}: {care_check['reason']}")
                 continue
 
             # Send as twin message
