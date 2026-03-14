@@ -871,22 +871,25 @@ class TwinResponder:
             )
 
         # Social context instruction — critical behavioral override
-        context_instruction = ""
-        if social_context:
-            context_instruction = (
-                f"\n\n【最重要的规则，必须遵守】{social_context}"
-            )
-
         personality_block = profile.build_personality_prompt()
-        system_prompt = (
-            f"You are {profile.display_name}'s digital twin.\n"
-            f"{personality_block}\n"
-            f"Reply as {profile.display_name}'s twin. Keep it under 50 words, "
-            f"natural and authentic. Output only the reply text. "
-            f"Only respond to the LATEST message, do not recap previous messages."
-            f"{lang_instruction}"
-            f"{context_instruction}"
-        )
+
+        if social_context:
+            # When auto-replying for owner, use Chinese prompt with strict constraints FIRST
+            system_prompt = (
+                f"{social_context}\n\n"
+                f"你是{profile.display_name}的数字分身。\n"
+                f"{personality_block}\n"
+                f"用{profile.display_name}的风格回复，只输出回复内容。"
+            )
+        else:
+            system_prompt = (
+                f"You are {profile.display_name}'s digital twin.\n"
+                f"{personality_block}\n"
+                f"Reply as {profile.display_name}'s twin. Keep it under 50 words, "
+                f"natural and authentic. Output only the reply text. "
+                f"Only respond to the LATEST message, do not recap previous messages."
+                f"{lang_instruction}"
+            )
 
         # Build messages with conversation history
         messages = [{"role": "system", "content": system_prompt}]
@@ -913,7 +916,7 @@ class TwinResponder:
                     },
                     json={
                         "model": AI_MODEL,
-                        "max_tokens": 100,
+                        "max_tokens": 40 if social_context else 100,
                         "messages": messages,
                     },
                 )
