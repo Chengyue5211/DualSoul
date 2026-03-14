@@ -1911,22 +1911,36 @@ function copyTwinCardUrl(){
 }
 function previewTwinCard(){
   var url=g('twinCardUrl').textContent;
-  // Show in-app overlay instead of new tab (avoids back-button issues on mobile)
   var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;flex-direction:column';
-  var topBar=document.createElement('div');
-  topBar.style.cssText='padding:12px 16px;display:flex;justify-content:flex-end';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:#0a0a10;overflow-y:auto';
   var closeBtn=document.createElement('button');
   closeBtn.textContent=LANG==='zh'?'✕ 关闭':'✕ Close';
-  closeBtn.style.cssText='padding:8px 18px;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit';
-  closeBtn.onclick=function(){overlay.remove()};
-  topBar.appendChild(closeBtn);
-  overlay.appendChild(topBar);
-  var frame=document.createElement('iframe');
-  frame.src=url;
-  frame.style.cssText='flex:1;border:none;border-radius:12px;margin:0 12px 12px';
-  overlay.appendChild(frame);
+  closeBtn.style.cssText='position:fixed;top:12px;right:12px;z-index:10000;padding:8px 18px;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit';
+  closeBtn.onclick=function(){overlay.remove();closeBtn.remove()};
+  document.body.appendChild(closeBtn);
+  overlay.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:#888">Loading...</div>';
   document.body.appendChild(overlay);
+  fetch(url,{headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success){overlay.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:#888">Error</div>';return}
+    var c=d.data;
+    var avHtml=c.twin_avatar||c.avatar?
+      '<img src="'+(c.twin_avatar||c.avatar)+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(92,200,250,.4);box-shadow:0 0 20px rgba(124,92,252,.3)">':
+      '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:700">'+esc(c.display_name||'?')[0]+'</div>';
+    var langMap={zh:'中文',en:'English',ja:'日本語',ko:'한국어',fr:'Français',de:'Deutsch',es:'Español'};
+    var langName=langMap[c.preferred_lang]||c.preferred_lang||'';
+    overlay.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">'+
+      '<div style="background:#14141e;border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:32px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4)">'+
+      '<div style="margin:0 auto 16px">'+avHtml+'</div>'+
+      '<div style="font-size:22px;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+esc(c.display_name)+' 的数字分身</div>'+
+      '<div style="font-size:14px;color:#8a8594;margin:12px 0 16px;line-height:1.6;font-style:italic">"'+esc(c.greeting)+'"</div>'+
+      '<div style="text-align:left;margin:16px 0;padding:14px;background:#1e1e2c;border-radius:12px">'+
+      (c.twin_personality?'<div style="display:flex;gap:8px;margin-bottom:10px;font-size:13px"><span style="color:#7c5cfc;min-width:65px;font-weight:600;font-size:11px">性格特征</span><span style="color:#e8e4de;line-height:1.5">'+esc(c.twin_personality)+'</span></div>':'')+
+      (c.twin_speech_style?'<div style="display:flex;gap:8px;margin-bottom:10px;font-size:13px"><span style="color:#7c5cfc;min-width:65px;font-weight:600;font-size:11px">说话风格</span><span style="color:#e8e4de;line-height:1.5">'+esc(c.twin_speech_style)+'</span></div>':'')+
+      (langName?'<div style="display:flex;gap:8px;font-size:13px"><span style="color:#7c5cfc;min-width:65px;font-weight:600;font-size:11px">语言</span><span style="color:#e8e4de">'+esc(langName)+'</span></div>':'')+
+      '</div>'+
+      '<div style="margin-top:16px;font-size:10px;color:#555">DualSoul — 第四种社交</div>'+
+      '</div></div>';
+  }).catch(function(){overlay.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:#888">Network error</div>'});
 }
 
 var _styleTemplates={
