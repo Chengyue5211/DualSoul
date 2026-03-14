@@ -37,6 +37,18 @@ a{color:var(--ac);text-decoration:none}
 .toast-wrap{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:none;width:90%;max-width:400px}
 .toast{background:rgba(20,20,30,.95);border:1px solid rgba(124,92,252,.2);border-radius:12px;padding:12px 16px;color:var(--tx);font-size:12px;animation:toastIn .3s ease;backdrop-filter:blur(12px)}
 .toast.out{animation:toastOut .25s ease forwards}
+
+/* Twin notification card */
+.twin-notify-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease}
+.twin-notify-card{background:var(--bg2);border:1px solid rgba(124,92,252,.3);border-radius:16px;padding:20px;width:85%;max-width:340px;box-shadow:0 8px 32px rgba(124,92,252,.2);animation:slideUp .3s ease}
+.twin-notify-card .tn-icon{text-align:center;font-size:28px;margin-bottom:8px}
+.twin-notify-card .tn-title{text-align:center;font-size:14px;font-weight:700;color:var(--ac);margin-bottom:12px}
+.twin-notify-card .tn-body{font-size:12px;color:var(--tx);line-height:1.8;background:rgba(124,92,252,.06);border-radius:10px;padding:12px;margin-bottom:14px;white-space:pre-line}
+.twin-notify-card .tn-btns{display:flex;gap:8px}
+.twin-notify-card .tn-btns button{flex:1;padding:10px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.twin-notify-card .tn-go{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+.twin-notify-card .tn-ok{background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)!important}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes toastIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-12px)}}
 
@@ -872,6 +884,34 @@ function toast(msg,ms){
 
 function headers(){return{'Content-Type':'application/json','Authorization':'Bearer '+token}}
 
+function showTwinNotify(nd){
+  var friendName=nd.friend_name||'好友';
+  var friendId=nd.friend_id||'';
+  var content=nd.content||'';
+  // Parse "刚才XX找你，说：「xxx」\n我替你回了：「xxx」\n具体事情得你来定哦～"
+  var overlay=document.createElement('div');
+  overlay.className='twin-notify-overlay';
+  overlay.innerHTML='<div class="twin-notify-card">'+
+    '<div class="tn-icon">👻</div>'+
+    '<div class="tn-title">'+(LANG==='zh'?'你的分身替你回了消息':'Your twin replied for you')+'</div>'+
+    '<div class="tn-body">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="tn-btns">'+
+      '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'知道了':'OK')+'</button>'+
+      (friendId?'<button class="tn-go" onclick="goTwinNotifyChat(\''+esc(friendId)+'\',\''+esc(friendName)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'查看对话':'View Chat')+'</button>':'')+
+    '</div>'+
+  '</div>';
+  document.body.appendChild(overlay);
+  // Also play a subtle sound or vibrate
+  if(navigator.vibrate)navigator.vibrate(200);
+}
+
+function goTwinNotifyChat(friendId,friendName){
+  // Switch to Social tab and open chat with this friend
+  var navItems=document.querySelectorAll('nav .ni');
+  if(navItems[0])swTab('Social',navItems[0]);
+  openChat(friendId,friendName,'real');
+}
+
 // Auth
 function toggleAuthMode(){
   isRegister=!isRegister;
@@ -1367,12 +1407,12 @@ function wsHandle(msg){
     toast('New friend request!');
     loadFriends();
   }else if(msg.type==='twin_notification'){
-    // Twin notified its owner about an incoming message from a friend
     var nd=msg.data;
-    toast((LANG==='zh'?'分身提醒：':'Twin: ')+nd.from_friend+(LANG==='zh'?' 给你发了消息':' sent you a message'));
     loadUnread();
     loadFriendUnread();
-    // If owner is currently in twin self-chat, show the notification there
+    // Show persistent notification card
+    showTwinNotify(nd);
+    // If owner is currently in twin self-chat, show the notification there too
     if(chatFriend&&chatFriend.is_twin_chat){
       _twinChatHistory.push({mine:false,text:nd.content});
       var box=g('chatMsgs');
