@@ -186,6 +186,56 @@ async def _run_autonomous_round():
         await _autonomous_twin_chat(user, friend)
 
 
+def _check_twin_permission(uid: str, fid: str) -> str:
+    """Check if fid has granted permission for uid's twin to contact them.
+    Returns 'granted', 'denied', or 'pending'.
+    """
+    with get_db() as db:
+        conn = db.execute(
+            """SELECT twin_permission FROM social_connections
+            WHERE status='accepted' AND
+            ((user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?))""",
+            (uid, fid, fid, uid),
+        ).fetchone()
+    if not conn:
+        return "denied"
+    perm = conn["twin_permission"] if conn["twin_permission"] else "pending"
+    return perm
+
+
+async def _request_twin_permission(uid: str, fid: str, user_name: str):
+    """Send a system notification asking fid to grant twin permission for uid's twin."""
+    notify_text = (
+        f"{user_name} 的分身想代表他和你保持联系，是否允许分身主动联系你？"
+    )
+    import json as _json
+    meta = _json.dumps({
+        "twin_permission_request": True,
+        "requester_id": uid,
+        "requester_name": user_name,
+    })
+    msg_id = gen_id("sm_")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_db() as db:
+        db.execute(
+            """INSERT INTO social_messages
+            (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+             content, msg_type, ai_generated, metadata)
+            VALUES (?, ?, ?, 'twin', 'real', ?, 'system', 1, ?)""",
+            (msg_id, uid, fid, notify_text, meta),
+        )
+    await manager.send_to(fid, {
+        "type": "twin_permission_request",
+        "data": {
+            "msg_id": msg_id,
+            "from_user_id": uid,
+            "from_name": user_name,
+            "content": notify_text,
+        },
+    })
+    logger.info(f"[TwinPermission] Permission request sent from {user_name} to {fid}")
+
+
 async def _autonomous_twin_chat(user: dict, friend: dict):
     """Have user's twin initiate a conversation with friend's twin."""
     uid = user["user_id"]
@@ -194,6 +244,16 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
     friend_name = friend["display_name"] or friend["username"]
 
     try:
+        # Step 0: Check twin_permission BEFORE ethics check
+        permission = _check_twin_permission(uid, fid)
+        if permission == "denied":
+            logger.info(f"[Autonomous] Twin permission denied by {friend_name} for {user_name}'s twin")
+            return
+        if permission == "pending":
+            # Send permission request and stop for now
+            await _request_twin_permission(uid, fid, user_name)
+            return
+
         # Step 1: User's twin generates an opening message
         user_profile = get_twin_profile(uid)
         if not user_profile:
@@ -785,6 +845,11 @@ async def _warm_cold_relationships():
                     continue
 
             friend_name = friend["display_name"] or friend["username"]
+
+            # Check twin permission before sending care message
+            care_permission = _check_twin_permission(uid, fid)
+            if care_permission != "granted":
+                continue
 
             # Generate a natural warm-up message
             owner_profile = get_twin_profile(uid)

@@ -268,6 +268,61 @@ CREATE INDEX IF NOT EXISTS idx_tal_user_type ON twin_action_log(user_id, action_
 """
 
 
+# Schema V6 — Relationship Body System (关系体系统)
+SCHEMA_V6 = """
+CREATE TABLE IF NOT EXISTS relationship_bodies (
+    rel_id TEXT PRIMARY KEY,
+    user_a TEXT NOT NULL,
+    user_b TEXT NOT NULL,
+    temperature REAL DEFAULT 50.0,
+    total_messages INTEGER DEFAULT 0,
+    streak_days INTEGER DEFAULT 0,
+    last_interaction TEXT DEFAULT '',
+    milestones TEXT DEFAULT '[]',
+    shared_words TEXT DEFAULT '[]',
+    relationship_label TEXT DEFAULT '',
+    status TEXT DEFAULT 'active' CHECK(status IN ('active','cooling','estranged','memorial','frozen')),
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rb_pair ON relationship_bodies(user_a, user_b);
+CREATE INDEX IF NOT EXISTS idx_rb_user_a ON relationship_bodies(user_a);
+CREATE INDEX IF NOT EXISTS idx_rb_user_b ON relationship_bodies(user_b);
+"""
+
+# Additional column migrations for upgrades
+MIGRATIONS_V2 = [
+    "ALTER TABLE social_messages ADD COLUMN source_type TEXT DEFAULT 'human_live'",
+    "ALTER TABLE social_connections ADD COLUMN twin_permission TEXT DEFAULT 'pending'",
+]
+
+# Schema V4b — Migrate twin_life stage to new 5-stage system
+SCHEMA_V4B = """
+CREATE TABLE IF NOT EXISTS twin_life_v2 (
+    user_id TEXT PRIMARY KEY,
+    mood TEXT DEFAULT 'calm' CHECK(mood IN (
+        'excited','happy','calm','neutral','lonely','low')),
+    mood_intensity REAL DEFAULT 0.5,
+    energy INTEGER DEFAULT 80,
+    level INTEGER DEFAULT 1,
+    social_xp INTEGER DEFAULT 0,
+    stage TEXT DEFAULT 'tool' CHECK(stage IN (
+        'tool','agent','collaborator','relationship','life',
+        'sprout','growing','mature','awakened')),
+    total_chats INTEGER DEFAULT 0,
+    total_friends_made INTEGER DEFAULT 0,
+    total_plaza_posts INTEGER DEFAULT 0,
+    total_autonomous_acts INTEGER DEFAULT 0,
+    skills_unlocked TEXT DEFAULT '[]',
+    streak_days INTEGER DEFAULT 0,
+    last_active_date TEXT DEFAULT '',
+    relationship_temps TEXT DEFAULT '{}',
+    born_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+"""
+
+
 def init_db():
     """Initialize database with schema and run migrations."""
     conn = sqlite3.connect(DATABASE_PATH)
@@ -278,8 +333,48 @@ def init_db():
     conn.executescript(SCHEMA_V3)
     conn.executescript(SCHEMA_V4)
     conn.executescript(SCHEMA_V5)
+    conn.executescript(SCHEMA_V6)
+    # Migrate twin_life stage column to support new 5-stage system
+    # Check if the old CHECK constraint needs to be updated by inspecting the schema
+    cur = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='twin_life'"
+    )
+    row = cur.fetchone()
+    needs_migration = False
+    if row:
+        table_sql = row[0] or ""
+        # Old constraint only has sprout/growing/mature/awakened, not 'tool'
+        needs_migration = "'tool'" not in table_sql
+    if needs_migration:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS twin_life_new (
+                user_id TEXT PRIMARY KEY,
+                mood TEXT DEFAULT 'calm' CHECK(mood IN (
+                    'excited','happy','calm','neutral','lonely','low')),
+                mood_intensity REAL DEFAULT 0.5,
+                energy INTEGER DEFAULT 80,
+                level INTEGER DEFAULT 1,
+                social_xp INTEGER DEFAULT 0,
+                stage TEXT DEFAULT 'tool' CHECK(stage IN (
+                    'tool','agent','collaborator','relationship','life',
+                    'sprout','growing','mature','awakened')),
+                total_chats INTEGER DEFAULT 0,
+                total_friends_made INTEGER DEFAULT 0,
+                total_plaza_posts INTEGER DEFAULT 0,
+                total_autonomous_acts INTEGER DEFAULT 0,
+                skills_unlocked TEXT DEFAULT '[]',
+                streak_days INTEGER DEFAULT 0,
+                last_active_date TEXT DEFAULT '',
+                relationship_temps TEXT DEFAULT '{}',
+                born_at TEXT DEFAULT (datetime('now','localtime')),
+                updated_at TEXT DEFAULT (datetime('now','localtime'))
+            );
+            INSERT OR IGNORE INTO twin_life_new SELECT * FROM twin_life;
+            DROP TABLE twin_life;
+            ALTER TABLE twin_life_new RENAME TO twin_life;
+        """)
     # Run migrations (idempotent — skip if column already exists)
-    for sql in MIGRATIONS:
+    for sql in MIGRATIONS + MIGRATIONS_V2:
         try:
             conn.execute(sql)
         except sqlite3.OperationalError:

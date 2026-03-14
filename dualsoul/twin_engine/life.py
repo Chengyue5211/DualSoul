@@ -51,21 +51,89 @@ def level_from_xp(xp: int) -> int:
 
 
 def stage_from_level(level: int) -> str:
-    if level <= 5:
-        return "sprout"
-    elif level <= 15:
-        return "growing"
-    elif level <= 30:
-        return "mature"
+    """Map level to the 5-stage social growth path."""
+    if level <= 2:
+        return "tool"
+    elif level <= 5:
+        return "agent"
+    elif level <= 9:
+        return "collaborator"
+    elif level <= 14:
+        return "relationship"
     else:
-        return "awakened"
+        return "life"
 
 
+# Five-stage social growth path (五阶段成长路径)
 STAGE_NAMES = {
-    "sprout": {"zh": "萌芽期", "en": "Sprout", "emoji": "\U0001f331"},
-    "growing": {"zh": "成长期", "en": "Growing", "emoji": "\U0001f33f"},
-    "mature": {"zh": "成熟期", "en": "Mature", "emoji": "\U0001f333"},
-    "awakened": {"zh": "觉醒期", "en": "Awakened", "emoji": "\u2728"},
+    "tool": {
+        "zh": "工具分身",
+        "en": "Tool Twin",
+        "emoji": "\U0001f527",
+        "level_range": "LV.1-2",
+        "desc_zh": "能自动回复，能代接消息",
+        "desc_en": "Auto-replies and receives messages on your behalf",
+        "abilities_zh": ["离线自动回复", "代接消息"],
+        "abilities_en": ["Auto-reply when offline", "Receive messages"],
+        "unlock_hint_zh": "继续聊天，解锁代理分身",
+        "unlock_hint_en": "Keep chatting to unlock Agent Twin",
+    },
+    "agent": {
+        "zh": "代理分身",
+        "en": "Agent Twin",
+        "emoji": "\U0001f916",
+        "level_range": "LV.3-5",
+        "desc_zh": "能主动联系，能管理关系",
+        "desc_en": "Proactively reaches out and manages relationships",
+        "abilities_zh": ["主动联系好友", "管理社交关系", "好友发现推荐"],
+        "abilities_en": ["Proactively contact friends", "Manage relationships", "Friend discovery"],
+        "unlock_hint_zh": "继续成长，解锁协作分身",
+        "unlock_hint_en": "Keep growing to unlock Collaborator Twin",
+    },
+    "collaborator": {
+        "zh": "协作分身",
+        "en": "Collaborator Twin",
+        "emoji": "\U0001f91d",
+        "level_range": "LV.6-9",
+        "desc_zh": "能感知情绪，能识别场合",
+        "desc_en": "Senses emotions and understands social context",
+        "abilities_zh": ["情绪感知", "场合识别", "自主社交对话", "伦理边界守护"],
+        "abilities_en": ["Emotion sensing", "Context awareness", "Autonomous conversation", "Ethics protection"],
+        "unlock_hint_zh": "继续成长，解锁关系分身",
+        "unlock_hint_en": "Keep growing to unlock Relationship Twin",
+    },
+    "relationship": {
+        "zh": "关系分身",
+        "en": "Relationship Twin",
+        "emoji": "\U0001f49b",
+        "level_range": "LV.10-14",
+        "desc_zh": "能维护关系体，能积累共同记忆",
+        "desc_en": "Maintains relationship bodies and builds shared memories",
+        "abilities_zh": ["关系体管理", "共同记忆积累", "里程碑记录", "共同词汇提取"],
+        "abilities_en": ["Relationship body management", "Shared memory accumulation", "Milestone tracking", "Shared vocabulary"],
+        "unlock_hint_zh": "继续成长，解锁生命分身",
+        "unlock_hint_en": "Keep growing to unlock Life Twin",
+    },
+    "life": {
+        "zh": "生命分身",
+        "en": "Life Twin",
+        "emoji": "\u2728",
+        "level_range": "LV.15+",
+        "desc_zh": "具备持续人格，参与双生命社交",
+        "desc_en": "Has continuous personality and participates in dual-life social",
+        "abilities_zh": ["持续人格", "双生命社交", "独立见解", "跨平台身份", "生命记忆传承"],
+        "abilities_en": ["Continuous personality", "Dual-life social", "Independent insights", "Cross-platform identity", "Life memory inheritance"],
+        "unlock_hint_zh": "你的分身已进入最高阶段",
+        "unlock_hint_en": "Your twin has reached the highest stage",
+    },
+}
+
+# Legacy mapping for backward compatibility
+_LEGACY_STAGE_MAP = {
+    "sprout": "tool",
+    "growing": "agent",
+    "mature": "collaborator",
+    "awakened": "life",
 }
 
 
@@ -305,7 +373,9 @@ def get_life_dashboard(user_id: str) -> dict:
     xp_needed = next_level_xp - current_level_xp
 
     stage = state["stage"]
-    stage_info = STAGE_NAMES.get(stage, STAGE_NAMES["sprout"])
+    # Handle legacy stage names from old DB rows
+    stage = _LEGACY_STAGE_MAP.get(stage, stage)
+    stage_info = STAGE_NAMES.get(stage, STAGE_NAMES["tool"])
 
     unlocked = get_unlocked_skills(level)
     next_skill = get_next_skill(level)
@@ -368,6 +438,28 @@ def get_life_dashboard(user_id: str) -> dict:
     similarity += min(50, int(xp / 20))  # Max 50% from XP, caps at 1000 XP
     similarity = min(99, similarity)
 
+    # Build 5-stage growth card for the frontend
+    stage_order = ["tool", "agent", "collaborator", "relationship", "life"]
+    current_stage_idx = stage_order.index(stage) if stage in stage_order else 0
+    growth_path = []
+    for i, s in enumerate(stage_order):
+        s_info = STAGE_NAMES[s]
+        growth_path.append({
+            "stage": s,
+            "name_zh": s_info["zh"],
+            "name_en": s_info["en"],
+            "emoji": s_info["emoji"],
+            "level_range": s_info["level_range"],
+            "desc_zh": s_info["desc_zh"],
+            "desc_en": s_info["desc_en"],
+            "abilities_zh": s_info["abilities_zh"],
+            "abilities_en": s_info["abilities_en"],
+            "unlock_hint_zh": s_info["unlock_hint_zh"],
+            "unlock_hint_en": s_info["unlock_hint_en"],
+            "is_current": i == current_stage_idx,
+            "is_unlocked": i <= current_stage_idx,
+        })
+
     return {
         "level": level,
         "social_xp": xp,
@@ -376,6 +468,7 @@ def get_life_dashboard(user_id: str) -> dict:
         "xp_percent": round(xp_progress / max(xp_needed, 1) * 100),
         "stage": stage,
         "stage_name": stage_info,
+        "growth_path": growth_path,
         "mood": state["mood"],
         "mood_intensity": state["mood_intensity"],
         "energy": state["energy"],
