@@ -314,6 +314,21 @@ async def detect_translate(req: TranslateRequest, user=Depends(get_current_user)
 async def twin_chat(req: TwinChatRequest, user=Depends(get_current_user)):
     """Chat with your own digital twin — the twin knows it IS you."""
     uid = user["user_id"]
+
+    # Save the user's message for style learning (sender_mode='real' to self)
+    if req.message and req.message.strip():
+        user_msg_id = gen_id("sm_")
+        with get_db() as db:
+            db.execute(
+                """
+                INSERT INTO social_messages
+                (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                 content, msg_type, ai_generated)
+                VALUES (?, ?, ?, 'real', 'twin', ?, 'text', 0)
+                """,
+                (user_msg_id, uid, uid, req.message.strip()),
+            )
+
     reply = await _twin.twin_self_chat(
         owner_id=uid,
         message=req.message,

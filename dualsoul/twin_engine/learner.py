@@ -15,7 +15,7 @@ from dualsoul.database import get_db
 logger = logging.getLogger(__name__)
 
 # Minimum messages needed before learning is meaningful
-MIN_MESSAGES_FOR_LEARNING = 10
+MIN_MESSAGES_FOR_LEARNING = 5
 # How many recent messages to analyze
 SAMPLE_SIZE = 80
 
