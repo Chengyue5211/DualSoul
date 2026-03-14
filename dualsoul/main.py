@@ -7,6 +7,7 @@ import os
 from contextlib import asynccontextmanager
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,9 +24,9 @@ from dualsoul.twin_engine.autonomous import autonomous_social_loop
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    print(f"[DualSoul v{__version__}] Database initialized")
+    logger.info(f"DualSoul v{__version__} — database initialized")
     task = asyncio.create_task(autonomous_social_loop())
-    print("[DualSoul] Autonomous twin social engine started")
+    logger.info("Autonomous twin social engine started")
     yield
     task.cancel()
     try:

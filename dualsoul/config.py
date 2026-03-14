@@ -1,9 +1,12 @@
 """DualSoul configuration — all settings from environment variables."""
 
+import logging
 import os
 import secrets
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -22,10 +25,10 @@ if not JWT_SECRET:
             JWT_SECRET = secrets.token_hex(32)
             with open(_secret_file, "w") as _f:
                 _f.write(JWT_SECRET)
-            print("[DualSoul] INFO: Generated persistent JWT secret saved to .jwt_secret")
+            logger.info("Generated persistent JWT secret saved to .jwt_secret")
     except OSError:
         JWT_SECRET = secrets.token_hex(32)
-        print("[DualSoul] WARNING: Could not persist JWT secret. Tokens will expire on restart.")
+        logger.warning("Could not persist JWT secret. Tokens will expire on restart.")
 
 JWT_EXPIRE_HOURS = int(os.getenv("DUALSOUL_JWT_EXPIRE_HOURS", "72"))
 

@@ -2,9 +2,12 @@
 
 import base64
 import hashlib
+import logging
 import os
 
 import httpx
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
@@ -72,12 +75,18 @@ async def update_profile(req: UpdateProfileRequest, user=Depends(get_current_use
     updates = []
     params = []
     if req.display_name:
+        if len(req.display_name) > 50:
+            return {"success": False, "error": "Display name too long (max 50 chars)"}
         updates.append("display_name=?")
         params.append(req.display_name)
     if req.twin_personality:
+        if len(req.twin_personality) > 500:
+            return {"success": False, "error": "Personality too long (max 500 chars)"}
         updates.append("twin_personality=?")
         params.append(req.twin_personality)
     if req.twin_speech_style:
+        if len(req.twin_speech_style) > 500:
+            return {"success": False, "error": "Speech style too long (max 500 chars)"}
         updates.append("twin_speech_style=?")
         params.append(req.twin_speech_style)
     _VALID_LANGS = {"", "zh", "en", "ja", "ko", "fr", "de", "es", "pt", "ru", "ar", "hi", "th", "vi", "id", "auto"}
@@ -113,7 +122,8 @@ async def upload_avatar(req: AvatarUploadRequest, user=Depends(get_current_user)
         img_data = img_data.split(",", 1)[1]
     try:
         raw = base64.b64decode(img_data)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Avatar base64 decode failed: {e}")
         return {"success": False, "error": "Invalid base64 image"}
 
     if len(raw) > 2 * 1024 * 1024:  # 2MB limit
@@ -191,7 +201,8 @@ async def upload_voice(req: VoiceUploadRequest, user=Depends(get_current_user)):
         audio_data = audio_data.split(",", 1)[1]
     try:
         raw = base64.b64decode(audio_data)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Voice base64 decode failed: {e}")
         return {"success": False, "error": "Invalid base64 audio"}
     if len(raw) > 5 * 1024 * 1024:
         return {"success": False, "error": "Audio too large (max 5MB)"}
@@ -240,7 +251,8 @@ async def twin_preview(req: TwinPreviewRequest, user=Depends(get_current_user)):
                 json={"model": AI_MODEL, "max_tokens": 80, "messages": [{"role": "user", "content": prompt}]},
             )
             reply = resp.json()["choices"][0]["message"]["content"].strip()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Twin preview generation failed: {e}")
         reply = f"Hey! This is {name}'s twin — I think the weekend might work, let me check!"
 
     return {"success": True, "reply": reply}
@@ -407,8 +419,8 @@ async def twin_card(username: str, request: Request):
                     },
                 )
                 greeting = resp.json()["choices"][0]["message"]["content"].strip()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Greeting generation skipped: {e}")
     if not greeting:
         greeting = f"Hi, I'm {display_name}'s digital twin. Nice to meet you!"
 

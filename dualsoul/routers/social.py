@@ -311,6 +311,8 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
     content = req.content.strip()
     if not content:
         return {"success": False, "error": "Content cannot be empty"}
+    if len(content) > 2000:
+        return {"success": False, "error": "Message too long (max 2000 chars)"}
     if req.sender_mode not in ("real", "twin"):
         return {"success": False, "error": "Invalid sender_mode"}
     if req.receiver_mode not in ("real", "twin"):

@@ -12,7 +12,7 @@
 <title>DualSoul — The Fourth Kind of Social</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a10;--bg2:#14141e;--bg3:#1e1e2c;--tx:#e8e4de;--tx2:#8a8594;--ac:#7c5cfc;--ac2:#a07cff;--gd:linear-gradient(135deg,#7c5cfc,#5cc8fa);--bd:rgba(255,255,255,.06)}
+:root{--bg:#0a0a10;--bg2:#14141e;--bg3:#1e1e2c;--tx:#e8e4de;--tx2:#8a8594;--ac:#7c5cfc;--ac2:#a07cff;--gd:linear-gradient(135deg,#7c5cfc,#5cc8fa);--bd:rgba(255,255,255,.06);--orange:#ff8c32;--red:#e74c3c;--green:#2ecc71;--cyan:#5cc8fa}
 body{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--tx);max-width:480px;margin:0 auto;min-height:100vh;overflow-x:hidden}
 a{color:var(--ac);text-decoration:none}
 .page{display:none;min-height:100vh}.page.v{display:block}
@@ -63,15 +63,15 @@ a{color:var(--ac);text-decoration:none}
 .call-btns{display:flex;gap:20px;z-index:1}
 .call-btns .cb{width:60px;height:60px;border-radius:50%;border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
 .call-btns .cb:active{transform:scale(.9)}
-.cb-accept{background:#2ecc71;color:#fff}
-.cb-reject{background:#e74c3c;color:#fff}
-.cb-hangup{background:#e74c3c;color:#fff}
+.cb-accept{background:var(--green);color:#fff}
+.cb-reject{background:var(--red);color:#fff}
+.cb-hangup{background:var(--red);color:#fff}
 .cb-mute{background:rgba(255,255,255,.15);color:#fff}
-.cb-mute.on{background:rgba(231,76,60,.3);color:#e74c3c}
+.cb-mute.on{background:rgba(231,76,60,.3);color:var(--red)}
 .cb-speaker{background:rgba(255,255,255,.15);color:#fff}
-.cb-speaker.on{background:rgba(46,204,113,.3);color:#2ecc71}
+.cb-speaker.on{background:rgba(46,204,113,.3);color:var(--green)}
 .cb-video-toggle{background:rgba(255,255,255,.15);color:#fff}
-.cb-video-toggle.off{background:rgba(231,76,60,.3);color:#e74c3c}
+.cb-video-toggle.off{background:rgba(231,76,60,.3);color:var(--red)}
 /* Ringing animation */
 @keyframes ringPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,204,113,.4)}50%{box-shadow:0 0 0 20px rgba(46,204,113,0)}}
 .call-overlay.ringing .call-avatar{animation:ringPulse 1.5s infinite}
@@ -103,7 +103,7 @@ nav .ni .nc{display:block;font-size:18px;transition:.2s}
 nav .ni .nl{display:block;font-size:9px;color:var(--tx2);margin-top:1px}
 nav .ni.on .nl{color:var(--ac)}
 nav .ni.on .nc{transform:scale(1.15)}
-.ni-badge{position:absolute;top:2px;right:20%;background:#f06030;color:#fff;font-size:7px;padding:1px 5px;border-radius:8px;font-weight:700;display:none}
+.ni-badge{position:absolute;top:2px;right:20%;background:var(--orange);color:#fff;font-size:7px;padding:1px 5px;border-radius:8px;font-weight:700;display:none}
 
 /* Tabs */
 .tab{display:none;padding:0 14px 80px}.tab.v{display:block}
@@ -136,7 +136,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .life-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gd)}
 .lp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;cursor:pointer;user-select:none}
 .lp-header.expanded{margin-bottom:10px}
-.lp-toggle{font-size:12px;color:var(--tc2);transition:transform .25s;display:inline-block}
+.lp-toggle{font-size:12px;color:var(--tx2);transition:transform .25s;display:inline-block}
 .lp-toggle.open{transform:rotate(180deg)}
 .lp-body{overflow:hidden;max-height:0;transition:max-height .3s ease}
 .lp-body.open{max-height:600px}
@@ -174,7 +174,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .lp-today-title{font-size:10px;font-weight:700;color:var(--ac2);margin-bottom:4px}
 .lp-today-text{font-size:11px;color:var(--tx2);line-height:1.6}
 .lp-streak{position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:3px;font-size:10px;color:var(--tx2)}
-.lp-streak-val{font-weight:800;color:#ff8c32}
+.lp-streak-val{font-weight:800;color:var(--orange)}
 .my-identity-bar{display:flex;gap:14px;align-items:center;padding:14px;margin-bottom:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:14px}
 .id-card{text-align:center;cursor:pointer;transition:transform .15s}
 .id-card:active{transform:scale(.95)}
@@ -201,7 +201,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .fi-preview{font-size:12px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;line-height:1.3}
 .fi-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .fi-time{font-size:10px;color:rgba(255,255,255,.2)}
-.fi-unread{background:#f06030;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 5px;border-radius:10px;flex-shrink:0}
+.fi-unread{background:var(--orange);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 5px;border-radius:10px;flex-shrink:0}
 .fi-badge{background:var(--ac);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
 .pending-btns{display:flex;gap:6px}
 .pending-btns button{padding:5px 14px;border-radius:8px;border:none;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
@@ -328,7 +328,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .profile-field textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit;resize:vertical;min-height:60px}
 .profile-field textarea::placeholder{color:var(--tx2)}
 .profile-save{width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
-.profile-logout{width:100%;padding:10px;border:1px solid rgba(255,80,80,.2);border-radius:10px;background:transparent;color:rgba(255,80,80,.6);font-size:12px;cursor:pointer;font-family:inherit;margin-top:10px}
+.profile-logout{width:100%;padding:10px;border:1px solid rgba(231,76,60,.2);border-radius:10px;background:transparent;color:rgba(231,76,60,.6);font-size:12px;cursor:pointer;font-family:inherit;margin-top:10px}
 
 /* Header */
 .tab-header{padding:14px 0 10px;display:flex;align-items:center;justify-content:space-between}
@@ -562,10 +562,10 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
     <div class="add-friend">
       <input id="addInput" placeholder="Add friend by username..." maxlength="50">
-      <button onclick="addFriend()">Add</button>
+      <button id="addFriendBtn" onclick="addFriend()">Add</button>
     </div>
     <div style="margin-bottom:14px">
-      <button onclick="openShareModal()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
+      <button onclick="openShareModal()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:var(--orange);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
     </div>
     <div id="pendingSection" style="display:none">
       <div class="section-title">Friend Requests</div>
@@ -890,7 +890,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
   </div>
   <div class="profile-section">
-    <h3 id="inviteTitle" style="color:#ff8c32">🎁 邀请好友</h3>
+    <h3 id="inviteTitle" style="color:var(--orange)">🎁 邀请好友</h3>
     <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px" id="inviteDesc">对方点链接注册后自动加你为好友（和名片不同，这个是注册邀请）</p>
     <div style="background:var(--bg3);border:1px solid rgba(255,140,50,.15);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="inviteLink"></div>
     <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
@@ -1227,7 +1227,7 @@ function showDailyReport(nd){
   var coldHtml='';
   if(coldFriends.length>0){
     coldHtml='<div style="margin-top:10px;padding:10px;background:rgba(255,140,50,.08);border:1px solid rgba(255,140,50,.15);border-radius:10px">';
-    coldHtml+='<div style="font-size:10px;color:#ff8c32;font-weight:700;margin-bottom:6px">'+(LANG==='zh'?'需要关心的朋友':'Friends to reach out to')+'</div>';
+    coldHtml+='<div style="font-size:10px;color:var(--orange);font-weight:700;margin-bottom:6px">'+(LANG==='zh'?'需要关心的朋友':'Friends to reach out to')+'</div>';
     coldFriends.forEach(function(cf){
       coldHtml+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
       coldHtml+='<span style="font-size:11px;color:var(--tx)">'+esc(cf.name)+' <span style="color:var(--tx2);font-size:9px">'+cf.temp+'\u00B0C</span></span>';
@@ -2713,11 +2713,16 @@ function blockFriend(connId,name){
 function addFriend(){
   var u=g('addInput').value.trim();
   if(!u){toast(t('enterUsername'));return}
+  var btn=g('addFriendBtn');if(btn){btn.disabled=true;btn.textContent='...'}
   fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
   .then(function(r){return r.json()}).then(function(d){
+    if(btn){btn.disabled=false;btn.textContent=t('add')||'Add'}
     if(d.success){toast(t('friendSent'));g('addInput').value='';loadFriends()}
     else toast(d.error||'Failed');
-  }).catch(function(){toast(t('networkError'))});
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.textContent=t('add')||'Add'}
+    toast(t('networkError'));
+  });
 }
 
 function respondFriend(id,action){
@@ -3563,9 +3568,11 @@ function sendMsg(){
   var myAv='<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>';
   box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble">'+esc(text)+'</div><div class="msg-time">now</div></div></div>';
   box.scrollTop=box.scrollHeight;
+  var sendBtn=g('ciSendBtn');if(sendBtn){sendBtn.disabled=true;sendBtn.style.opacity='0.5'}
   fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
     to_user_id:chatFriend.user_id,content:text,sender_mode:'real',receiver_mode:'real'
   })}).then(function(r){return r.json()}).then(function(d){
+    if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity=''}
     if(!d.success){toast(d.error||t('sendFailed'));return}
     // Show twin reply from HTTP response (WS may also deliver it, dedup by msg_id)
     if(d.ai_reply&&d.ai_reply.content&&!_shownMsgIds[d.ai_reply.msg_id]){
@@ -3576,7 +3583,10 @@ function sendMsg(){
         '<div class="ai-tag">Twin auto-reply</div><div class="msg-time">now</div></div></div>';
       box.scrollTop=box.scrollHeight;
     }
-  }).catch(function(){toast(t('networkError'))});
+  }).catch(function(){
+    if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity=''}
+    toast(t('networkError'));
+  });
 }
 
 // Profile
