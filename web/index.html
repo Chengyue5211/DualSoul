@@ -565,7 +565,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <button onclick="addFriend()">Add</button>
     </div>
     <div style="margin-bottom:14px">
-      <button onclick="openShareModal()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
+      <button onclick="quickCopyInvite()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:#ff8c32;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
     </div>
     <div id="pendingSection" style="display:none">
       <div class="section-title">Friend Requests</div>
@@ -4027,6 +4027,21 @@ function _copySmLink(link){
   if(!l||(l.indexOf('?invite=')>-1&&l.split('?invite=')[1]===''))return toast(LANG==='zh'?'请先登录':'Please login first');
   copyInvite(l);
   toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!');
+}
+function quickCopyInvite(){
+  // If username already loaded, copy immediately
+  if(_profileUsername){
+    copyInvite(getInviteLink());
+    toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!');
+    return;
+  }
+  // Otherwise fetch username first
+  fetch(DS_BASE+'/api/identity/me',{headers:headers()})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success&&d.data&&d.data.username)_profileUsername=d.data.username;
+      copyInvite(getInviteLink());
+      toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!');
+    }).catch(function(){toast(LANG==='zh'?'复制失败，请重试':'Copy failed')});
 }
 
 var _shareText='';
