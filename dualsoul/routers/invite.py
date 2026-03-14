@@ -126,22 +126,26 @@ async def generate_invite_text(
         )
         return {"success": True, "text": text, "platform": platform}
 
-    personality_block = profile.build_personality_prompt() if hasattr(profile, 'build_personality_prompt') else ""
+    # Build style description without revealing the name
+    style_desc = ""
+    if hasattr(profile, 'twin_speech_style') and profile.twin_speech_style:
+        style_desc += f"说话风格：{profile.twin_speech_style}\n"
+    if hasattr(profile, 'twin_personality') and profile.twin_personality:
+        style_desc += f"性格特点：{profile.twin_personality}\n"
 
     prompt = (
-        f"你是{name}的数字分身，现在要帮主人写一条邀请消息，邀请朋友来DualSoul平台。\n\n"
-        f"{personality_block}\n"
-        f"DualSoul是什么：每个人拥有真人身份+AI数字分身，第四种社交——你不在时分身替你聊天，"
-        f"跨语言交流分身自动翻译，分身学你的说话方式。\n\n"
+        f"你是某人的数字分身，帮主人写一条邀请消息，邀请朋友来DualSoul平台。\n\n"
+        f"主人的说话风格（模仿这个风格写，但不要写出任何人名）：\n"
+        f"{style_desc if style_desc else '自然亲切，口语化'}\n\n"
+        f"DualSoul是什么：每个人拥有真人身份+AI数字分身，第四种社交——"
+        f"你不在时分身替你聊天，跨语言交流分身自动翻译，分身学你的说话方式。\n\n"
         f"平台要求：{hint}\n\n"
-        f"重要：模仿{name}的说话节奏和语气风格来写，但绝对不能在文案中出现任何人名。\n"
-        f"【严格禁止，违反即作废】：\n"
-        f"1. 不能出现主人名字「{name}」\n"
-        f"2. 不能出现任何收件人称呼（你/宝贝/朋友/小红/亲等）\n"
-        f"3. 不能出现任何具体人名\n"
-        f"文案必须完全通用，因为要发给不同的人看。\n"
-        f"不要提到'邀请链接'或'注册链接'这样的词，链接会自动附上。\n"
-        f"只输出文案正文，不要任何解释或前缀。"
+        f"【铁律，必须遵守】：\n"
+        f"- 文案里不能出现任何人名（不管是谁的名字）\n"
+        f"- 不能出现任何称呼（你/宝贝/朋友/亲/小红等）\n"
+        f"- 文案必须通用，发给任何人看都合适\n"
+        f"- 不要提'邀请链接'，链接会自动附上\n"
+        f"只输出文案正文，不要任何解释。"
     )
 
     try:
@@ -161,7 +165,11 @@ async def generate_invite_text(
             text = resp.json()["choices"][0]["message"]["content"].strip()
     except Exception as e:
         logger.warning(f"Invite text generation failed: {e}")
-        text = f"我在DualSoul上有个数字分身，能用我的说话方式替我社交，快来试试！"
+        text = "我在DualSoul上有个AI数字分身，能用我的说话方式替我社交，快来试试！"
+
+    # Post-process: strip owner name if AI included it anyway
+    if name:
+        text = text.replace(name, "").strip()
 
     return {"success": True, "text": text, "platform": platform}
 
