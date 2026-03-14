@@ -710,6 +710,18 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
   </div>
 
+  <!-- Twin Training (分身训练 — 导向年轮) -->
+  <div class="disc-section" onclick="openTwinTraining()">
+    <div class="disc-item">
+      <span class="disc-icon" style="background:linear-gradient(135deg,#2ecc71,#1abc9c)">🧒</span>
+      <div class="disc-info">
+        <div class="disc-label" id="discTraining">分身训练</div>
+        <div class="disc-desc" id="discTrainingDesc">让分身更像你——去年轮深度训练</div>
+      </div>
+      <span class="disc-arrow">›</span>
+    </div>
+  </div>
+
   <!-- Twin Promotion (分身推广) -->
   <div class="disc-section" onclick="openTwinPromotion()">
     <div class="disc-item">
@@ -1250,7 +1262,7 @@ function authSubmit(){
   }).catch(function(){toast(t('networkError'))});
 }
 
-function enterApp(){
+function enterApp(isNewUser){
   g('authPage').classList.remove('v');
   g('onboardPage').classList.remove('v');
   g('onboardPage').style.display='none';
@@ -1259,6 +1271,29 @@ function enterApp(){
   wsConnect();
   checkInviteParam();
   checkTwinActivity();
+
+  // First-time user: show a warm welcome from their twin
+  if(isNewUser){
+    setTimeout(function(){
+      var name=_profileName||'';
+      var welcomeContent=LANG==='zh'
+        ?(name?name+'，':'')+'你好！我是你的数字分身，刚刚诞生 \uD83C\uDF31\n\n'+
+          '现在我还是个"社交新人"（LV.1），说话可能有点生硬，但我会越来越像你。\n\n'+
+          '你可以：\n'+
+          '\u2022 点上方"和你的数字分身聊天"来教我\n'+
+          '\u2022 添加好友，让我替你社交\n'+
+          '\u2022 去"发现"页面逛逛分身广场\n\n'+
+          '我们一起成长吧！'
+        :'Hi'+(name?', '+name:'')+'! I\'m your digital twin, just born \uD83C\uDF31\n\n'+
+          'I\'m a social newbie (LV.1) right now, but I\'ll learn to be more like you.\n\n'+
+          'You can:\n'+
+          '\u2022 Chat with me using the button above\n'+
+          '\u2022 Add friends and I\'ll socialize for you\n'+
+          '\u2022 Explore the Agent Plaza in "Discover"\n\n'+
+          'Let\'s grow together!';
+      showDailyReport({content:welcomeContent,cold_friends:[]});
+    },1500);
+  }
 }
 
 function checkTwinActivity(){
@@ -1299,7 +1334,7 @@ function startOnboarding(){
   tsStep=0;tsRunStep();
 }
 
-function obSkip(){enterApp()}
+function obSkip(){enterApp(true)}
 
 var _camStream=null;
 var _capturedPhoto=null;
@@ -1452,12 +1487,12 @@ function tsRunStep(){
       setTimeout(function(){
         tsAddMsg('system',LANG==='zh'?'你的分身已就绪！欢迎来到第四种社交。':'Your twin is ready! Welcome to the fourth kind of social.');
         inp.style.display='flex';
-        inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">'+(LANG==='zh'?'开始聊天':'Start Chatting')+'</button>';
+        inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp(true)">'+(LANG==='zh'?'开始聊天':'Start Chatting')+'</button>';
       },800);
     }).catch(function(){
       tsAddMsg('system',LANG==='zh'?'你的分身已就绪！出发吧。':'Your twin is ready! Let\'s go.');
       inp.style.display='flex';
-      inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp()">'+(LANG==='zh'?'开始聊天':'Start Chatting')+'</button>';
+      inp.innerHTML='<button class="ob-btn" style="width:100%" onclick="enterApp(true)">'+(LANG==='zh'?'开始聊天':'Start Chatting')+'</button>';
     });
   }
 }
@@ -3868,6 +3903,52 @@ function drawQR(canvas,text){
 }
 
 // ─── Twin Promotion Page (分身推广) ────────────────────────────
+function openTwinTraining(){
+  // Show a guided page about twin training via 年轮
+  var existing=document.querySelector('.twin-notify-overlay');if(existing)existing.remove();
+
+  // Get current life dashboard data
+  fetch(DS_BASE+'/api/life/dashboard',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    var level=d.success?d.data.level:1;
+    var similarity=d.success?d.data.similarity:0;
+
+    var overlay=document.createElement('div');
+    overlay.className='twin-notify-overlay';
+    overlay.style.alignItems='flex-start';
+    overlay.style.paddingTop='40px';
+    overlay.innerHTML='<div class="twin-notify-card" style="max-width:360px;text-align:left">'+
+      '<div style="text-align:center;margin-bottom:12px"><span style="font-size:36px">\uD83E\uDDD2</span></div>'+
+      '<div class="tn-title" style="font-size:16px;text-align:center">'+(LANG==='zh'?'让分身更像你':'Make Your Twin More Like You')+'</div>'+
+      '<div style="margin:14px 0;padding:12px;background:var(--bg3);border-radius:10px;text-align:center">'+
+        '<div style="font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'当前相似度':'Current similarity')+'</div>'+
+        '<div style="font-size:28px;font-weight:900;color:var(--ac2)">'+similarity+'%</div>'+
+        '<div style="font-size:10px;color:var(--tx2)">LV.'+level+'</div>'+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--tx);line-height:1.8;margin-bottom:12px">'+
+        (LANG==='zh'
+          ?'<b>在DualSoul里</b>，分身通过社交自然成长——聊得越多，越像你。\n\n'+
+           '<b>想加速？</b>去<b>年轮</b>做深度训练：\n'+
+           '\u2022 投喂你的聊天记录，让分身学习你的说话方式\n'+
+           '\u2022 回答性格问卷，建立五维人格画像\n'+
+           '\u2022 纠正分身的错误回复，持续优化\n\n'+
+           '训练完的分身可以一键导入回DualSoul，立刻变得更像你。'
+          :'<b>In DualSoul</b>, your twin grows naturally through socializing.\n\n'+
+           '<b>Want to speed up?</b> Train deeply in <b>NianLun</b>:\n'+
+           '\u2022 Feed your chat history to learn your style\n'+
+           '\u2022 Build a five-dimension personality profile\n'+
+           '\u2022 Correct mistakes and continuously improve\n\n'+
+           'Trained twins can be imported back to DualSoul instantly.'
+        ).replace(/\n/g,'<br>')+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button onclick="this.closest(\'.twin-notify-overlay\').remove()" style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'稍后再说':'Later')+'</button>'+
+        '<button onclick="openTwinChat();this.closest(\'.twin-notify-overlay\').remove()" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'先和分身聊聊':'Chat with Twin')+'</button>'+
+      '</div>'+
+    '</div>';
+    document.body.appendChild(overlay);
+  }).catch(function(){});
+}
+
 function openTwinPromotion(){
   var html='<div style="padding:16px">';
 
