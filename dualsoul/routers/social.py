@@ -171,6 +171,7 @@ async def list_friends(user=Depends(get_current_user)):
         ).fetchall()
 
     friends = []
+    friend_ids = []
     for r in rows:
         friends.append({
             "conn_id": r["conn_id"],
@@ -184,7 +185,43 @@ async def list_friends(user=Depends(get_current_user)):
             "current_mode": r["current_mode"] or "real",
             "accepted_at": r["accepted_at"] or "",
             "reg_source": r["reg_source"] if "reg_source" in r.keys() else "dualsoul",
+            "last_msg": "",
+            "last_msg_time": "",
+            "last_msg_mine": False,
         })
+        if r["status"] == "accepted":
+            friend_ids.append(r["user_id"])
+
+    # Fetch last message for each accepted friend
+    if friend_ids:
+        with get_db() as db:
+            for f in friends:
+                if f["status"] != "accepted":
+                    continue
+                fid = f["user_id"]
+                msg = db.execute(
+                    """
+                    SELECT content, created_at, from_user_id, sender_mode FROM social_messages
+                    WHERE (from_user_id=? AND to_user_id=?) OR (from_user_id=? AND to_user_id=?)
+                    ORDER BY created_at DESC LIMIT 1
+                    """,
+                    (uid, fid, fid, uid),
+                ).fetchone()
+                if msg:
+                    preview = msg["content"][:40]
+                    if msg["sender_mode"] == "twin":
+                        preview = "👻 " + preview
+                    f["last_msg"] = preview
+                    f["last_msg_time"] = msg["created_at"] or ""
+                    f["last_msg_mine"] = msg["from_user_id"] == uid
+
+        # Sort accepted friends by last message time (most recent first)
+        def sort_key(f):
+            if f["status"] != "accepted":
+                return ""
+            return f["last_msg_time"] or f["accepted_at"] or ""
+        friends.sort(key=sort_key, reverse=True)
+
     return {"success": True, "friends": friends}
 
 

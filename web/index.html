@@ -149,13 +149,14 @@ nav .ni.on .nc{transform:scale(1.15)}
 
 /* Friend List */
 .section-title{font-size:10px;color:var(--tx2);font-weight:600;margin:14px 0 6px 4px}
-.friend-list{display:flex;flex-direction:column;gap:4px}
-.friend-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;cursor:pointer;transition:.15s}
-.friend-item:active{background:var(--bg3)}
+.friend-list{display:flex;flex-direction:column;gap:0}
+.friend-item{display:flex;align-items:center;gap:12px;padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+.friend-item:active{background:rgba(255,255,255,.03)}
 .fi-info{flex:1;min-width:0}
-.fi-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fi-mode{font-size:9px;color:rgba(124,92,252,.7)}
-.fi-time{font-size:9px;color:rgba(255,255,255,.2)}
+.fi-name{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-preview{font-size:12px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;line-height:1.3}
+.fi-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.fi-time{font-size:10px;color:rgba(255,255,255,.2)}
 .fi-unread{background:#f06030;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 5px;border-radius:10px;flex-shrink:0}
 .fi-badge{background:var(--ac);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
 .pending-btns{display:flex;gap:6px}
@@ -1672,7 +1673,6 @@ function loadFriends(){
     var fl=g('friendList');
     if(accepted.length){
       fl.innerHTML=accepted.map(function(f){
-        var ml=f.current_mode==='twin'?'Twin online':'Online';
         var srcBadge='';
         if(f.reg_source&&f.reg_source!=='dualsoul'){
           var sc={'nianlun':'#4caf50','openclaw':'#ff9800','guide':'#2196f3'};
@@ -1680,11 +1680,23 @@ function loadFriends(){
           srcBadge='<span style="font-size:8px;padding:1px 5px;border-radius:6px;background:'+(sc[f.reg_source]||'#666')+';color:#fff;margin-left:4px">'+(sn[f.reg_source]||f.reg_source)+'</span>';
         }
         var uc=_friendUnread[f.user_id]||0;
-        var ubadge='<span class="fi-unread" data-fid="'+esc(f.user_id)+'" style="display:'+(uc?'inline-block':'none')+'">'+(uc>99?'99+':uc)+'</span>';
+        var ubadge=uc?'<span class="fi-unread" data-fid="'+esc(f.user_id)+'">'+(uc>99?'99+':uc)+'</span>':'<span class="fi-unread" data-fid="'+esc(f.user_id)+'" style="display:none"></span>';
+        // Last message preview
+        var preview=f.last_msg||'';
+        if(f.last_msg_mine&&preview)preview=(LANG==='zh'?'我: ':'Me: ')+preview;
+        if(!preview)preview=LANG==='zh'?'开始聊天吧':'Start chatting';
+        // Time display
+        var timeStr='';
+        if(f.last_msg_time){
+          var td=f.last_msg_time.slice(0,10);
+          var today=new Date().toISOString().slice(0,10);
+          if(td===today)timeStr=f.last_msg_time.slice(11,16);
+          else timeStr=td.slice(5); // MM-DD
+        }
         return '<div class="friend-item" onclick="openChat(\''+esc(f.user_id)+'\',\''+esc(f.display_name)+'\',\''+esc(f.current_mode)+'\')" oncontextmenu="event.preventDefault();showFriendMenu(\''+esc(f.conn_id)+'\',\''+esc(f.display_name)+'\',event)">'+
-          buildAvatar(f.display_name,44,f.current_mode)+
-          '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+srcBadge+'</div><div class="fi-mode">'+ml+'</div></div>'+
-          ubadge+'</div>';
+          buildAvatar(f.display_name,48,f.current_mode)+
+          '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+srcBadge+'</div><div class="fi-preview">'+esc(preview)+'</div></div>'+
+          '<div class="fi-right"><span class="fi-time">'+timeStr+'</span>'+ubadge+'</div></div>';
       }).join('');
     }else{fl.innerHTML='<div class="empty">'+t('noFriends').replace('\n','<br>')+'</div>'}
   }).catch(function(){});
