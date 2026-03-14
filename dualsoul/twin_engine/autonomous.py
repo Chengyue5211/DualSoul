@@ -57,8 +57,10 @@ async def autonomous_social_loop():
             logger.error(f"[Autonomous] Error in round: {e}", exc_info=True)
 
         # Decay energy/mood for inactive twins every cycle
+        # Run in executor so synchronous DB call doesn't block the event loop
         try:
-            decay_energy_and_mood()
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, decay_energy_and_mood)
         except Exception as e:
             logger.error(f"[TwinLife] Decay error: {e}", exc_info=True)
 

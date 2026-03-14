@@ -16,6 +16,7 @@ from dualsoul.twin_engine.ethics import pre_send_check
 from dualsoul.twin_engine.life import award_xp, increment_stat, update_relationship_temp
 from dualsoul.twin_engine.relationship_body import update_on_message as rb_update
 from dualsoul.twin_engine.responder import TwinResponder
+from dualsoul.twin_engine.twin_state import get_twin_state, get_state_display
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
 _twin = TwinResponder()
@@ -185,14 +186,45 @@ async def list_friends(user=Depends(get_current_user)):
             (uid, uid, uid),
         ).fetchall()
 
+    friend_ids = [r["user_id"] for r in rows if r["status"] == "accepted"]
+
+    # Batch-fetch last message per friend in ONE query (window function, no N+1)
+    last_msg_map: dict = {}
+    if friend_ids:
+        placeholders = ",".join("?" * len(friend_ids))
+        with get_db() as db:
+            lm_rows = db.execute(
+                f"""
+                WITH ranked AS (
+                    SELECT content, created_at, from_user_id, to_user_id, sender_mode,
+                           CASE WHEN from_user_id=? THEN to_user_id ELSE from_user_id END AS fid,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY CASE WHEN from_user_id=? THEN to_user_id ELSE from_user_id END
+                               ORDER BY created_at DESC
+                           ) AS rn
+                    FROM social_messages
+                    WHERE (from_user_id=? AND to_user_id IN ({placeholders}))
+                       OR (to_user_id=? AND from_user_id IN ({placeholders}))
+                )
+                SELECT * FROM ranked WHERE rn=1
+                """,
+                [uid, uid, uid] + friend_ids + [uid] + friend_ids,
+            ).fetchall()
+        for lm in lm_rows:
+            last_msg_map[lm["fid"]] = lm
+
+    # Build response — single pass
     friends = []
-    friend_ids = []
     for r in rows:
-        friends.append({
+        fid = r["user_id"]
+        state = get_twin_state(fid, is_online=manager.is_online(fid))
+        state_display = get_state_display(state)
+
+        friend_entry: dict = {
             "conn_id": r["conn_id"],
             "status": r["status"],
             "is_incoming": r["req_to"] == uid,
-            "user_id": r["user_id"],
+            "user_id": fid,
             "username": r["username"],
             "display_name": r["display_name"] or r["username"],
             "avatar": r["avatar"] or "",
@@ -200,42 +232,31 @@ async def list_friends(user=Depends(get_current_user)):
             "current_mode": r["current_mode"] or "real",
             "accepted_at": r["accepted_at"] or "",
             "reg_source": r["reg_source"] if "reg_source" in r.keys() else "dualsoul",
+            "twin_state": state,
+            "twin_state_icon": state_display.get("icon", ""),
+            "twin_state_label": state_display.get("label_zh", ""),
             "last_msg": "",
             "last_msg_time": "",
             "last_msg_mine": False,
-        })
-        if r["status"] == "accepted":
-            friend_ids.append(r["user_id"])
+        }
 
-    # Fetch last message for each accepted friend
-    if friend_ids:
-        with get_db() as db:
-            for f in friends:
-                if f["status"] != "accepted":
-                    continue
-                fid = f["user_id"]
-                msg = db.execute(
-                    """
-                    SELECT content, created_at, from_user_id, sender_mode FROM social_messages
-                    WHERE (from_user_id=? AND to_user_id=?) OR (from_user_id=? AND to_user_id=?)
-                    ORDER BY created_at DESC LIMIT 1
-                    """,
-                    (uid, fid, fid, uid),
-                ).fetchone()
-                if msg:
-                    preview = msg["content"][:40]
-                    if msg["sender_mode"] == "twin":
-                        preview = "👻 " + preview
-                    f["last_msg"] = preview
-                    f["last_msg_time"] = msg["created_at"] or ""
-                    f["last_msg_mine"] = msg["from_user_id"] == uid
+        lm = last_msg_map.get(fid)
+        if lm:
+            preview = lm["content"][:40]
+            if lm["sender_mode"] == "twin":
+                preview = "👻 " + preview
+            friend_entry["last_msg"] = preview
+            friend_entry["last_msg_time"] = lm["created_at"] or ""
+            friend_entry["last_msg_mine"] = lm["from_user_id"] == uid
 
-        # Sort accepted friends by last message time (most recent first)
-        def sort_key(f):
-            if f["status"] != "accepted":
-                return ""
-            return f["last_msg_time"] or f["accepted_at"] or ""
-        friends.sort(key=sort_key, reverse=True)
+        friends.append(friend_entry)
+
+    # Sort: accepted by last-message-time, then pending
+    def sort_key(f):
+        if f["status"] != "accepted":
+            return ""
+        return f["last_msg_time"] or f["accepted_at"] or ""
+    friends.sort(key=sort_key, reverse=True)
 
     return {"success": True, "friends": friends}
 
