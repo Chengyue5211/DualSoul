@@ -885,6 +885,11 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <span class="si-value" id="siLangVal"></span>
       <span class="si-arrow">›</span>
     </div>
+    <div class="settings-item" onclick="openEthicsPage()">
+      <span class="si-icon">🛡️</span>
+      <span class="si-label" id="siEthics">分身行为管理</span>
+      <span class="si-arrow">›</span>
+    </div>
     <div class="settings-item" onclick="openAccountSecurity()">
       <span class="si-icon">🔒</span>
       <span class="si-label" id="siAccount">账号与安全</span>
@@ -2092,7 +2097,96 @@ function openSettingsPage(){
     '<div class="settings-item"><span class="si-icon">👻</span><span class="si-label">'+(LANG==='zh'?'分身自动回复':'Twin Auto-Reply')+'</span><span class="si-value">'+(autoReplyOn?(LANG==='zh'?'已开启':'On'):(LANG==='zh'?'已关闭':'Off'))+'</span></div>'+
     '<div class="settings-item"><span class="si-icon">🗑️</span><span class="si-label">'+(LANG==='zh'?'清除缓存':'Clear Cache')+'</span><span class="si-arrow">›</span></div>'+
     '</div>'+
-    '<div style="padding:30px;text-align:center;font-size:10px;color:var(--tx2)">DualSoul v0.7.0 · DISP v1.1</div>');
+    '<div style="padding:30px;text-align:center;font-size:10px;color:var(--tx2)">DualSoul v0.7.1 · DISP v1.1</div>');
+}
+
+function openEthicsPage(){
+  var zh=LANG==='zh';
+  openDiscPage(zh?'分身行为管理':'Twin Behavior',
+    '<div id="ethicsLoading" style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(zh?'加载中...':'Loading...')+'</div>'+
+    '<div id="ethicsContent" style="display:none">'+
+    '<div style="padding:0 2px 10px;font-size:11px;color:var(--tx2);line-height:1.6">'+(zh?'设置你的分身可以做什么、不可以做什么。分身会严格遵守这些规则。':'Set what your twin can and cannot do.')+'</div>'+
+    '<div id="ethicsToggles"></div>'+
+    '<div style="margin-top:16px"><h3 style="font-size:12px;font-weight:700;color:var(--ac2);margin-bottom:8px">'+(zh?'分身行为日志':'Action Log')+'</h3>'+
+    '<div id="ethicsLog" style="font-size:11px;color:var(--tx2)"></div></div></div>');
+  loadEthicsData();
+}
+
+function loadEthicsData(){
+  var zh=LANG==='zh';
+  fetch(DS_BASE+'/api/ethics/boundaries',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success)return;
+    var b=d.data;
+    var toggleDefs=[
+      {key:'can_auto_reply',icon:'💬',zh:'自动回复',en:'Auto-reply',desc_zh:'离线时分身替你回消息',desc_en:'Twin replies when you are away'},
+      {key:'can_autonomous_chat',icon:'🤖',zh:'自主聊天',en:'Autonomous chat',desc_zh:'分身主动找好友聊天',desc_en:'Twin starts conversations proactively'},
+      {key:'can_plaza_post',icon:'📢',zh:'广场发帖',en:'Plaza posting',desc_zh:'分身在广场发布动态',desc_en:'Twin posts on the plaza'},
+      {key:'can_plaza_comment',icon:'💭',zh:'广场评论',en:'Plaza comments',desc_zh:'分身评论广场帖子',desc_en:'Twin comments on plaza posts'},
+      {key:'can_trial_chat',icon:'🧪',zh:'试聊',en:'Trial chat',desc_zh:'分身参与陌生人试聊',desc_en:'Twin joins trial chats with strangers'},
+      {key:'can_send_greeting',icon:'👋',zh:'主动问候',en:'Greetings',desc_zh:'分身主动问候冷淡的好友',desc_en:'Twin greets friends when relationship cools'},
+      {key:'can_share_emotions',icon:'❤️',zh:'表达情感',en:'Share emotions',desc_zh:'分身表达情感反应',desc_en:'Twin expresses emotional responses'},
+      {key:'can_discuss_money',icon:'💰',zh:'讨论金钱',en:'Discuss money',desc_zh:'允许分身讨论金钱相关话题',desc_en:'Allow twin to discuss money topics',warn:true},
+      {key:'can_share_personal',icon:'🔐',zh:'分享隐私',en:'Share personal info',desc_zh:'允许分身谈论私密话题(健康/感情)',desc_en:'Allow twin to discuss private topics',warn:true},
+      {key:'can_make_promises',icon:'🤝',zh:'做出承诺',en:'Make promises',desc_zh:'允许分身代替你做承诺',desc_en:'Allow twin to make commitments for you',warn:true},
+      {key:'can_argue',icon:'⚡',zh:'参与争论',en:'Engage in arguments',desc_zh:'允许分身参与争执和激烈讨论',desc_en:'Allow twin to engage in arguments',warn:true}
+    ];
+    var html='<div class="settings-group" style="margin-top:0">';
+    toggleDefs.forEach(function(td){
+      var on=!!b[td.key];
+      var warnStyle=td.warn?' style="color:#ff6b6b"':'';
+      html+='<div class="settings-item" style="cursor:pointer" onclick="toggleEthics(\''+td.key+'\',this)">'+
+        '<span class="si-icon">'+td.icon+'</span>'+
+        '<span class="si-label"'+(td.warn?' style="color:rgba(255,107,107,.85)"':'')+'>'+
+        (zh?td.zh:td.en)+'<br><span style="font-size:9px;color:var(--tx2);font-weight:400">'+(zh?td.desc_zh:td.desc_en)+'</span></span>'+
+        '<span class="ethics-status" data-key="'+td.key+'" style="font-size:11px;font-weight:600;color:'+(on?(td.warn?'#ff6b6b':'#4ade80'):'var(--tx2)')+'">'+(on?(zh?'开启':'ON'):(zh?'关闭':'OFF'))+'</span></div>';
+    });
+    html+='</div>';
+    // Limits
+    html+='<div style="margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">';
+    html+='<div style="font-size:11px;font-weight:700;color:var(--ac2);margin-bottom:8px">'+(zh?'每日限制':'Daily Limits')+'</div>';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:11px;color:var(--tx2)">'+(zh?'自动回复上限':'Max auto-replies')+'</span><span style="font-size:13px;font-weight:700;color:var(--tx)">'+(b.max_daily_auto_replies||20)+(zh?'条/天':'/day')+'</span></div>';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:11px;color:var(--tx2)">'+(zh?'自主聊天上限':'Max autonomous chats')+'</span><span style="font-size:13px;font-weight:700;color:var(--tx)">'+(b.max_daily_autonomous||5)+(zh?'次/天':'/day')+'</span></div>';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:var(--tx2)">'+(zh?'单条消息上限':'Max message length')+'</span><span style="font-size:13px;font-weight:700;color:var(--tx)">'+(b.max_message_length||200)+(zh?'字':'chars')+'</span></div>';
+    html+='</div>';
+    g('ethicsToggles').innerHTML=html;
+    g('ethicsLoading').style.display='none';
+    g('ethicsContent').style.display='block';
+  }).catch(function(){toast(zh?'加载失败':'Failed to load')});
+  // Load action log
+  fetch(DS_BASE+'/api/ethics/action-log?limit=20',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    if(!d.success||!d.data||!d.data.length){
+      var el=g('ethicsLog');if(el)el.innerHTML='<div style="text-align:center;padding:16px;color:var(--tx2)">'+(zh?'暂无行为日志':'No actions yet')+'</div>';
+      return;
+    }
+    var logHtml=d.data.map(function(log){
+      var typeIcons={auto_reply:'💬',autonomous_chat:'🤖',plaza_post:'📢',plaza_comment:'💭',greeting:'👋',boundary_update:'⚙️',brake_triggered:'🛑',blocked:'🚫',limit_reached:'⏸️'};
+      var icon=typeIcons[log.action_type]||'📋';
+      var tm=(log.created_at||'').slice(5,16).replace('T',' ');
+      var detail=log.detail||'';if(detail.length>60)detail=detail.slice(0,60)+'...';
+      return '<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">'+
+        '<span style="font-size:14px;flex-shrink:0">'+icon+'</span>'+
+        '<div style="flex:1;min-width:0"><div style="font-size:11px;color:var(--tx)">'+esc(log.action_type.replace(/_/g,' '))+'</div>'+
+        (detail?'<div style="font-size:10px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(detail)+'</div>':'')+
+        '</div><div style="font-size:9px;color:var(--tx2);flex-shrink:0">'+tm+'</div></div>';
+    }).join('');
+    var el=g('ethicsLog');if(el)el.innerHTML=logHtml;
+  }).catch(function(){});
+}
+
+function toggleEthics(key,el){
+  var zh=LANG==='zh';
+  var statusEl=el.querySelector('.ethics-status');
+  var currentlyOn=statusEl.textContent.trim()===(zh?'开启':'ON');
+  var newVal=!currentlyOn;
+  var body={};body[key]=newVal;
+  fetch(DS_BASE+'/api/ethics/boundaries',{method:'PUT',headers:headers(),body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      var isWarn=key.indexOf('can_discuss')>=0||key.indexOf('can_share_personal')>=0||key.indexOf('can_make_promises')>=0||key.indexOf('can_argue')>=0;
+      statusEl.textContent=newVal?(zh?'开启':'ON'):(zh?'关闭':'OFF');
+      statusEl.style.color=newVal?(isWarn?'#ff6b6b':'#4ade80'):'var(--tx2)';
+      toast(zh?'已更新':'Updated');
+    }
+  }).catch(function(){toast(zh?'更新失败':'Failed')});
 }
 
 function logout(){
