@@ -3964,7 +3964,6 @@ function openShareModal(){
   // Remove existing
   var old=document.querySelector('.share-modal-overlay');if(old)old.remove();
 
-  var link=getInviteLink();
   var overlay=document.createElement('div');
   overlay.className='share-modal-overlay';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
@@ -3973,30 +3972,61 @@ function openShareModal(){
   modal.className='share-modal';
   modal.innerHTML=
     '<div class="sm-title">'+(LANG==='zh'?'分享DualSoul给朋友':'Share DualSoul')+'</div>'+
+    // Link block at the TOP — always visible before AI text loads
+    '<div style="margin-bottom:10px">'+
+      '<div style="font-size:10px;color:var(--tx2);margin-bottom:4px">'+(LANG==='zh'?'你的专属邀请链接（点击复制）：':'Your invite link (tap to copy):')+'</div>'+
+      '<div style="background:var(--bg2);border:1px solid rgba(92,200,250,.25);border-radius:8px;padding:9px 12px;font-size:11px;color:var(--ac);word-break:break-all;cursor:pointer;line-height:1.5" id="smInviteLink" onclick="_copySmLink()">'+
+        (LANG==='zh'?'加载中...':'Loading...')+
+      '</div>'+
+      '<button style="margin-top:6px;width:100%;padding:9px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" onclick="_copySmLink()">'+(LANG==='zh'?'📋 复制链接':'📋 Copy Link')+'</button>'+
+    '</div>'+
     '<div class="sm-text-preview" id="shareTextPreview">'+(LANG==='zh'?'正在让分身写邀请文案...':'Your twin is writing an invite...')+'</div>'+
     '<div class="sm-channels">'+
       '<div class="sm-ch" onclick="shareVia(\'wechat\')"><div class="sm-ch-icon" style="background:#07c160">💬</div><div class="sm-ch-name">'+(LANG==='zh'?'微信':'WeChat')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'weibo\')"><div class="sm-ch-icon" style="background:#e6162d">📢</div><div class="sm-ch-name">'+(LANG==='zh'?'微博':'Weibo')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'sms\')"><div class="sm-ch-icon" style="background:#34c759">📱</div><div class="sm-ch-name">'+(LANG==='zh'?'短信':'SMS')+'</div></div>'+
-      '<div class="sm-ch" onclick="shareVia(\'copy\')"><div class="sm-ch-icon" style="background:var(--ac)">📋</div><div class="sm-ch-name">'+(LANG==='zh'?'复制':'Copy')+'</div></div>'+
+      '<div class="sm-ch" onclick="shareVia(\'copy\')"><div class="sm-ch-icon" style="background:var(--ac)">📋</div><div class="sm-ch-name">'+(LANG==='zh'?'复制全文':'Copy All')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'qrcode\')"><div class="sm-ch-icon" style="background:#333">📷</div><div class="sm-ch-name">QR</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'twincard\')"><div class="sm-ch-icon" style="background:rgba(92,200,250,.3)">🪪</div><div class="sm-ch-name">'+(LANG==='zh'?'名片':'Card')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'native\')"><div class="sm-ch-icon" style="background:rgba(255,255,255,.15)">📤</div><div class="sm-ch-name">'+(LANG==='zh'?'更多':'More')+'</div></div>'+
       '<div class="sm-ch" onclick="shareVia(\'email\')"><div class="sm-ch-icon" style="background:#ea4335">📧</div><div class="sm-ch-name">'+(LANG==='zh'?'邮件':'Email')+'</div></div>'+
     '</div>'+
     '<div class="sm-stats" id="shareStats"></div>'+
-    '<div style="margin:8px 0 4px;font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'邀请链接（复制后一起发给朋友）：':'Invite link:')+'</div>'+
-    '<div style="background:var(--bg2);border-radius:6px;padding:7px 10px;font-size:11px;color:var(--ac);word-break:break-all;user-select:all;cursor:pointer" id="smInviteLink" onclick="copyInvite(\''+link+'\');toast(LANG===\'zh\'?\'链接已复制！\':\'Copied!\')">'+link+'</div>'+
     '<div class="sm-qr" id="shareQrWrap" style="display:none"><canvas id="shareQrCanvas" width="160" height="160"></canvas><div style="font-size:9px;color:var(--tx2);margin-top:4px">'+(LANG==='zh'?'扫码加入DualSoul':'Scan to join DualSoul')+'</div></div>'+
     '<button class="sm-cancel" onclick="this.closest(\'.share-modal-overlay\').remove()">'+(LANG==='zh'?'取消':'Cancel')+'</button>';
 
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
-  // Generate twin invite text
-  _loadShareText('wechat', link);
-  // Load invite stats
+  // Fetch username fresh from API — don't rely on _profileUsername being cached
+  fetch(DS_BASE+'/api/identity/me',{headers:headers()})
+    .then(function(r){return r.json()}).then(function(d){
+      var uname=(d.success&&d.data)?d.data.username:'';
+      if(uname)_profileUsername=uname;
+      var link=getInviteLink();
+      var el=document.getElementById('smInviteLink');
+      if(el){
+        el.textContent=link;
+        el.onclick=function(){_copySmLink(link)};
+      }
+      var btn=modal.querySelector('button[onclick*="_copySmLink"]');
+      if(btn)btn.onclick=function(){_copySmLink(link)};
+      // Now load AI text with the real link
+      _loadShareText('wechat', link);
+    }).catch(function(){
+      var link=getInviteLink();
+      var el=document.getElementById('smInviteLink');
+      if(el)el.textContent=link||'（登录后可见）';
+      _loadShareText('wechat', link);
+    });
+
   _loadShareStats();
+}
+function _copySmLink(link){
+  var l=link||getInviteLink();
+  if(!l||(l.indexOf('?invite=')>-1&&l.split('?invite=')[1]===''))return toast(LANG==='zh'?'请先登录':'Please login first');
+  copyInvite(l);
+  toast(LANG==='zh'?'邀请链接已复制！发给朋友就行～':'Invite link copied!');
 }
 
 var _shareText='';
