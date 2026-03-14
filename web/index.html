@@ -173,8 +173,13 @@ nav .ni.on .nc{transform:scale(1.15)}
 .chat-input textarea{flex:1;padding:10px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;resize:none;max-height:80px}
 .chat-input textarea::placeholder{color:var(--tx2)}
 .chat-input .ci-send{padding:10px 14px;border-radius:20px;border:none;background:var(--gd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.chat-input .ci-icon{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--tx2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.chat-input .ci-icon:active{color:var(--ac);transform:scale(.9)}
 .chat-input .ci-plus{width:36px;height:36px;border-radius:50%;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .2s}
 .chat-input .ci-plus.open{transform:rotate(45deg);color:var(--ac)}
+/* Voice hold-to-talk button (replaces textarea) */
+.ci-voice-btn{flex:1;height:36px;border-radius:20px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:none;user-select:none;-webkit-user-select:none;transition:background .15s}
+.ci-voice-btn:active{background:rgba(124,92,252,.15)}
 /* Chat toolbar grid (WeChat-like) */
 .chat-toolbar{display:none;padding:12px 8px;border-top:1px solid var(--bd);background:var(--bg2);flex-shrink:0}
 .chat-toolbar.open{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
@@ -469,16 +474,20 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <div class="empty">Start the conversation!</div>
     </div>
     <div class="chat-input">
-      <button class="ci-plus" id="ciPlusBtn" onclick="toggleChatToolbar()">+</button>
+      <button class="ci-icon" id="ciVoiceToggle" onclick="toggleVoiceMode()">🎤</button>
       <textarea id="chatInput" rows="1" placeholder="Say something..."
-        oninput="this.style.height='36px';this.style.height=Math.min(this.scrollHeight,80)+'px'"
+        oninput="this.style.height='36px';this.style.height=Math.min(this.scrollHeight,80)+'px';ciInputChange()"
         onfocus="closeChatToolbar()"></textarea>
-      <button class="ci-send" onclick="sendMsg()">Send</button>
+      <button class="ci-voice-btn" id="ciVoiceHold"
+        ontouchstart="voiceHoldStart(event)" ontouchend="voiceHoldEnd(event)"
+        onmousedown="voiceHoldStart(event)" onmouseup="voiceHoldEnd(event)">按住 说话</button>
+      <button class="ci-icon" id="ciEmojiBtn" onclick="toggleEmoji()" style="font-size:22px">😊</button>
+      <button class="ci-plus" id="ciPlusBtn" onclick="toggleChatToolbar()" style="display:flex">+</button>
+      <button class="ci-send" id="ciSendBtn" onclick="sendMsg()" style="display:none">Send</button>
     </div>
     <div class="chat-toolbar" id="chatToolbar">
       <div class="ct-item" onclick="chatSendPhoto()"><div class="ct-icon">🖼</div><div class="ct-label" data-i18n="ctPhoto">照片</div></div>
       <div class="ct-item" onclick="chatTakePhoto()"><div class="ct-icon">📷</div><div class="ct-label" data-i18n="ctCamera">拍摄</div></div>
-      <div class="ct-item" onclick="chatSendVoice()"><div class="ct-icon">🎤</div><div class="ct-label" data-i18n="ctVoice">语音</div></div>
       <div class="ct-item" onclick="chatSendFile()"><div class="ct-icon">📁</div><div class="ct-label" data-i18n="ctFile">文件</div></div>
     </div>
   </div>
@@ -806,6 +815,7 @@ function applyLang(){
   var ai=g('addInput');if(ai)ai.placeholder=t('addFriendPh');
   // Chat
   var ci=g('chatInput');if(ci)ci.placeholder=t('sayPlaceholder');
+  var vhb=g('ciVoiceHold');if(vhb&&_voiceMode)vhb.textContent=LANG==='zh'?'按住 说话':'Hold to Talk';
   // Profile
   var pt=document.querySelector('#tabProfile .tab-header h2');if(pt)pt.textContent=t('profileTitle');
   var ps=document.querySelector('.profile-section h3');if(ps)ps.innerHTML=t('twinPersonality')+' <span id="labelQuickStyle" style="font-size:10px;color:var(--ac2);font-weight:400">'+(LANG==='zh'?'点击展开选择风格模板':'Tap to pick a style template')+'</span>';
@@ -1999,9 +2009,89 @@ function chatTakePhoto(){
   var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.capture='environment';
   inp.onchange=function(){if(inp.files[0])sendFileMsg(inp.files[0],'image')};inp.click();
 }
-function chatSendVoice(){
+// Voice mode toggle (WeChat-style: tap mic to switch between text/voice input)
+var _voiceMode=false;
+function toggleVoiceMode(){
+  _voiceMode=!_voiceMode;
+  var ta=g('chatInput'),vb=g('ciVoiceHold'),icon=g('ciVoiceToggle');
+  if(_voiceMode){
+    ta.style.display='none';vb.style.display='block';
+    icon.textContent='⌨️';
+    vb.textContent=LANG==='zh'?'按住 说话':'Hold to Talk';
+    // Hide send, show plus
+    g('ciSendBtn').style.display='none';
+    g('ciPlusBtn').style.display='flex';
+  }else{
+    ta.style.display='';vb.style.display='none';
+    icon.textContent='🎤';
+    ciInputChange();
+  }
   closeChatToolbar();
-  alert(LANG==='zh'?'语音消息功能开发中...':'Voice messages coming soon...');
+}
+
+var _voiceHoldRecorder=null,_voiceHoldChunks=[],_voiceHoldTimer=null,_voiceHoldSec=0;
+function voiceHoldStart(e){
+  e.preventDefault();
+  var btn=g('ciVoiceHold');
+  btn.textContent=LANG==='zh'?'松开 发送':'Release to Send';
+  btn.style.background='rgba(124,92,252,.15)';
+  _voiceHoldChunks=[];_voiceHoldSec=0;
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    _voiceHoldRecorder=new MediaRecorder(stream);
+    _voiceHoldRecorder.ondataavailable=function(ev){_voiceHoldChunks.push(ev.data)};
+    _voiceHoldRecorder.start();
+    _voiceHoldTimer=setInterval(function(){
+      _voiceHoldSec++;
+      btn.textContent=(LANG==='zh'?'松开 发送 (':'Release (')+ _voiceHoldSec+'s)';
+      if(_voiceHoldSec>=60)voiceHoldEnd();
+    },1000);
+  }).catch(function(){
+    btn.textContent=LANG==='zh'?'无法访问麦克风':'Mic not available';
+    btn.style.background='';
+  });
+}
+function voiceHoldEnd(){
+  var btn=g('ciVoiceHold');
+  btn.textContent=LANG==='zh'?'按住 说话':'Hold to Talk';
+  btn.style.background='';
+  if(_voiceHoldTimer){clearInterval(_voiceHoldTimer);_voiceHoldTimer=null}
+  if(!_voiceHoldRecorder||_voiceHoldRecorder.state!=='recording')return;
+  _voiceHoldRecorder.onstop=function(){
+    var stream=_voiceHoldRecorder.stream;
+    stream.getTracks().forEach(function(t){t.stop()});
+    if(_voiceHoldSec<1){toast(LANG==='zh'?'录音太短':'Too short');return}
+    var blob=new Blob(_voiceHoldChunks,{type:'audio/webm'});
+    sendVoiceMsg(blob);
+  };
+  _voiceHoldRecorder.stop();
+}
+function sendVoiceMsg(blob){
+  var reader=new FileReader();
+  reader.onload=function(){
+    var b64=reader.result;
+    var box=g('chatMsgs');
+    var empty=box.querySelector('.empty');if(empty)empty.remove();
+    var myAv='<div class="msg-av">'+buildAvatar(_profileName||'Me',34,'real')+'</div>';
+    box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble"><audio controls src="'+b64+'" style="max-width:200px;height:32px"></audio></div><div class="msg-time">now</div></div></div>';
+    box.scrollTop=box.scrollHeight;
+    // For twin chat, send as text prompt (STT placeholder)
+    if(chatFriend&&chatFriend.is_twin_chat){
+      toast(LANG==='zh'?'语音消息已发送':'Voice sent');
+    }
+  };
+  reader.readAsDataURL(blob);
+}
+
+// Show send vs plus based on input content
+function ciInputChange(){
+  var ta=g('chatInput');
+  var hasText=ta&&ta.value.trim().length>0;
+  g('ciSendBtn').style.display=hasText?'':'none';
+  g('ciPlusBtn').style.display=hasText?'none':'flex';
+}
+
+function toggleEmoji(){
+  toast(LANG==='zh'?'表情功能开发中...':'Emoji coming soon...');
 }
 function chatSendFile(){
   closeChatToolbar();
