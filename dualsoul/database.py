@@ -248,6 +248,26 @@ CREATE INDEX IF NOT EXISTS idx_tdl_user_date ON twin_daily_log(user_id, log_date
 """
 
 
+# Schema V5 — Twin Ethics Governance (分身伦理治理)
+SCHEMA_V5 = """
+CREATE TABLE IF NOT EXISTS twin_ethics (
+    user_id TEXT PRIMARY KEY,
+    boundaries TEXT DEFAULT '{}',
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS twin_action_log (
+    log_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    detail TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_tal_user_time ON twin_action_log(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tal_user_type ON twin_action_log(user_id, action_type, created_at DESC);
+"""
+
+
 def init_db():
     """Initialize database with schema and run migrations."""
     conn = sqlite3.connect(DATABASE_PATH)
@@ -257,6 +277,7 @@ def init_db():
     conn.executescript(SCHEMA_V2)
     conn.executescript(SCHEMA_V3)
     conn.executescript(SCHEMA_V4)
+    conn.executescript(SCHEMA_V5)
     # Run migrations (idempotent — skip if column already exists)
     for sql in MIGRATIONS:
         try:

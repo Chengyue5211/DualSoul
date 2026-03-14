@@ -12,6 +12,7 @@ from dualsoul.auth import get_current_user
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
 from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinChatRequest
+from dualsoul.twin_engine.ethics import pre_send_check
 from dualsoul.twin_engine.life import award_xp, increment_stat, update_relationship_temp
 from dualsoul.twin_engine.responder import TwinResponder
 
@@ -530,6 +531,37 @@ async def _do_twin_reply(
 ):
     """Execute the twin auto-reply: generate response, push to both users, notify owner."""
     try:
+        # Ethics check on incoming message — brake if sensitive topic detected
+        incoming_check = pre_send_check(twin_owner_id, content, "auto_reply")
+        if not incoming_check["allowed"] and incoming_check.get("brake_message"):
+            # Send brake message instead of generating a reply
+            brake_msg = incoming_check["brake_message"]
+            brake_id = gen_id("sm_")
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with get_db() as db:
+                db.execute(
+                    """INSERT INTO social_messages
+                    (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                     content, msg_type, ai_generated, auto_reply, metadata)
+                    VALUES (?, ?, ?, 'twin', ?, ?, 'text', 1, 1, '{"ethics_brake":true}')""",
+                    (brake_id, twin_owner_id, from_user_id, sender_mode, brake_msg),
+                )
+            twin_msg = {
+                "type": "new_message",
+                "data": {
+                    "msg_id": brake_id, "from_user_id": twin_owner_id,
+                    "to_user_id": from_user_id, "sender_mode": "twin",
+                    "receiver_mode": sender_mode, "content": brake_msg,
+                    "msg_type": "text", "ai_generated": 1, "created_at": now,
+                },
+            }
+            await manager.send_to(from_user_id, twin_msg)
+            await manager.send_to(twin_owner_id, twin_msg)
+            return
+
+        if not incoming_check["allowed"]:
+            return  # Silently blocked (e.g. daily limit reached)
+
         reply = await _twin.generate_reply(
             twin_owner_id=twin_owner_id,
             from_user_id=from_user_id,
