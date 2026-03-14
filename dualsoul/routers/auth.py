@@ -1,12 +1,18 @@
-"""Auth router — register and login."""
+"""Auth router — register, login, and account management."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
-from dualsoul.auth import create_token, hash_password, verify_password
+from dualsoul.auth import create_token, get_current_user, hash_password, verify_password
 from dualsoul.database import gen_id, get_db
 from dualsoul.models import LoginRequest, RegisterRequest
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
 
 
 @router.post("/register")
@@ -65,3 +71,23 @@ async def login(req: LoginRequest):
             "token": token,
         },
     }
+
+
+@router.post("/change-password")
+async def change_password(req: ChangePasswordRequest, user=Depends(get_current_user)):
+    """Change password for the logged-in user."""
+    uid = user["user_id"]
+    if len(req.new_password) < 4:
+        return {"success": False, "error": "Password must be at least 4 characters"}
+
+    with get_db() as db:
+        row = db.execute(
+            "SELECT password_hash FROM users WHERE user_id=?", (uid,)
+        ).fetchone()
+        if not row or not verify_password(req.old_password, row["password_hash"]):
+            return {"success": False, "error": "Current password is incorrect"}
+        db.execute(
+            "UPDATE users SET password_hash=? WHERE user_id=?",
+            (hash_password(req.new_password), uid),
+        )
+    return {"success": True}

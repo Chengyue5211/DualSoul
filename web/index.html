@@ -267,7 +267,22 @@ nav .ni.on .nc{transform:scale(1.15)}
 .tab-header h2{font-size:18px;font-weight:800;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .tab-header .unread{font-size:10px;color:var(--tx2)}
 
-/* About section */
+/* Discover page */
+.disc-section{margin-bottom:8px;background:var(--bg2);border-radius:12px;overflow:hidden}
+.disc-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .15s}
+.disc-item:active{background:rgba(255,255,255,.03)}
+.disc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:#fff}
+.disc-info{flex:1;min-width:0}
+.disc-label{font-size:14px;font-weight:600;color:var(--tx)}
+.disc-desc{font-size:11px;color:var(--tx2);margin-top:2px}
+.disc-arrow{font-size:18px;color:var(--tx2);flex-shrink:0}
+/* Sub-pages (full-screen panels pushed from right) */
+.disc-page{position:fixed;inset:0;z-index:800;background:var(--bg);display:flex;flex-direction:column;animation:slideRight .25s ease}
+.disc-page .dp-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.disc-page .dp-header h3{flex:1;font-size:16px;font-weight:700;color:var(--tx);margin:0}
+.disc-page .dp-back{background:none;border:none;color:var(--tx);font-size:20px;cursor:pointer;padding:4px}
+.disc-page .dp-body{flex:1;overflow-y:auto;padding:16px}
+/* About section (inside discover sub-page) */
 .about{padding:14px;margin:14px 0;background:var(--bg2);border:1px solid var(--bd);border-radius:14px}
 .about h3{font-size:14px;font-weight:800;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
 .about p{font-size:11px;color:var(--tx2);line-height:1.7;margin-bottom:8px}
@@ -276,6 +291,20 @@ nav .ni.on .nc{transform:scale(1.15)}
 .mode-card .mc-icon{font-size:20px;margin-bottom:4px}
 .mode-card .mc-label{font-size:10px;font-weight:700}
 .mode-card .mc-desc{font-size:9px;color:var(--tx2);margin-top:2px}
+/* Twin feed item */
+.feed-item{padding:14px;border-bottom:1px solid rgba(255,255,255,.04)}
+.feed-item .feed-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.feed-item .feed-time{font-size:9px;color:var(--tx2)}
+.feed-item .feed-body{font-size:12px;color:var(--tx);line-height:1.7}
+/* Settings section in Profile */
+.settings-group{margin-top:14px;background:var(--bg2);border-radius:12px;overflow:hidden}
+.settings-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+.settings-item:last-child{border-bottom:none}
+.settings-item:active{background:rgba(255,255,255,.03)}
+.settings-item .si-icon{font-size:18px;width:24px;text-align:center}
+.settings-item .si-label{flex:1;font-size:13px;color:var(--tx)}
+.settings-item .si-value{font-size:12px;color:var(--tx2)}
+.settings-item .si-arrow{color:var(--tx2);font-size:14px}
 
 /* Onboarding */
 .onboard{display:none;min-height:100vh;flex-direction:column;padding:0 24px env(safe-area-inset-bottom)}
@@ -539,20 +568,68 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   </div>
 </div>
 
-<!-- About Tab -->
+<!-- Discover Tab (发现) -->
 <div class="tab" id="tabAbout">
-  <div class="tab-header"><h2>About DualSoul</h2></div>
-  <div class="about">
-    <h3>The Dual Identity Protocol</h3>
-    <p>In the age of AI, every person can have a digital twin &mdash; an AI extension of themselves that can speak, respond, and interact on their behalf.</p>
-    <p>DualSoul lets you switch between your <b>real self</b> and your <b>digital twin</b> in social conversations. Four modes of interaction emerge:</p>
-    <div class="mode-grid">
-      <div class="mode-card"><div class="mc-icon">&#x1F464;&#x2194;&#x1F464;</div><div class="mc-label">Real &rarr; Real</div><div class="mc-desc">Traditional messaging</div></div>
-      <div class="mode-card"><div class="mc-icon">&#x1F464;&#x2194;&#x1F47B;</div><div class="mc-label">Real &rarr; Twin</div><div class="mc-desc">Talk to someone's twin</div></div>
-      <div class="mode-card"><div class="mc-icon">&#x1F47B;&#x2194;&#x1F464;</div><div class="mc-label">Twin &rarr; Real</div><div class="mc-desc">Your twin reaches out</div></div>
-      <div class="mode-card"><div class="mc-icon">&#x1F47B;&#x2194;&#x1F47B;</div><div class="mc-label">Twin &rarr; Twin</div><div class="mc-desc">Twin-to-twin chat</div></div>
+  <div class="tab-header"><h2 id="discoverTitle">发现</h2></div>
+
+  <!-- Twin Activity Feed (分身动态) -->
+  <div class="disc-section" onclick="openTwinFeed()">
+    <div class="disc-item">
+      <span class="disc-icon" style="background:linear-gradient(135deg,#7c5cfc,#5ca0fa)">👻</span>
+      <div class="disc-info">
+        <div class="disc-label" id="discTwinFeed">分身动态</div>
+        <div class="disc-desc" id="discTwinFeedDesc">看看你的分身最近替你做了什么</div>
+      </div>
+      <span class="disc-arrow">›</span>
     </div>
-    <p>Your twin's personality is shaped by you. Set its traits in your profile, and it will respond in your style when someone messages it.</p>
+  </div>
+
+  <!-- Moments (朋友圈 — placeholder) -->
+  <div class="disc-section" onclick="openMoments()">
+    <div class="disc-item">
+      <span class="disc-icon" style="background:linear-gradient(135deg,#ff8c32,#ff6b1a)">📷</span>
+      <div class="disc-info">
+        <div class="disc-label" id="discMoments">朋友圈</div>
+        <div class="disc-desc" id="discMomentsDesc">好友的真人和分身动态</div>
+      </div>
+      <span class="disc-arrow">›</span>
+    </div>
+  </div>
+
+  <!-- Scan QR (扫一扫) -->
+  <div class="disc-section" onclick="scanQR()">
+    <div class="disc-item">
+      <span class="disc-icon" style="background:linear-gradient(135deg,#2ecc71,#27ae60)">📱</span>
+      <div class="disc-info">
+        <div class="disc-label" id="discScan">扫一扫</div>
+        <div class="disc-desc" id="discScanDesc">扫码加好友</div>
+      </div>
+      <span class="disc-arrow">›</span>
+    </div>
+  </div>
+
+  <!-- Twin Plaza (分身广场) -->
+  <div class="disc-section" onclick="openTwinPlaza()">
+    <div class="disc-item">
+      <span class="disc-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)">🌐</span>
+      <div class="disc-info">
+        <div class="disc-label" id="discPlaza">分身广场</div>
+        <div class="disc-desc" id="discPlazaDesc">发现其他人的数字分身</div>
+      </div>
+      <span class="disc-arrow">›</span>
+    </div>
+  </div>
+
+  <!-- About DualSoul (协议说明) -->
+  <div class="disc-section" onclick="openAbout()">
+    <div class="disc-item">
+      <span class="disc-icon" style="background:linear-gradient(135deg,#9b59b6,#8e44ad)">✨</span>
+      <div class="disc-info">
+        <div class="disc-label" id="discAbout">关于 DualSoul</div>
+        <div class="disc-desc" id="discAboutDesc">第四种社交 · 双身份社交协议</div>
+      </div>
+      <span class="disc-arrow">›</span>
+    </div>
   </div>
 </div>
 
@@ -681,15 +758,39 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
     <a href="/guide" target="_blank" style="display:block;text-align:center;margin-top:8px;font-size:11px;color:var(--ac)">查看分身接入指南 (开发者/平台对接)</a>
   </div>
-  <button id="langBtn2" onclick="setLang(LANG==='zh'?'en':'zh')" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px">Language / 语言切换</button>
-  <button class="profile-logout" onclick="logout()">Logout</button>
+  <!-- Settings Group -->
+  <div class="settings-group">
+    <div class="settings-item" onclick="chatSendFav()">
+      <span class="si-icon">⭐</span>
+      <span class="si-label" id="siMyFav">我的收藏</span>
+      <span class="si-arrow">›</span>
+    </div>
+    <div class="settings-item" onclick="setLang(LANG==='zh'?'en':'zh')">
+      <span class="si-icon">🌐</span>
+      <span class="si-label" id="siLang">语言 / Language</span>
+      <span class="si-value" id="siLangVal"></span>
+      <span class="si-arrow">›</span>
+    </div>
+    <div class="settings-item" onclick="openAccountSecurity()">
+      <span class="si-icon">🔒</span>
+      <span class="si-label" id="siAccount">账号与安全</span>
+      <span class="si-arrow">›</span>
+    </div>
+    <div class="settings-item" onclick="openSettingsPage()">
+      <span class="si-icon">⚙️</span>
+      <span class="si-label" id="siSettings">设置</span>
+      <span class="si-arrow">›</span>
+    </div>
+  </div>
+
+  <button class="profile-logout" style="margin-top:14px" onclick="logout()">Logout</button>
 </div>
 
 <!-- Bottom Nav -->
 <nav>
-  <div class="ni on" onclick="swTab('Social',this)"><span class="nc">&#x1F4AC;</span><span class="nl">Social</span><span class="ni-badge" id="navBadge"></span></div>
-  <div class="ni" onclick="swTab('About',this)"><span class="nc">&#x2728;</span><span class="nl">About</span></div>
-  <div class="ni" onclick="swTab('Profile',this)"><span class="nc">&#x1F464;</span><span class="nl">Profile</span></div>
+  <div class="ni on" onclick="swTab('Social',this)"><span class="nc">&#x1F4AC;</span><span class="nl" id="navChat">消息</span><span class="ni-badge" id="navBadge"></span></div>
+  <div class="ni" onclick="swTab('About',this)"><span class="nc">&#x1F50D;</span><span class="nl" id="navDiscover">发现</span></div>
+  <div class="ni" onclick="swTab('Profile',this)"><span class="nc">&#x1F464;</span><span class="nl" id="navMe">我</span></div>
 </nav>
 </div>
 
@@ -855,8 +956,23 @@ function applyLang(){
   var ls=g('langBtn');if(ls)ls.textContent=t('langSwitch');
   var ls2=g('langBtn2');if(ls2)ls2.textContent=LANG==='zh'?'English / 切换英文':'中文 / Switch to Chinese';
   // Nav
-  var nls=document.querySelectorAll('nav .nl');
-  if(nls.length>=3){nls[0].textContent=t('social');nls[1].textContent=t('about');nls[2].textContent=t('profile')}
+  var nc=g('navChat');if(nc)nc.textContent=LANG==='zh'?'消息':'Chat';
+  var nd=g('navDiscover');if(nd)nd.textContent=LANG==='zh'?'发现':'Discover';
+  var nm=g('navMe');if(nm)nm.textContent=LANG==='zh'?'我':'Me';
+  // Discover page items
+  var dt=g('discoverTitle');if(dt)dt.textContent=LANG==='zh'?'发现':'Discover';
+  var dtf=g('discTwinFeed');if(dtf)dtf.textContent=LANG==='zh'?'分身动态':'Twin Activity';
+  var dtfd=g('discTwinFeedDesc');if(dtfd)dtfd.textContent=LANG==='zh'?'看看你的分身最近替你做了什么':'See what your twin did for you';
+  var dm=g('discMoments');if(dm)dm.textContent=LANG==='zh'?'朋友圈':'Moments';
+  var dmd=g('discMomentsDesc');if(dmd)dmd.textContent=LANG==='zh'?'好友的真人和分身动态':'Friends\' real and twin updates';
+  var ds=g('discScan');if(ds)ds.textContent=LANG==='zh'?'扫一扫':'Scan';
+  var dsd=g('discScanDesc');if(dsd)dsd.textContent=LANG==='zh'?'扫码加好友':'Scan to add friends';
+  var dp=g('discPlaza');if(dp)dp.textContent=LANG==='zh'?'分身广场':'Twin Plaza';
+  var dpd=g('discPlazaDesc');if(dpd)dpd.textContent=LANG==='zh'?'发现其他人的数字分身':'Discover other people\'s twins';
+  var da=g('discAbout');if(da)da.textContent=LANG==='zh'?'关于 DualSoul':'About DualSoul';
+  var dad=g('discAboutDesc');if(dad)dad.textContent=LANG==='zh'?'第四种社交 · 双身份社交协议':'The Fourth Kind of Social · DISP';
+  // Settings items
+  var slv=g('siLangVal');if(slv)slv.textContent=LANG==='zh'?'中文':'English';
   // Add friend
   var ai=g('addInput');if(ai)ai.placeholder=t('addFriendPh');
   // Chat
@@ -902,18 +1018,7 @@ function applyLang(){
   var tcd=g('twinCardDesc');if(tcd)tcd.textContent=t('twinCardDesc');
   var tccp=g('twinCardCopyBtn');if(tccp)tccp.textContent=t('twinCardCopy');
   var tcpv=g('twinCardPreviewBtn');if(tcpv)tcpv.textContent=t('twinCardPreview');
-  // About
-  var abt=document.querySelector('#tabAbout .tab-header h2');if(abt)abt.textContent=t('aboutTitle');
-  var abh=document.querySelector('.about h3');if(abh)abh.textContent=t('aboutProto');
-  var abps=document.querySelectorAll('.about p');
-  if(abps.length>=3){abps[0].innerHTML=t('aboutDesc1');abps[1].innerHTML=t('aboutDesc2');abps[2].innerHTML=t('aboutDesc3')}
-  var mcs=document.querySelectorAll('.mode-card');
-  if(mcs.length>=4){
-    mcs[0].querySelector('.mc-label').innerHTML=t('mRR');mcs[0].querySelector('.mc-desc').textContent=t('mRRd');
-    mcs[1].querySelector('.mc-label').innerHTML=t('mRT');mcs[1].querySelector('.mc-desc').textContent=t('mRTd');
-    mcs[2].querySelector('.mc-label').innerHTML=t('mTR');mcs[2].querySelector('.mc-desc').textContent=t('mTRd');
-    mcs[3].querySelector('.mc-label').innerHTML=t('mTT');mcs[3].querySelector('.mc-desc').textContent=t('mTTd');
-  }
+  // About content is now dynamic in openAbout()
   // Auto-reply label
   var arl=document.querySelector('[for="profAutoReply"],.profile-field label');
   // Onboarding
@@ -1434,6 +1539,146 @@ function tsFinishLang(){
   tsAddMsg('user',label?label.textContent:tsLang);
   g('tsInput').style.display='none';
   tsStep=5;setTimeout(tsRunStep,400);
+}
+
+// ====== Discover Page Functions ======
+function openDiscPage(title,bodyHtml){
+  var old=document.querySelector('.disc-page');if(old)old.remove();
+  var page=document.createElement('div');
+  page.className='disc-page';
+  page.innerHTML='<div class="dp-header"><button class="dp-back" onclick="this.closest(\'.disc-page\').remove()">←</button><h3>'+esc(title)+'</h3></div><div class="dp-body">'+bodyHtml+'</div>';
+  document.body.appendChild(page);
+}
+
+function openTwinFeed(){
+  var html='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px" id="feedLoading">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
+  openDiscPage(LANG==='zh'?'分身动态':'Twin Activity',html);
+  // Load twin activity from API
+  fetch(DS_BASE+'/api/social/twin/activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+    var body=document.querySelector('.disc-page .dp-body');if(!body)return;
+    if(!d.success||!d.activities||!d.activities.length){
+      body.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'暂无分身动态\n当你不在时，分身替你回复的消息会出现在这里':'No twin activity yet')+'</div>';
+      return;
+    }
+    body.innerHTML=d.activities.map(function(a){
+      var tm=(a.created_at||'').slice(5,16).replace('T',' ');
+      return '<div class="feed-item"><div class="feed-head">'+buildAvatar(_profileName||'?',32,'twin')+'<span style="font-size:13px;font-weight:600;color:var(--tx)">'+esc(_profileName)+(LANG==='zh'?' 的分身':"'s Twin")+'</span><span class="feed-time" style="margin-left:auto">'+tm+'</span></div><div class="feed-body">'+esc(a.content).replace(/\n/g,'<br>')+'</div></div>';
+    }).join('');
+  }).catch(function(){
+    var body=document.querySelector('.disc-page .dp-body');
+    if(body)body.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2)">'+t('networkError')+'</div>';
+  });
+}
+
+function openMoments(){
+  openDiscPage(LANG==='zh'?'朋友圈':'Moments',
+    '<div style="text-align:center;padding:60px 20px">'+
+    '<div style="font-size:48px;margin-bottom:16px">📷</div>'+
+    '<div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:8px">'+(LANG==='zh'?'朋友圈即将上线':'Moments coming soon')+'</div>'+
+    '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+(LANG==='zh'?'你和好友的真人、分身都可以发动态\n看看大家的分身都在说什么':'Post updates from your real self or twin.\nSee what everyone\'s twins are up to.')+'</div></div>');
+}
+
+function scanQR(){
+  // Try to use camera for QR scanning, fallback to manual input
+  openDiscPage(LANG==='zh'?'扫一扫':'Scan QR',
+    '<div style="text-align:center;padding:30px 20px">'+
+    '<div style="font-size:48px;margin-bottom:16px">📱</div>'+
+    '<div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:16px">'+(LANG==='zh'?'扫描好友的二维码':'Scan friend\'s QR code')+'</div>'+
+    '<div style="margin:20px auto;max-width:200px;padding:20px;background:var(--bg2);border:2px dashed var(--bd);border-radius:12px;text-align:center;cursor:pointer" onclick="startQRScan()">'+
+    '<div style="font-size:32px;margin-bottom:8px">📸</div>'+
+    '<div style="font-size:11px;color:var(--tx2)">'+(LANG==='zh'?'点击打开相机扫码':'Tap to open camera')+'</div></div>'+
+    '<div style="margin-top:20px;font-size:11px;color:var(--tx2);text-align:center">'+(LANG==='zh'?'或直接输入对方用户名添加好友':'Or enter username to add friend')+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:10px;max-width:280px;margin-left:auto;margin-right:auto">'+
+    '<input id="qrManualInput" placeholder="'+(LANG==='zh'?'输入用户名':'Username')+'" style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit">'+
+    '<button onclick="qrAddFriend()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'添加':'Add')+'</button></div>'+
+    '</div>');
+}
+
+function startQRScan(){
+  toast(LANG==='zh'?'扫码功能需要HTTPS环境，暂用手动输入':'QR scan requires HTTPS');
+}
+
+function qrAddFriend(){
+  var inp=document.getElementById('qrManualInput');
+  var u=inp?inp.value.trim():'';
+  if(!u){toast(LANG==='zh'?'请输入用户名':'Enter username');return}
+  fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){toast(LANG==='zh'?'好友请求已发送':'Friend request sent');inp.value='';loadFriends()}
+    else toast(d.error||'Failed');
+  }).catch(function(){toast(t('networkError'))});
+}
+
+function openTwinPlaza(){
+  openDiscPage(LANG==='zh'?'分身广场':'Twin Plaza',
+    '<div style="text-align:center;padding:60px 20px">'+
+    '<div style="font-size:48px;margin-bottom:16px">🌐</div>'+
+    '<div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:8px">'+(LANG==='zh'?'分身广场即将上线':'Twin Plaza coming soon')+'</div>'+
+    '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+(LANG==='zh'?'在这里发现其他人的数字分身\n和他们的分身聊天，认识新朋友':'Discover other people\'s digital twins.\nChat with their twins and make new friends.')+'</div></div>');
+}
+
+function openAbout(){
+  openDiscPage(LANG==='zh'?'关于 DualSoul':'About DualSoul',
+    '<div class="about">'+
+    '<h3>'+(LANG==='zh'?'第四种社交':'The Fourth Kind of Social')+'</h3>'+
+    '<p>'+(LANG==='zh'?'在AI时代，每个人都可以拥有一个数字分身——一个能代替你说话、回应、社交的AI延伸。':'In the age of AI, every person can have a digital twin — an AI extension that speaks, responds, and interacts on your behalf.')+'</p>'+
+    '<p>'+(LANG==='zh'?'DualSoul让你在社交对话中自由切换真人身份和数字分身。四种互动模式由此诞生：':'DualSoul lets you switch between your real self and digital twin. Four interaction modes emerge:')+'</p>'+
+    '<div class="mode-grid">'+
+    '<div class="mode-card"><div class="mc-icon">👤↔👤</div><div class="mc-label">'+(LANG==='zh'?'真人 → 真人':'Real → Real')+'</div><div class="mc-desc">'+(LANG==='zh'?'传统聊天':'Traditional chat')+'</div></div>'+
+    '<div class="mode-card"><div class="mc-icon">👤↔👻</div><div class="mc-label">'+(LANG==='zh'?'真人 → 分身':'Real → Twin')+'</div><div class="mc-desc">'+(LANG==='zh'?'和对方分身聊':'Talk to their twin')+'</div></div>'+
+    '<div class="mode-card"><div class="mc-icon">👻↔👤</div><div class="mc-label">'+(LANG==='zh'?'分身 → 真人':'Twin → Real')+'</div><div class="mc-desc">'+(LANG==='zh'?'你的分身主动联系':'Your twin reaches out')+'</div></div>'+
+    '<div class="mode-card"><div class="mc-icon">👻↔👻</div><div class="mc-label">'+(LANG==='zh'?'分身 → 分身':'Twin → Twin')+'</div><div class="mc-desc">'+(LANG==='zh'?'分身对话分身':'Twin-to-twin chat')+'</div></div>'+
+    '</div>'+
+    '<p style="margin-top:12px">'+(LANG==='zh'?'DISP v1.1 · 双身份社交协议':'DISP v1.1 · Dual Identity Social Protocol')+'</p>'+
+    '<p style="font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'© 2026 DualSoul · AGPL-3.0 开源':'© 2026 DualSoul · AGPL-3.0 Open Source')+'</p>'+
+    '</div>');
+}
+
+// ====== Settings & Account Security ======
+function openAccountSecurity(){
+  openDiscPage(LANG==='zh'?'账号与安全':'Account & Security',
+    '<div class="settings-group" style="margin-top:0">'+
+    '<div class="settings-item"><span class="si-icon">👤</span><span class="si-label">'+(LANG==='zh'?'DualSoul号':'DualSoul ID')+'</span><span class="si-value" style="font-family:monospace">'+esc(myId.slice(-8))+'</span></div>'+
+    '<div class="settings-item" onclick="changePassword()"><span class="si-icon">🔑</span><span class="si-label">'+(LANG==='zh'?'修改密码':'Change Password')+'</span><span class="si-arrow">›</span></div>'+
+    '<div class="settings-item"><span class="si-icon">📱</span><span class="si-label">'+(LANG==='zh'?'手机号绑定':'Phone Binding')+'</span><span class="si-value" style="color:var(--tx2)">'+(LANG==='zh'?'未绑定':'Not set')+'</span><span class="si-arrow">›</span></div>'+
+    '<div class="settings-item"><span class="si-icon">📧</span><span class="si-label">'+(LANG==='zh'?'邮箱绑定':'Email Binding')+'</span><span class="si-value" style="color:var(--tx2)">'+(LANG==='zh'?'未绑定':'Not set')+'</span><span class="si-arrow">›</span></div>'+
+    '</div>'+
+    '<div style="padding:20px;text-align:center;font-size:11px;color:var(--tx2)">'+(LANG==='zh'?'手机号和邮箱绑定功能即将上线':'Phone and email binding coming soon')+'</div>');
+}
+
+function changePassword(){
+  openDiscPage(LANG==='zh'?'修改密码':'Change Password',
+    '<div style="max-width:300px;margin:20px auto">'+
+    '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'当前密码':'Current password')+'</label><input type="password" id="cpOld" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'新密码':'New password')+'</label><input type="password" id="cpNew" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
+    '<div style="margin-bottom:16px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'确认新密码':'Confirm new password')+'</label><input type="password" id="cpConfirm" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
+    '<button onclick="submitChangePassword()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'确认修改':'Save')+'</button></div>');
+}
+
+function submitChangePassword(){
+  var o=document.getElementById('cpOld').value;
+  var n=document.getElementById('cpNew').value;
+  var c=document.getElementById('cpConfirm').value;
+  if(!o||!n){toast(LANG==='zh'?'请填写密码':'Enter passwords');return}
+  if(n!==c){toast(LANG==='zh'?'两次密码不一致':'Passwords don\'t match');return}
+  if(n.length<4){toast(LANG==='zh'?'密码至少4位':'Password min 4 chars');return}
+  fetch(DS_BASE+'/api/auth/change-password',{method:'POST',headers:headers(),body:JSON.stringify({old_password:o,new_password:n})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){toast(LANG==='zh'?'密码已修改':'Password changed');var p=document.querySelector('.disc-page');if(p)p.remove()}
+    else toast(d.error||'Failed');
+  }).catch(function(){toast(t('networkError'))});
+}
+
+function openSettingsPage(){
+  var autoReplyOn=document.getElementById('profAutoReply')&&document.getElementById('profAutoReply').checked;
+  openDiscPage(LANG==='zh'?'设置':'Settings',
+    '<div class="settings-group" style="margin-top:0">'+
+    '<div class="settings-item" onclick="setLang(LANG===\'zh\'?\'en\':\'zh\');this.closest(\'.disc-page\').remove()"><span class="si-icon">🌐</span><span class="si-label">'+(LANG==='zh'?'语言 / Language':'Language / 语言')+'</span><span class="si-value">'+(LANG==='zh'?'中文':'English')+'</span><span class="si-arrow">›</span></div>'+
+    '<div class="settings-item"><span class="si-icon">🔔</span><span class="si-label">'+(LANG==='zh'?'消息通知':'Notifications')+'</span><span class="si-value" style="color:var(--tx2)">'+(LANG==='zh'?'即将上线':'Coming soon')+'</span></div>'+
+    '<div class="settings-item"><span class="si-icon">👻</span><span class="si-label">'+(LANG==='zh'?'分身自动回复':'Twin Auto-Reply')+'</span><span class="si-value">'+(autoReplyOn?(LANG==='zh'?'已开启':'On'):(LANG==='zh'?'已关闭':'Off'))+'</span></div>'+
+    '<div class="settings-item"><span class="si-icon">🗑️</span><span class="si-label">'+(LANG==='zh'?'清除缓存':'Clear Cache')+'</span><span class="si-arrow">›</span></div>'+
+    '</div>'+
+    '<div style="padding:30px;text-align:center;font-size:10px;color:var(--tx2)">DualSoul v0.7.0 · DISP v1.1</div>');
 }
 
 function logout(){
