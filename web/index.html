@@ -49,6 +49,32 @@ a{color:var(--ac);text-decoration:none}
 .twin-notify-card .tn-go{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
 .twin-notify-card .tn-ok{background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)!important}
 @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Call UI */
+.call-overlay{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,#0c0c18 0%,#1a1a2e 50%,#0c0c18 100%);animation:fadeIn .3s ease}
+.call-overlay .call-avatar{width:100px;height:100px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:700;color:#fff;margin-bottom:16px}
+.call-overlay .call-name{font-size:20px;font-weight:700;color:#fff;margin-bottom:6px}
+.call-overlay .call-status{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:40px}
+.call-overlay .call-timer{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:30px;font-variant-numeric:tabular-nums}
+.call-overlay .call-video{position:absolute;inset:0;z-index:0}
+.call-overlay .call-video video{width:100%;height:100%;object-fit:cover}
+.call-overlay .call-video-self{position:absolute;top:60px;right:16px;width:100px;height:140px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.2);z-index:1}
+.call-overlay .call-video-self video{width:100%;height:100%;object-fit:cover}
+.call-btns{display:flex;gap:20px;z-index:1}
+.call-btns .cb{width:60px;height:60px;border-radius:50%;border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.call-btns .cb:active{transform:scale(.9)}
+.cb-accept{background:#2ecc71;color:#fff}
+.cb-reject{background:#e74c3c;color:#fff}
+.cb-hangup{background:#e74c3c;color:#fff}
+.cb-mute{background:rgba(255,255,255,.15);color:#fff}
+.cb-mute.on{background:rgba(231,76,60,.3);color:#e74c3c}
+.cb-speaker{background:rgba(255,255,255,.15);color:#fff}
+.cb-speaker.on{background:rgba(46,204,113,.3);color:#2ecc71}
+.cb-video-toggle{background:rgba(255,255,255,.15);color:#fff}
+.cb-video-toggle.off{background:rgba(231,76,60,.3);color:#e74c3c}
+/* Ringing animation */
+@keyframes ringPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,204,113,.4)}50%{box-shadow:0 0 0 20px rgba(46,204,113,0)}}
+.call-overlay.ringing .call-avatar{animation:ringPulse 1.5s infinite}
 @keyframes toastIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-12px)}}
 
@@ -488,6 +514,8 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     <div class="chat-toolbar" id="chatToolbar">
       <div class="ct-item" onclick="chatSendPhoto()"><div class="ct-icon">🖼</div><div class="ct-label" data-i18n="ctPhoto">照片</div></div>
       <div class="ct-item" onclick="chatTakePhoto()"><div class="ct-icon">📷</div><div class="ct-label" data-i18n="ctCamera">拍摄</div></div>
+      <div class="ct-item" onclick="startCall('voice')"><div class="ct-icon">📞</div><div class="ct-label" data-i18n="ctVoiceCall">语音通话</div></div>
+      <div class="ct-item" onclick="startCall('video')"><div class="ct-icon">📹</div><div class="ct-label" data-i18n="ctVideoCall">视频通话</div></div>
       <div class="ct-item" onclick="chatSendFile()"><div class="ct-icon">📁</div><div class="ct-label" data-i18n="ctFile">文件</div></div>
     </div>
   </div>
@@ -1448,6 +1476,18 @@ function wsHandle(msg){
       box.innerHTML+='<div class="msg theirs">'+twinAv+'<div><div class="bubble" style="box-shadow:0 0 12px rgba(124,92,252,.15)">'+esc(nd.content).replace(/\n/g,'<br>')+'</div></div></div>';
       box.scrollTop=box.scrollHeight;
     }
+  }else if(msg.type==='call_invite'){
+    showIncomingCall(msg);
+  }else if(msg.type==='call_accept'){
+    onCallAccepted(msg);
+  }else if(msg.type==='call_reject'||msg.type==='call_hangup'){
+    onCallEnded(msg);
+  }else if(msg.type==='call_offer'){
+    onCallOffer(msg);
+  }else if(msg.type==='call_answer'){
+    onCallAnswer(msg);
+  }else if(msg.type==='call_ice'){
+    onCallIce(msg);
   }else if(msg.type==='auto_translation'){
     // Auto-detected foreign language/dialect — show translation below the message
     var atd=msg.data;
@@ -2092,6 +2132,277 @@ function ciInputChange(){
 
 function toggleEmoji(){
   toast(LANG==='zh'?'表情功能开发中...':'Emoji coming soon...');
+}
+
+// ====== WebRTC Voice/Video Call ======
+var _callState=null; // null | 'ringing' | 'calling' | 'connected'
+var _callPeer=null;  // {user_id, name}
+var _callType='voice'; // 'voice' | 'video'
+var _callPC=null;    // RTCPeerConnection
+var _callStream=null; // local MediaStream
+var _callTimer=null;
+var _callSec=0;
+var _callMuted=false;
+var _callSpeaker=true;
+var _callVideoOff=false;
+var _callRingAudio=null;
+
+var _iceServers=[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'}
+];
+
+function wsSend(obj){
+  if(ws&&ws.readyState===1)ws.send(JSON.stringify(obj));
+}
+
+function startCall(type){
+  if(!chatFriend||chatFriend.is_twin_chat){toast(LANG==='zh'?'无法拨打':'Cannot call');return}
+  if(_callState){toast(LANG==='zh'?'通话中':'Already in call');return}
+  closeChatToolbar();
+  _callType=type;
+  _callPeer={user_id:chatFriend.user_id,name:chatFriend.name};
+  _callState='calling';
+  // Send invite via WebSocket
+  wsSend({type:'call_invite',target:_callPeer.user_id,call_type:type,caller_name:_profileName||'?'});
+  showCallUI('calling');
+  // Play ring sound
+  playRing();
+  // Timeout 45s — if no answer, hang up
+  setTimeout(function(){if(_callState==='calling')endCall()},45000);
+}
+
+function showIncomingCall(msg){
+  if(_callState){
+    // Already in call, auto reject
+    wsSend({type:'call_reject',target:msg.from});return;
+  }
+  _callPeer={user_id:msg.from,name:msg.caller_name||'?'};
+  _callType=msg.call_type||'voice';
+  _callState='ringing';
+  showCallUI('ringing');
+  playRing();
+  if(navigator.vibrate)navigator.vibrate([300,200,300,200,300]);
+}
+
+function showCallUI(mode){
+  // Remove existing overlay
+  var old=document.querySelector('.call-overlay');if(old)old.remove();
+  var av=buildAvatar(_callPeer.name,100,_callType==='video'?'twin':'real');
+  var statusText='';
+  if(mode==='ringing')statusText=LANG==='zh'?'邀请你'+(_callType==='video'?'视频':'语音')+'通话...':'Incoming '+_callType+' call...';
+  else if(mode==='calling')statusText=LANG==='zh'?'正在呼叫...':'Calling...';
+  else statusText=LANG==='zh'?'通话中':'Connected';
+
+  var btns='';
+  if(mode==='ringing'){
+    btns='<button class="cb cb-reject" onclick="rejectCall()">✕</button>'+
+         '<button class="cb cb-accept" onclick="acceptCall()">📞</button>';
+  }else if(mode==='calling'){
+    btns='<button class="cb cb-hangup" onclick="endCall()">✕</button>';
+  }else{
+    btns='<button class="cb cb-mute'+ (_callMuted?' on':'') +'" id="cbMute" onclick="toggleMute()">🎤</button>'+
+         (_callType==='video'?'<button class="cb cb-video-toggle'+(_callVideoOff?' off':'')+'" id="cbCam" onclick="toggleCam()">📹</button>':'')+
+         '<button class="cb cb-hangup" onclick="endCall()">✕</button>';
+  }
+
+  var overlay=document.createElement('div');
+  overlay.className='call-overlay'+(mode==='ringing'?' ringing':'');
+  overlay.id='callOverlay';
+
+  var videoHtml='';
+  if(_callType==='video'){
+    videoHtml='<div class="call-video"><video id="callRemoteVideo" autoplay playsinline></video></div>'+
+              '<div class="call-video-self"><video id="callLocalVideo" autoplay playsinline muted></video></div>';
+  }
+
+  overlay.innerHTML=videoHtml+
+    '<div class="call-avatar" style="background:linear-gradient(135deg,var(--ac),var(--ac2));z-index:1" id="callAvatar">'+_callPeer.name.charAt(0)+'</div>'+
+    '<div class="call-name" style="z-index:1">'+esc(_callPeer.name)+'</div>'+
+    '<div class="call-status" style="z-index:1" id="callStatus">'+statusText+'</div>'+
+    '<div class="call-timer" style="z-index:1;display:none" id="callTimerEl"></div>'+
+    '<div class="call-btns">'+btns+'</div>';
+  document.body.appendChild(overlay);
+}
+
+function acceptCall(){
+  _callState='connected';
+  wsSend({type:'call_accept',target:_callPeer.user_id});
+  stopRing();
+  setupWebRTC(false); // callee — wait for offer
+}
+
+function rejectCall(){
+  wsSend({type:'call_reject',target:_callPeer.user_id});
+  cleanupCall();
+}
+
+function onCallAccepted(msg){
+  if(_callState!=='calling')return;
+  _callState='connected';
+  stopRing();
+  setupWebRTC(true); // caller — create offer
+}
+
+function onCallEnded(msg){
+  if(!_callState)return;
+  toast(LANG==='zh'?'通话已结束':'Call ended');
+  cleanupCall();
+}
+
+function endCall(){
+  if(_callPeer)wsSend({type:'call_hangup',target:_callPeer.user_id});
+  cleanupCall();
+}
+
+function cleanupCall(){
+  stopRing();
+  _callState=null;
+  if(_callPC){try{_callPC.close()}catch(e){}_callPC=null}
+  if(_callStream){_callStream.getTracks().forEach(function(t){t.stop()});_callStream=null}
+  if(_callTimer){clearInterval(_callTimer);_callTimer=null}
+  _callSec=0;_callMuted=false;_callVideoOff=false;
+  var ov=document.querySelector('.call-overlay');if(ov)ov.remove();
+}
+
+function setupWebRTC(isCaller){
+  var constraints=_callType==='video'?{audio:true,video:{facingMode:'user'}}:{audio:true};
+
+  navigator.mediaDevices.getUserMedia(constraints).then(function(stream){
+    _callStream=stream;
+
+    // Show local video
+    if(_callType==='video'){
+      var lv=g('callLocalVideo');
+      if(lv)lv.srcObject=stream;
+    }
+
+    // Update UI
+    showCallUI('connected');
+    startCallTimer();
+
+    // Create peer connection
+    _callPC=new RTCPeerConnection({iceServers:_iceServers});
+
+    // Add local tracks
+    stream.getTracks().forEach(function(track){
+      _callPC.addTrack(track,stream);
+    });
+
+    // Handle remote tracks
+    _callPC.ontrack=function(ev){
+      if(_callType==='video'){
+        var rv=g('callRemoteVideo');
+        if(rv)rv.srcObject=ev.streams[0];
+        // Hide avatar when video comes in
+        var av=g('callAvatar');if(av)av.style.display='none';
+      }else{
+        // Audio only — create audio element
+        var audio=document.createElement('audio');
+        audio.srcObject=ev.streams[0];audio.autoplay=true;
+        document.body.appendChild(audio);
+        audio.id='callRemoteAudio';
+      }
+    };
+
+    // ICE candidates
+    _callPC.onicecandidate=function(ev){
+      if(ev.candidate){
+        wsSend({type:'call_ice',target:_callPeer.user_id,candidate:ev.candidate});
+      }
+    };
+
+    _callPC.oniceconnectionstatechange=function(){
+      if(_callPC&&(_callPC.iceConnectionState==='disconnected'||_callPC.iceConnectionState==='failed')){
+        endCall();
+      }
+    };
+
+    // Caller creates offer
+    if(isCaller){
+      _callPC.createOffer().then(function(offer){
+        return _callPC.setLocalDescription(offer);
+      }).then(function(){
+        wsSend({type:'call_offer',target:_callPeer.user_id,sdp:_callPC.localDescription});
+      });
+    }
+  }).catch(function(err){
+    toast(LANG==='zh'?'无法访问摄像头/麦克风':'Cannot access camera/mic');
+    endCall();
+  });
+}
+
+function onCallOffer(msg){
+  if(!_callPC)return;
+  _callPC.setRemoteDescription(new RTCSessionDescription(msg.sdp)).then(function(){
+    return _callPC.createAnswer();
+  }).then(function(answer){
+    return _callPC.setLocalDescription(answer);
+  }).then(function(){
+    wsSend({type:'call_answer',target:msg.from,sdp:_callPC.localDescription});
+  });
+}
+
+function onCallAnswer(msg){
+  if(!_callPC)return;
+  _callPC.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+}
+
+function onCallIce(msg){
+  if(!_callPC)return;
+  _callPC.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(function(){});
+}
+
+function toggleMute(){
+  _callMuted=!_callMuted;
+  if(_callStream){
+    _callStream.getAudioTracks().forEach(function(t){t.enabled=!_callMuted});
+  }
+  var btn=g('cbMute');
+  if(btn)btn.className='cb cb-mute'+(_callMuted?' on':'');
+}
+
+function toggleCam(){
+  _callVideoOff=!_callVideoOff;
+  if(_callStream){
+    _callStream.getVideoTracks().forEach(function(t){t.enabled=!_callVideoOff});
+  }
+  var btn=g('cbCam');
+  if(btn)btn.className='cb cb-video-toggle'+(_callVideoOff?' off':'');
+}
+
+function startCallTimer(){
+  _callSec=0;
+  var el=g('callTimerEl');
+  if(el)el.style.display='';
+  _callTimer=setInterval(function(){
+    _callSec++;
+    var m=Math.floor(_callSec/60),s=_callSec%60;
+    var el=g('callTimerEl');
+    if(el)el.textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  },1000);
+}
+
+function playRing(){
+  try{
+    // Use Web Audio for a simple ringtone
+    var ctx=new (window.AudioContext||window.webkitAudioContext)();
+    var osc=ctx.createOscillator();var gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.value=440;gain.gain.value=0.15;osc.type='sine';
+    osc.start();
+    _callRingAudio={ctx:ctx,osc:osc,interval:setInterval(function(){
+      gain.gain.value=gain.gain.value>0?0:0.15;
+    },500)};
+  }catch(e){}
+}
+
+function stopRing(){
+  if(_callRingAudio){
+    clearInterval(_callRingAudio.interval);
+    try{_callRingAudio.osc.stop();_callRingAudio.ctx.close()}catch(e){}
+    _callRingAudio=null;
+  }
 }
 function chatSendFile(){
   closeChatToolbar();

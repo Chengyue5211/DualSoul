@@ -37,12 +37,30 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")):
 
     try:
         while True:
-            # Keep connection alive; handle client pings
             data = await websocket.receive_text()
             manager.touch(user_id)
-            # Client can send "ping" to keep alive
             if data == "ping":
                 await websocket.send_text("pong")
+                continue
+
+            # Handle JSON messages (call signaling)
+            try:
+                import json
+                msg = json.loads(data)
+            except Exception:
+                continue
+
+            msg_type = msg.get("type", "")
+            target_id = msg.get("target", "")
+
+            # Forward call signaling to the target user
+            if msg_type in (
+                "call_invite", "call_accept", "call_reject", "call_hangup",
+                "call_offer", "call_answer", "call_ice",
+            ) and target_id:
+                msg["from"] = user_id
+                await manager.send_to(target_id, msg)
+
     except WebSocketDisconnect:
         manager.disconnect(user_id)
     except Exception:
