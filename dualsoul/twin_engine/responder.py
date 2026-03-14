@@ -873,12 +873,14 @@ class TwinResponder:
         personality_block = profile.build_personality_prompt()
 
         if social_context:
-            # When auto-replying for owner, use Chinese prompt with strict constraints FIRST
+            # When auto-replying for owner, use minimal prompt with hard constraints
             system_prompt = (
-                f"{social_context}\n\n"
-                f"你是{profile.display_name}的数字分身。\n"
-                f"{personality_block}\n"
-                f"用{profile.display_name}的风格回复，只输出回复内容。"
+                f"你是{profile.display_name}的数字分身，主人不在。\n"
+                f"收到好友消息后，你只回一句话，格式固定：先说'好的'或'收到'，再说'我跟主人说一声'。\n"
+                f"示例回复：'好的～我跟主人说一声！'\n"
+                f"示例回复：'收到，等主人回来跟你定～'\n\n"
+                f"绝对禁止：说'在吗'、用问号复述对方的话、替主人做决定、输出多行。\n"
+                f"只输出一句回复，不超过20字。"
             )
         else:
             system_prompt = (
