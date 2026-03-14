@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from dualsoul import __version__
 from dualsoul.config import CORS_ORIGINS, HOST, PORT
 from dualsoul.database import init_db
-from dualsoul.routers import auth, ethics, identity, invite, life, plaza, social, twin_import, ws
+from dualsoul.routers import auth, ethics, identity, invite, life, plaza, relationship, social, twin_import, ws
 from dualsoul.twin_engine.autonomous import autonomous_social_loop
 
 
@@ -57,6 +57,7 @@ app.include_router(identity.router)
 app.include_router(invite.router)
 app.include_router(life.router)
 app.include_router(plaza.router)
+app.include_router(relationship.router)
 app.include_router(social.router)
 app.include_router(twin_import.router)
 app.include_router(ws.router)

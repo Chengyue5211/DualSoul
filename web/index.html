@@ -230,6 +230,15 @@ nav .ni.on .nc{transform:scale(1.15)}
 .msg.theirs .bubble{background:var(--bg2);border:1px solid var(--bd);border-top-left-radius:4px}
 .msg.mine .bubble{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.2);border-top-right-radius:4px}
 .msg .ai-tag{font-size:8px;color:rgba(124,92,252,.6);margin-top:2px}
+/* source_type: twin_auto label */
+.msg .twin-auto-tag{display:inline-flex;align-items:center;gap:2px;font-size:9px;color:rgba(124,92,252,.85);background:rgba(124,92,252,.1);border:1px solid rgba(124,92,252,.18);border-radius:6px;padding:1px 5px;margin-top:2px}
+/* Twin state indicator in chat header */
+.twin-state-dot{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--tx2);margin-left:2px}
+/* Twin permission request system message */
+.perm-actions{display:flex;gap:6px;margin-top:6px}
+.perm-btn{font-size:11px;padding:4px 12px;border:none;border-radius:8px;cursor:pointer}
+.perm-btn.allow{background:rgba(124,92,252,.2);color:#7c5cfc}
+.perm-btn.deny{background:rgba(255,80,80,.1);color:rgba(255,80,80,.8)}
 /* Chat images — WeChat-like thumbnail */
 .chat-img{max-width:140px !important;max-height:180px !important;width:auto;height:auto;border-radius:8px;cursor:pointer;display:block}
 /* Full-screen image preview */
@@ -634,8 +643,13 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
         <div class="av-back is-twin" style="width:20px;height:20px"><img></div>
         <div class="av-front is-real" style="width:28px;height:28px"><img></div>
       </div>
-      <span class="chat-name" id="chatName">Friend</span>
-      <span class="chat-mode-tag" id="chatModeTag">Real &rarr; Real</span>
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="chat-name" id="chatName">Friend</span>
+          <span class="twin-state-dot" id="twinStateDot" style="display:none"></span>
+        </div>
+        <span class="chat-mode-tag" id="chatModeTag" style="margin-top:1px">Real &rarr; Real</span>
+      </div>
       <label class="twin-toggle" id="twinToggleWrap" onclick="toggleTwinTakeover()" title="分身代聊">
         <span class="tt-track"><span class="tt-dot" id="ttDot"></span></span>
         <span class="tt-label" id="ttLabel">分身代聊</span>
@@ -2290,7 +2304,75 @@ function wsHandle(msg){
       trDiv.innerHTML='<span style="font-size:9px;color:var(--ac2)">'+esc(atd.detected_lang)+'</span> '+esc(atd.translated_content);
       bubble.parentNode.insertBefore(trDiv,bubble.nextSibling);
     }
+  }else if(msg.type==='twin_state_change'){
+    // Update twin state indicator in chat header if we're chatting with that user
+    var tsd=msg.data;
+    if(chatFriend&&chatFriend.user_id===tsd.user_id){
+      updateTwinStateIndicator(tsd.state,tsd.icon,tsd.label);
+    }
+    // Update friend list item if visible
+    var fi=document.querySelector('.friend-item[data-uid="'+tsd.user_id+'"]');
+    if(fi){
+      var sEl=fi.querySelector('.twin-state-mini');
+      if(sEl)sEl.textContent=tsd.icon;
+    }
+  }else if(msg.type==='twin_permission_request'){
+    // Show inline permission request in chat (if we're chatting with requester) or as notification
+    var tpr=msg.data;
+    showTwinPermissionRequest(tpr);
+  }else if(msg.type==='twin_permission_response'){
+    var tprr=msg.data;
+    var permMsg=tprr.permission==='granted'?
+      (LANG==='zh'?'对方已允许你的分身主动联系':'They allowed your twin to contact them'):
+      (LANG==='zh'?'对方拒绝了分身联系请求':'They declined twin contact');
+    toast(permMsg);
   }
+}
+
+function updateTwinStateIndicator(state,icon,label){
+  var el=g('twinStateDot');
+  if(!el)return;
+  if(state==='human_active'){
+    el.style.display='none';
+    return;
+  }
+  el.style.display='inline-flex';
+  var color=state==='twin_receptionist'?'#7c5cfc':state==='twin_draft_pending'?'#ff9800':'#5ca0fa';
+  el.innerHTML='<span style="color:'+color+';font-size:11px">'+esc(icon)+'</span><span style="color:'+color+'">'+esc(label)+'</span>';
+}
+
+function showTwinPermissionRequest(data){
+  // Show as a system message in chat or as a toast with action buttons
+  var box=g('chatMsgs');
+  if(chatFriend&&chatFriend.user_id===data.from_user_id&&box){
+    var div=document.createElement('div');
+    div.className='msg theirs';
+    div.innerHTML='<div><div class="bubble" style="background:rgba(92,160,250,.08);border-color:rgba(92,160,250,.25);font-size:12px">'+
+      esc(data.content)+
+      '<div class="perm-actions">'+
+      '<button class="perm-btn allow" onclick="respondTwinPermission(\''+esc(data.from_user_id)+'\',\'granted\',this)">'+
+        (LANG==='zh'?'允许':'Allow')+'</button>'+
+      '<button class="perm-btn deny" onclick="respondTwinPermission(\''+esc(data.from_user_id)+'\',\'denied\',this)">'+
+        (LANG==='zh'?'拒绝':'Decline')+'</button>'+
+      '</div></div></div>';
+    box.appendChild(div);
+    box.scrollTop=box.scrollHeight;
+  }else{
+    // Show toast with action
+    toast((data.from_name||'?')+(LANG==='zh'?'的分身请求联系你':'\'s twin wants to contact you'));
+  }
+}
+
+function respondTwinPermission(fromUserId,permission,btn){
+  var wrap=btn.parentNode;
+  fetch(DS_BASE+'/api/social/friends/'+fromUserId+'/twin-permission',{
+    method:'POST',headers:headers(),
+    body:JSON.stringify({permission:permission})
+  }).then(function(r){return r.json()}).then(function(d){
+    if(d.success){
+      wrap.innerHTML='<span style="font-size:11px;color:var(--tx2)">'+(permission==='granted'?(LANG==='zh'?'已允许':'Allowed'):(LANG==='zh'?'已拒绝':'Declined'))+'</span>';
+    }else{toast(d.error||'Failed');}
+  }).catch(function(){toast(t('networkError'));});
 }
 
 function appendIncoming(m){
@@ -2303,7 +2385,12 @@ function appendIncoming(m){
   var mine=m.from_user_id===myId;
   var cls='msg '+(mine?'mine':'theirs');
   var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
-  var ai=m.ai_generated?'<div class="ai-tag">'+t('twinAutoTag')+'</div>':'';
+  // source_type tag: show "✦ 分身" badge for twin_auto messages
+  var srcTag='';
+  if(m.source_type==='twin_auto'||m.source_type==='twin_standby'||(m.ai_generated&&m.sender_mode==='twin')){
+    srcTag='<span class="twin-auto-tag">&#10022; '+(LANG==='zh'?'分身':'Twin')+'</span>';
+  }
+  var ai=srcTag||'';
   var tm=(m.created_at||'').slice(11,16)||'now';
   var mid=m.msg_id||('m'+Math.random());
   var trBtn='<span class="msg-translate" onclick="translateMsg(this,\''+esc(mid)+'\')" title="Translate">&#x1F310;</span>';
@@ -2748,6 +2835,12 @@ function openChat(userId,name,friendMode){
   g('chatName').textContent=name;
   // Show twin toggle for real chats (not twin self-chat)
   var ttw=g('twinToggleWrap');if(ttw)ttw.className='twin-toggle show';
+  // Reset twin state indicator
+  var tsd=g('twinStateDot');if(tsd)tsd.style.display='none';
+  // Show friend's twin state based on their mode
+  if(friendMode==='twin'||friendMode==='twin_receptionist'){
+    updateTwinStateIndicator('twin_receptionist','✦',LANG==='zh'?'分身接待中':'Twin Active');
+  }
   // Sync toggle with server state
   fetch(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(d.success)syncTwinToggleUI(d.data.twin_auto_reply);
@@ -2767,8 +2860,12 @@ function openChat(userId,name,friendMode){
     box.innerHTML=d.messages.map(function(m){
       var mine=m.from_user_id===myId;
       var cls='msg '+(mine?'mine':'theirs');
-      var ai=m.ai_generated?'<div class="ai-tag">'+t('twinAutoTag')+'</div>':'';
       var tw=m.sender_mode==='twin'?'<span class="twin-icon">&#x1F47B;</span> ':'';
+      var srcTag2='';
+      if(m.source_type==='twin_auto'||m.source_type==='twin_standby'||(m.ai_generated&&m.sender_mode==='twin')){
+        srcTag2='<span class="twin-auto-tag">&#10022; '+(LANG==='zh'?'分身':'Twin')+'</span>';
+      }
+      var ai=srcTag2;
       var tm=(m.created_at||'').slice(11,16);
       var avName=mine?(_profileName||'Me'):name;
       var av='<div class="msg-av">'+buildAvatar(avName,34,m.sender_mode||'real')+'</div>';

@@ -14,6 +14,7 @@ from dualsoul.database import gen_id, get_db
 from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageRequest, TranslateRequest, TwinChatRequest
 from dualsoul.twin_engine.ethics import pre_send_check
 from dualsoul.twin_engine.life import award_xp, increment_stat, update_relationship_temp
+from dualsoul.twin_engine.relationship_body import update_on_message as rb_update
 from dualsoul.twin_engine.responder import TwinResponder
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
@@ -305,14 +306,17 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
             return {"success": False, "error": "Not friends"}
 
         msg_id = gen_id("sm_")
+        # Determine source_type: human_live for real sender, twin_auto for twin
+        source_type = "twin_auto" if req.sender_mode == "twin" else "human_live"
         db.execute(
             """
             INSERT INTO social_messages
             (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
-             content, msg_type, ai_generated)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+             content, msg_type, ai_generated, source_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
             """,
-            (msg_id, uid, req.to_user_id, req.sender_mode, req.receiver_mode, content, req.msg_type),
+            (msg_id, uid, req.to_user_id, req.sender_mode, req.receiver_mode,
+             content, req.msg_type, source_type),
         )
 
     result = {"success": True, "msg_id": msg_id, "ai_reply": None}
@@ -322,6 +326,12 @@ async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
     increment_stat(uid, "total_chats")
     update_relationship_temp(uid, req.to_user_id, 1.0)
     update_relationship_temp(req.to_user_id, uid, 0.5)
+
+    # Relationship Body: update shared history
+    try:
+        rb_update(uid, req.to_user_id, content)
+    except Exception as _rb_err:
+        logger.warning(f"[RelBody] update failed: {_rb_err}")
 
     # Push the new message to the recipient via WebSocket
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -467,6 +477,51 @@ async def twin_chat(req: TwinChatRequest, user=Depends(get_current_user)):
     return {"success": True, "reply": reply}
 
 
+@router.post("/friends/{friend_id}/twin-permission")
+async def set_twin_permission(
+    friend_id: str,
+    body: dict,
+    user=Depends(get_current_user),
+):
+    """Grant or deny permission for a friend's twin to proactively contact you.
+
+    body: {"permission": "granted"} or {"permission": "denied"}
+    """
+    uid = user["user_id"]
+    permission = body.get("permission", "")
+    if permission not in ("granted", "denied"):
+        return {"success": False, "error": "permission must be 'granted' or 'denied'"}
+
+    with get_db() as db:
+        # Find the connection where uid is the recipient (friend_id sent the request)
+        conn = db.execute(
+            """SELECT conn_id FROM social_connections
+            WHERE status='accepted' AND
+            ((user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?))""",
+            (friend_id, uid, uid, friend_id),
+        ).fetchone()
+        if not conn:
+            return {"success": False, "error": "Not friends"}
+
+        # Update twin_permission for the connection where uid is friend_id (receiver)
+        # We record the permission on the connection row that represents this pair
+        db.execute(
+            """UPDATE social_connections SET twin_permission=?
+            WHERE conn_id=?""",
+            (permission, conn["conn_id"]),
+        )
+
+    # Notify the friend via WebSocket
+    await manager.send_to(friend_id, {
+        "type": "twin_permission_response",
+        "data": {
+            "from_user_id": uid,
+            "permission": permission,
+        },
+    })
+    return {"success": True, "permission": permission}
+
+
 @router.get("/unread")
 async def unread_count(user=Depends(get_current_user)):
     """Get unread message count."""
@@ -543,8 +598,8 @@ async def _do_twin_reply(
                 db.execute(
                     """INSERT INTO social_messages
                     (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
-                     content, msg_type, ai_generated, auto_reply, metadata)
-                    VALUES (?, ?, ?, 'twin', ?, ?, 'text', 1, 1, '{"ethics_brake":true}')""",
+                     content, msg_type, ai_generated, auto_reply, metadata, source_type)
+                    VALUES (?, ?, ?, 'twin', ?, ?, 'text', 1, 1, '{"ethics_brake":true}', 'twin_auto')""",
                     (brake_id, twin_owner_id, from_user_id, sender_mode, brake_msg),
                 )
             twin_msg = {
