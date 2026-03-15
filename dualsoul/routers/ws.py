@@ -111,5 +111,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")):
             await _broadcast_twin_state(user_id, offline_state)
         except Exception as e:
             logger.warning(f"[TwinState] offline broadcast failed: {e}")
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[WS] Unexpected error for user {user_id}: {e}", exc_info=True)
         manager.disconnect(user_id)

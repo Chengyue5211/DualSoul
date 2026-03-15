@@ -12,7 +12,7 @@
 <title>DualSoul — The Fourth Kind of Social</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a10;--bg2:#14141e;--bg3:#1e1e2c;--tx:#e8e4de;--tx2:#8a8594;--ac:#7c5cfc;--ac2:#a07cff;--gd:linear-gradient(135deg,#7c5cfc,#5cc8fa);--bd:rgba(255,255,255,.06);--orange:#ff8c32;--red:#e74c3c;--green:#2ecc71;--cyan:#5cc8fa}
+:root{--bg:#0a0a10;--bg2:#14141e;--bg3:#1e1e2c;--tx:#e8e4de;--tx2:#8a8594;--ac:#7c5cfc;--ac2:#a07cff;--gd:linear-gradient(135deg,#7c5cfc,#5cc8fa);--bd:rgba(255,255,255,.06);--orange:#ff8c32;--red:#e74c3c;--green:#2ecc71;--cyan:#5cc8fa;--white:#fff}
 body{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--tx);max-width:480px;margin:0 auto;min-height:100vh;overflow-x:hidden}
 a{color:var(--ac);text-decoration:none}
 .page{display:none;min-height:100vh}.page.v{display:block}
@@ -432,7 +432,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .voice-sample-text{font-style:italic;color:var(--ac2);font-size:14px;margin:8px 0 16px;line-height:1.6}
 .voice-btn{width:64px;height:64px;border-radius:50%;border:none;font-size:28px;cursor:pointer;transition:all .2s}
 .voice-btn.idle{background:var(--ac);color:#fff}
-.voice-btn.recording{background:#e74c3c;color:#fff;animation:pulse 1s infinite}
+.voice-btn.recording{background:var(--red);color:var(--white);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 .voice-timer{font-size:12px;color:var(--tx2);margin-top:6px}
 .cam-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
@@ -2621,8 +2621,10 @@ function loadFriends(){
   // Ensure identity bar always shows current user's name
   loadLifeDashboard();
   if(_profileName)refreshIdentityBar();
+  var fl=g('friendList');
+  if(fl&&!fl.querySelector('.friend-item'))fl.innerHTML='<div class="empty ts-loading">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
   fetch(DS_BASE+'/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
-    if(!d.success)return;
+    if(!d.success){if(fl)fl.innerHTML='<div class="empty">'+esc(d.error||t('networkError'))+'</div>';return;}
     var pending=[],accepted=[];
     d.friends.forEach(function(f){
       if(f.status==='pending'&&f.is_incoming)pending.push(f);
@@ -2668,7 +2670,7 @@ function loadFriends(){
           '<div class="fi-right"><span class="fi-time">'+timeStr+'</span>'+ubadge+'</div></div>';
       }).join('');
     }else{fl.innerHTML='<div class="empty">'+t('noFriends').replace('\n','<br>')+'</div>'}
-  }).catch(function(){});
+  }).catch(function(){if(fl)fl.innerHTML='<div class="empty">'+t('networkError')+'<br><span style="color:var(--ac);cursor:pointer" onclick="loadFriends()">'+(LANG==='zh'?'点击重试':'Tap to retry')+'</span></div>'});
   loadUnread();
   loadFriendUnread();
 }
@@ -2857,10 +2859,11 @@ function openChat(userId,name,friendMode){
   var newAv=tmpDiv.firstChild;newAv.id='chatAvatar';
   ca.parentNode.replaceChild(newAv,ca);
   updateModeTag();
+  var box=g('chatMsgs');
+  box.innerHTML='<div class="empty ts-loading">'+(LANG==='zh'?'加载消息...':'Loading...')+'</div>';
   fetch(DS_BASE+'/api/social/messages?friend_id='+userId+'&limit=50',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
-    if(!d.success){g('chatMsgs').innerHTML='<div class="empty">'+esc(d.error)+'</div>';return}
-    var box=g('chatMsgs');
+    if(!d.success){box.innerHTML='<div class="empty">'+esc(d.error||t('networkError'))+'</div>';return}
     if(!d.messages.length){box.innerHTML='<div class="empty">'+t('startConversation')+'</div>';return}
     box.innerHTML=d.messages.map(function(m){
       var mine=m.from_user_id===myId;
@@ -2880,7 +2883,7 @@ function openChat(userId,name,friendMode){
         '<div><div class="bubble" data-msgid="'+esc(msgIdx)+'">'+tw+esc(m.content)+'</div>'+ai+'<div class="msg-time">'+tm+trBtn+'</div></div></div>';
     }).join('');
     box.scrollTop=box.scrollHeight;
-  }).catch(function(){});
+  }).catch(function(){box.innerHTML='<div class="empty">'+t('networkError')+'<br><span style="color:var(--ac);cursor:pointer" onclick="openChat(\''+esc(userId)+'\',\''+esc(name)+'\',\''+esc(friendMode)+'\')">'+(LANG==='zh'?'点击重试':'Tap to retry')+'</span></div>'});
 }
 
 function updateModeTag(){
