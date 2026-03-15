@@ -176,7 +176,7 @@ async def generate_avatar(req: AvatarGenerateRequest, user=Depends(get_current_u
 
     # Save the generated image as twin avatar
     img_bytes = base64.b64decode(result["image_base64"])
-    if len(img_bytes) > MAX_VOICE_SIZE:
+    if len(img_bytes) > MAX_AVATAR_SIZE:
         return {"success": False, "error": "Generated image too large"}
 
     name_hash = hashlib.md5(f"{uid}_twin".encode()).hexdigest()[:12]

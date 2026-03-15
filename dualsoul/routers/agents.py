@@ -115,7 +115,7 @@ async def create_agent_key(req: AgentKeyRequest, user=Depends(get_current_user))
         return {"success": False, "error": "Maximum 5 API keys per user"}
 
     key_id = gen_id("ak_")
-    api_key = f"agent_{secrets.token_urlsafe(32)}"
+    api_key = f"agent_{secrets.token_urlsafe(64)}"
     expires_at = (datetime.now() + timedelta(days=req.expires_days)).strftime("%Y-%m-%d %H:%M:%S")
 
     with get_db() as db:
@@ -194,6 +194,11 @@ async def agent_reply(req: AgentReplyRequest, request: Request, agent=Depends(ge
     # Rate limit
     if _agent_limiter.is_limited(request):
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    # Scope check
+    scopes = (agent.get("scopes") or "").split(",")
+    if "twin:reply" not in scopes:
+        raise HTTPException(status_code=403, detail="API key lacks 'twin:reply' scope")
 
     twin_owner_id = agent["twin_owner_id"]
     platform = agent["external_platform"]

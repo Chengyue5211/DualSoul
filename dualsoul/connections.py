@@ -60,9 +60,9 @@ class ConnectionManager:
             return False
 
     async def broadcast(self, user_ids: list[str], data: dict):
-        """Send JSON data to multiple users."""
-        for uid in user_ids:
-            await self.send_to(uid, data)
+        """Send JSON data to multiple users (parallel)."""
+        import asyncio
+        await asyncio.gather(*[self.send_to(uid, data) for uid in user_ids])
 
 
 # Singleton instance — imported by routers

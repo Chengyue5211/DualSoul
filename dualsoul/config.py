@@ -42,5 +42,6 @@ AI_VISION_MODEL = os.getenv("DUALSOUL_AI_VISION_MODEL", "qwen-vl-plus")
 HOST = os.getenv("DUALSOUL_HOST", "0.0.0.0")
 PORT = int(os.getenv("DUALSOUL_PORT", "8000"))
 
-# CORS
-CORS_ORIGINS = os.getenv("DUALSOUL_CORS_ORIGINS", "*").split(",")
+# CORS — restrict in production via env var
+_DEFAULT_CORS = "http://47.93.149.187,http://localhost:8000,http://localhost:3000"
+CORS_ORIGINS = os.getenv("DUALSOUL_CORS_ORIGINS", _DEFAULT_CORS).split(",")

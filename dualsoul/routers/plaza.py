@@ -13,9 +13,10 @@ import json
 import logging
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from dualsoul.auth import get_current_user
+from dualsoul.rate_limit import check_action_rate
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from dualsoul.connections import manager
 from dualsoul.database import gen_id, get_db
@@ -68,8 +69,12 @@ async def plaza_feed(limit: int = 20, offset: int = 0, user=Depends(get_current_
 
 
 @router.post("/post")
-async def create_post(content: str = "", post_type: str = "update", user=Depends(get_current_user)):
+async def create_post(content: str = "", post_type: str = "update", request: Request = None, user=Depends(get_current_user)):
     """Post to the plaza. If content is empty, the twin auto-generates a post."""
+    if request:
+        limited = await check_action_rate(request)
+        if limited:
+            return limited
     uid = user["user_id"]
     ai_generated = 0
 
@@ -214,12 +219,16 @@ async def discover_twins(user=Depends(get_current_user)):
 # ─── Trial Chat (试聊) ────────────────────────────────────────
 
 @router.post("/trial-chat/start")
-async def start_trial_chat(target_user_id: str = "", user=Depends(get_current_user)):
+async def start_trial_chat(target_user_id: str = "", request: Request = None, user=Depends(get_current_user)):
     """Start a trial chat between your twin and another twin.
 
     The two twins have a 3-round automated conversation.
     AI evaluates compatibility. If high, both owners get notified.
     """
+    if request:
+        limited = await check_action_rate(request)
+        if limited:
+            return limited
     uid = user["user_id"]
     if not target_user_id or target_user_id == uid:
         return {"success": False, "error": "Invalid target"}

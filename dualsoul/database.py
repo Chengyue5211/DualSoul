@@ -468,6 +468,7 @@ def init_db():
             ALTER TABLE twin_memories_new RENAME TO twin_memories;
         """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_tm_user_friend ON twin_memories(user_id, friend_id, period_end DESC)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sm_unread ON social_messages(to_user_id, is_read, created_at DESC)")
     conn.commit()
     conn.close()
 
