@@ -319,7 +319,7 @@ CREATE INDEX IF NOT EXISTS idx_aml_twin ON agent_message_log(to_twin_id, created
 # Additional column migrations for upgrades
 MIGRATIONS_V2 = [
     "ALTER TABLE social_messages ADD COLUMN source_type TEXT DEFAULT 'human_live'",
-    "ALTER TABLE social_connections ADD COLUMN twin_permission TEXT DEFAULT 'pending'",
+    "ALTER TABLE social_connections ADD COLUMN twin_permission TEXT DEFAULT 'granted'",
     "ALTER TABLE users ADD COLUMN token_gen INTEGER DEFAULT 0",
     # Narrative memory columns
     "ALTER TABLE twin_memories ADD COLUMN friend_id TEXT DEFAULT ''",

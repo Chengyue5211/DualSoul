@@ -155,7 +155,7 @@ async def respond_friend(req: RespondFriendRequest, user=Depends(get_current_use
         new_status = "accepted" if req.action == "accept" else "blocked"
         accepted_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if req.action == "accept" else None
         db.execute(
-            "UPDATE social_connections SET status=?, accepted_at=? WHERE conn_id=?",
+            "UPDATE social_connections SET status=?, accepted_at=?, twin_permission='granted' WHERE conn_id=?",
             (new_status, accepted_at, req.conn_id),
         )
         requester_id = conn["user_id"]
