@@ -648,6 +648,9 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
     <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="handleAvatarPick(this)">
     <div class="section-title" id="friendsLabel">Friends</div>
+    <div id="friendSearchWrap" style="display:none;margin-bottom:8px">
+      <input id="friendSearchInput" type="text" placeholder="" maxlength="30" aria-label="Search friends" oninput="filterFriends(this.value)" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit">
+    </div>
     <div class="friend-list" id="friendList">
       <div class="empty">No friends yet.<br>Add someone by username to get started!</div>
     </div>
@@ -2714,10 +2717,28 @@ function loadFriends(){
           '<div class="fi-info"><div class="fi-name">'+esc(f.display_name)+srcBadge+'</div><div class="fi-preview">'+esc(preview)+'</div></div>'+
           '<div class="fi-right"><span class="fi-time">'+timeStr+'</span>'+ubadge+'</div></div>';
       }).join('');
-    }else{fl.innerHTML='<div class="empty">'+t('noFriends').replace('\n','<br>')+'</div>'}
+      // Show search box when 5+ friends
+      var sw=g('friendSearchWrap');
+      if(sw){
+        sw.style.display=accepted.length>=5?'block':'none';
+        var si=g('friendSearchInput');
+        if(si)si.placeholder=LANG==='zh'?'🔍 搜索好友...':'🔍 Search friends...';
+      }
+    }else{fl.innerHTML='<div class="empty">'+t('noFriends').replace('\n','<br>')+'</div>';var sw2=g('friendSearchWrap');if(sw2)sw2.style.display='none'}
   }).catch(function(){if(fl)fl.innerHTML='<div class="empty">'+t('networkError')+'<br><span style="color:var(--ac);cursor:pointer" onclick="loadFriends()">'+(LANG==='zh'?'点击重试':'Tap to retry')+'</span></div>'});
   loadUnread();
   loadFriendUnread();
+}
+
+function filterFriends(q){
+  q=q.toLowerCase().trim();
+  var items=document.querySelectorAll('#friendList .friend-item');
+  items.forEach(function(el){
+    var name=el.querySelector('.fi-name');
+    if(!name){el.style.display='';return}
+    var text=name.textContent.toLowerCase();
+    el.style.display=(!q||text.indexOf(q)>=0)?'':'none';
+  });
 }
 
 function showFriendMenu(connId,name,e){
