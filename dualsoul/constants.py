@@ -1,0 +1,31 @@
+"""DualSoul constants — single source of truth for all magic numbers.
+
+Import from here instead of hardcoding values across the codebase.
+"""
+
+# Rate limits (per minute unless noted)
+RATE_LOGIN_MAX = 10
+RATE_LOGIN_WINDOW = 60
+RATE_REGISTER_MAX = 5
+RATE_MESSAGE_MAX = 30
+RATE_ACTION_MAX = 20
+RATE_AGENT_MAX = 60
+
+# Autonomous engine
+AUTONOMOUS_CHECK_INTERVAL = 1800  # 30 min
+OFFLINE_THRESHOLD_HOURS = 2
+MAX_DAILY_AUTONOMOUS_CONVOS = 3
+
+# Narrative memory
+CONVERSATION_GAP_MINUTES = 10
+MAX_MESSAGES_PER_SUMMARY = 30
+MEMORY_CLEANUP_DAYS = 30
+
+# Agent API
+AGENT_KEY_MAX_PER_USER = 5
+AGENT_KEY_DEFAULT_EXPIRY_DAYS = 90
+
+# AI
+AI_MAX_TOKENS_AUTO_REPLY = 40
+AI_MAX_TOKENS_REGULAR = 100
+AI_REQUEST_TIMEOUT = 20

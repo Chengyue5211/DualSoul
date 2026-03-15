@@ -69,7 +69,7 @@ async def on_friend_online(data):
 
         # Generate greeting from friend's twin
         from dualsoul.twin_engine.personality import get_twin_profile
-        from dualsoul.twin_engine.responder import TwinResponder
+        from dualsoul.twin_engine.responder import get_twin_responder
 
         profile = get_twin_profile(fid)
         if not profile:
@@ -94,7 +94,7 @@ async def on_friend_online(data):
         except Exception:
             pass
 
-        twin = TwinResponder()
+        twin = get_twin_responder()
         greeting = await twin._ai_reply(
             profile,
             (
@@ -194,13 +194,13 @@ async def on_user_registered(data):
     inviter_name = inviter["display_name"] or inviter["username"]
 
     from dualsoul.twin_engine.personality import get_twin_profile
-    from dualsoul.twin_engine.responder import TwinResponder
+    from dualsoul.twin_engine.responder import get_twin_responder
 
     profile = get_twin_profile(inviter_id)
     if not profile:
         return
 
-    twin = TwinResponder()
+    twin = get_twin_responder()
     welcome = await twin._ai_reply(
         profile,
         (
@@ -282,14 +282,14 @@ async def on_plaza_post(data):
             continue
 
         from dualsoul.twin_engine.personality import get_twin_profile
-        from dualsoul.twin_engine.responder import TwinResponder
+        from dualsoul.twin_engine.responder import get_twin_responder
 
         profile = get_twin_profile(fid)
         if not profile:
             continue
 
         friend_name = friend["display_name"] or friend["username"]
-        twin = TwinResponder()
+        twin = get_twin_responder()
         comment = await twin._ai_reply(
             profile,
             f"你的好友发了一条广场动态：\"{content[:100]}\"\n用你主人{friend_name}的风格，写一条简短评论。只输出评论内容，一句话。",

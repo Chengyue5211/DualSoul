@@ -15,7 +15,7 @@ from dualsoul.models import AddFriendRequest, RespondFriendRequest, SendMessageR
 from dualsoul.twin_engine.ethics import pre_send_check
 from dualsoul.twin_engine.life import award_xp, increment_stat, update_relationship_temp
 from dualsoul.twin_engine.relationship_body import update_on_message as rb_update
-from dualsoul.twin_engine.responder import TwinResponder
+from dualsoul.twin_engine.responder import get_twin_responder
 from dualsoul.twin_engine.twin_state import get_twin_state, get_state_display
 
 # --- Constants ---
@@ -24,7 +24,7 @@ MAX_MESSAGES_PER_PAGE = 100
 TWIN_REPLY_DELAY_SECONDS = 30
 
 router = APIRouter(prefix="/api/social", tags=["Social"])
-_twin = TwinResponder()
+_twin = get_twin_responder()
 
 
 @router.post("/friends/add")

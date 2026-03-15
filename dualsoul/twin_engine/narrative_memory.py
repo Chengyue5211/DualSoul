@@ -5,6 +5,7 @@ After each conversation ends (10-min gap), AI generates a narrative summary.
 These summaries are injected into the twin's prompt for continuity.
 """
 
+import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
@@ -12,15 +13,17 @@ from datetime import datetime, timedelta
 import httpx
 
 from dualsoul.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
+from dualsoul.constants import (
+    CONVERSATION_GAP_MINUTES,
+    MAX_MESSAGES_PER_SUMMARY,
+    MEMORY_CLEANUP_DAYS,
+)
 from dualsoul.database import gen_id, get_db
 
 logger = logging.getLogger(__name__)
 
-# --- Constants ---
-CONVERSATION_GAP_MINUTES = 10
-MAX_MESSAGES_PER_SUMMARY = 30
 MAX_SEGMENTS_PER_CYCLE = 5
-CLEANUP_DAYS = 30
+CLEANUP_DAYS = MEMORY_CLEANUP_DAYS
 
 
 def find_unsummarized_conversations(
@@ -158,30 +161,40 @@ async def summarize_conversation(
 
 要求：用中文，口语化，summary不超过100字。"""
 
-    try:
-        async with httpx.AsyncClient(timeout=20) as client:
-            resp = await client.post(
-                f"{AI_BASE_URL}/chat/completions",
-                headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": AI_MODEL,
-                    "max_tokens": 300,
-                    "temperature": 0.7,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-            )
-            raw = resp.json()["choices"][0]["message"]["content"].strip()
+    data = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                resp = await client.post(
+                    f"{AI_BASE_URL}/chat/completions",
+                    headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+                    json={
+                        "model": AI_MODEL,
+                        "max_tokens": 300,
+                        "temperature": 0.7,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                )
+                raw = resp.json()["choices"][0]["message"]["content"].strip()
 
-        # Parse JSON from AI response
-        # Handle potential markdown code blocks
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        data = json.loads(raw)
+            # Parse JSON from AI response
+            # Handle potential markdown code blocks
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            data = json.loads(raw)
+            break  # success
 
-    except Exception as e:
-        logger.warning(f"[NarrativeMemory] Summarization failed for {user_id}↔{friend_id}: {e}")
+        except Exception as e:
+            if attempt < 2:
+                logger.warning(f"[NarrativeMemory] Attempt {attempt+1} failed: {e}, retrying...")
+                await asyncio.sleep(2 ** (attempt + 1))
+            else:
+                logger.error(f"[NarrativeMemory] All 3 attempts failed: {e}")
+                return None
+
+    if data is None:
         return None
 
     # Save to twin_memories

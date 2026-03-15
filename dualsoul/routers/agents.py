@@ -17,6 +17,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
 
 from dualsoul.auth import get_current_user
+from dualsoul.constants import (
+    AGENT_KEY_DEFAULT_EXPIRY_DAYS,
+    AGENT_KEY_MAX_PER_USER,
+    RATE_AGENT_MAX,
+    RATE_LOGIN_WINDOW,
+)
 from dualsoul.database import gen_id, get_db
 from dualsoul.rate_limit import RateLimiter
 
@@ -24,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/agents", tags=["Agents"])
 
-# Rate limiter for agent API (60 requests/min per key)
-_agent_limiter = RateLimiter(max_requests=60, window_seconds=60)
+# Rate limiter for agent API
+_agent_limiter = RateLimiter(max_requests=RATE_AGENT_MAX, window_seconds=RATE_LOGIN_WINDOW)
 
 
 # --- Models ---
@@ -40,7 +46,7 @@ class AgentReplyRequest(BaseModel):
 
 class AgentKeyRequest(BaseModel):
     platform: str  # "openclaw", "custom", etc.
-    expires_days: int = 90
+    expires_days: int = AGENT_KEY_DEFAULT_EXPIRY_DAYS
 
 
 # --- Auth helpers ---
@@ -105,14 +111,14 @@ async def create_agent_key(req: AgentKeyRequest, user=Depends(get_current_user))
     if not platform or len(platform) > 50:
         return {"success": False, "error": "Platform name required (max 50 chars)"}
 
-    # Max 5 keys per user
+    # Max keys per user
     with get_db() as db:
         count = db.execute(
             "SELECT COUNT(*) as cnt FROM agent_api_keys WHERE twin_owner_id=?",
             (uid,),
         ).fetchone()
-    if count and count["cnt"] >= 5:
-        return {"success": False, "error": "Maximum 5 API keys per user"}
+    if count and count["cnt"] >= AGENT_KEY_MAX_PER_USER:
+        return {"success": False, "error": f"Maximum {AGENT_KEY_MAX_PER_USER} API keys per user"}
 
     key_id = gen_id("ak_")
     api_key = f"agent_{secrets.token_urlsafe(64)}"
@@ -213,8 +219,8 @@ async def agent_reply(req: AgentReplyRequest, request: Request, agent=Depends(ge
     external_sender = f"external:{platform}:{req.sender_id}" if req.sender_id else ""
 
     # Generate twin reply
-    from dualsoul.twin_engine.responder import TwinResponder
-    twin = TwinResponder()
+    from dualsoul.twin_engine.responder import get_twin_responder
+    twin = get_twin_responder()
 
     result = await twin.generate_reply(
         twin_owner_id=twin_owner_id,

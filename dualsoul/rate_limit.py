@@ -6,6 +6,14 @@ from collections import defaultdict
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from dualsoul.constants import (
+    RATE_ACTION_MAX,
+    RATE_LOGIN_MAX,
+    RATE_LOGIN_WINDOW,
+    RATE_MESSAGE_MAX,
+    RATE_REGISTER_MAX,
+)
+
 
 class RateLimiter:
     """Simple in-memory sliding window rate limiter."""
@@ -35,10 +43,10 @@ class RateLimiter:
 
 
 # Pre-configured limiters
-_login_limiter = RateLimiter(max_requests=10, window_seconds=60)
-_register_limiter = RateLimiter(max_requests=5, window_seconds=60)
-_message_limiter = RateLimiter(max_requests=30, window_seconds=60)
-_action_limiter = RateLimiter(max_requests=20, window_seconds=60)
+_login_limiter = RateLimiter(max_requests=RATE_LOGIN_MAX, window_seconds=RATE_LOGIN_WINDOW)
+_register_limiter = RateLimiter(max_requests=RATE_REGISTER_MAX, window_seconds=RATE_LOGIN_WINDOW)
+_message_limiter = RateLimiter(max_requests=RATE_MESSAGE_MAX, window_seconds=RATE_LOGIN_WINDOW)
+_action_limiter = RateLimiter(max_requests=RATE_ACTION_MAX, window_seconds=RATE_LOGIN_WINDOW)
 
 _RATE_LIMIT_RESPONSE = JSONResponse(
     status_code=429,
