@@ -18,6 +18,11 @@ from dualsoul.twin_engine.relationship_body import update_on_message as rb_updat
 from dualsoul.twin_engine.responder import TwinResponder
 from dualsoul.twin_engine.twin_state import get_twin_state, get_state_display
 
+# --- Constants ---
+MAX_MESSAGE_LENGTH = 2000
+MAX_MESSAGES_PER_PAGE = 100
+TWIN_REPLY_DELAY_SECONDS = 30
+
 router = APIRouter(prefix="/api/social", tags=["Social"])
 _twin = TwinResponder()
 
@@ -269,7 +274,7 @@ async def list_friends(user=Depends(get_current_user)):
 async def get_messages(friend_id: str = "", limit: int = 50, user=Depends(get_current_user)):
     """Get conversation history with a friend."""
     uid = user["user_id"]
-    limit = min(max(1, limit), 100)  # Clamp between 1 and 100
+    limit = min(max(1, limit), MAX_MESSAGES_PER_PAGE)  # Clamp between 1 and max
     if not friend_id:
         return {"success": False, "error": "friend_id required"}
 
@@ -319,8 +324,8 @@ async def send_message(req: SendMessageRequest, request: Request, user=Depends(g
     content = req.content.strip()
     if not content:
         return {"success": False, "error": "Content cannot be empty"}
-    if len(content) > 2000:
-        return {"success": False, "error": "Message too long (max 2000 chars)"}
+    if len(content) > MAX_MESSAGE_LENGTH:
+        return {"success": False, "error": f"Message too long (max {MAX_MESSAGE_LENGTH} chars)"}
     if req.sender_mode not in ("real", "twin"):
         return {"success": False, "error": "Invalid sender_mode"}
     if req.receiver_mode not in ("real", "twin"):
@@ -418,13 +423,13 @@ async def send_message(req: SendMessageRequest, request: Request, user=Depends(g
                     target_lang=req.target_lang, msg_id=msg_id,
                 ))
             else:
-                # Owner online — wait 30s then check if they responded
-                logger.info(f"[Twin] Owner online, scheduling 30s delay")
+                # Owner online — wait then check if they responded
+                logger.info(f"[Twin] Owner online, scheduling {TWIN_REPLY_DELAY_SECONDS}s delay")
                 asyncio.ensure_future(_delayed_twin_reply(
                     twin_owner_id=req.to_user_id, from_user_id=uid,
                     content=content, sender_mode=req.sender_mode,
                     target_lang=req.target_lang, msg_id=msg_id,
-                    delay_seconds=30,
+                    delay_seconds=TWIN_REPLY_DELAY_SECONDS,
                 ))
 
     return result

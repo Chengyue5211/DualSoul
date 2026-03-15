@@ -14,6 +14,14 @@ from dualsoul.database import gen_id, get_db
 
 logger = logging.getLogger(__name__)
 
+# --- Constants ---
+DEFAULT_TEMPERATURE = 50.0
+TEMP_HOT = 75
+TEMP_WARM = 45
+TEMP_COOL = 20
+DAYS_ESTRANGED = 30
+DAYS_COOLING = 7
+
 
 def _canonical_pair(uid: str, fid: str) -> tuple[str, str]:
     """Return (min_id, max_id) for a canonical pair key."""
@@ -42,7 +50,7 @@ def get_or_create_relationship(uid: str, fid: str) -> dict:
         )
         return {
             "rel_id": rel_id, "user_a": a, "user_b": b,
-            "temperature": 50.0, "total_messages": 0, "streak_days": 0,
+            "temperature": DEFAULT_TEMPERATURE, "total_messages": 0, "streak_days": 0,
             "last_interaction": "", "milestones": "[]", "shared_words": "[]",
             "relationship_label": "", "status": "active",
             "created_at": now, "updated_at": now,
@@ -73,7 +81,7 @@ def update_on_message(uid: str, fid: str, content: str):
                 streak = 1  # First interaction
 
         # Temperature: each message warms the relationship
-        current_temp = rel.get("temperature", 50.0)
+        current_temp = rel.get("temperature", DEFAULT_TEMPERATURE)
         new_temp = min(100.0, current_temp + 0.8)
 
         # Update shared words periodically (every 10 messages)
@@ -237,11 +245,11 @@ def get_relationship_summary(uid: str, fid: str) -> dict:
     except Exception as e:
         logger.debug(f"Failed to parse shared_words JSON: {e}")
 
-    temp = rel.get("temperature", 50.0)
+    temp = rel.get("temperature", DEFAULT_TEMPERATURE)
     temp_status = (
-        "hot" if temp >= 75 else
-        "warm" if temp >= 45 else
-        "cool" if temp >= 20 else
+        "hot" if temp >= TEMP_HOT else
+        "warm" if temp >= TEMP_WARM else
+        "cool" if temp >= TEMP_COOL else
         "cold"
     )
 
@@ -293,7 +301,7 @@ def get_relationships_batch(uid: str, friend_ids: list[str]) -> dict[str, dict]:
         found_pairs.add(pair_key)
         fid = pair_to_fid.get(pair_key)
         if fid:
-            temp = r.get("temperature", 50.0)
+            temp = r.get("temperature", DEFAULT_TEMPERATURE)
             milestones = []
             try:
                 milestones = json.loads(r.get("milestones") or "[]")
@@ -301,7 +309,7 @@ def get_relationships_batch(uid: str, friend_ids: list[str]) -> dict[str, dict]:
                 pass
             result[fid] = {
                 "temperature": temp,
-                "temperature_status": "hot" if temp >= 75 else "warm" if temp >= 45 else "cool" if temp >= 20 else "cold",
+                "temperature_status": "hot" if temp >= TEMP_HOT else "warm" if temp >= TEMP_WARM else "cool" if temp >= TEMP_COOL else "cold",
                 "total_messages": r.get("total_messages", 0),
                 "streak_days": r.get("streak_days", 0),
                 "last_interaction": r.get("last_interaction", ""),
@@ -314,7 +322,7 @@ def get_relationships_batch(uid: str, friend_ids: list[str]) -> dict[str, dict]:
     for fid in friend_ids:
         if fid not in result:
             result[fid] = {
-                "temperature": 50.0,
+                "temperature": DEFAULT_TEMPERATURE,
                 "temperature_status": "warm",
                 "total_messages": 0,
                 "streak_days": 0,
@@ -349,16 +357,16 @@ def update_relationship_status(uid: str, fid: str):
             return
 
         new_status = current_status
-        if days_since >= 30:
+        if days_since >= DAYS_ESTRANGED:
             new_status = "estranged"
-        elif days_since >= 7:
+        elif days_since >= DAYS_COOLING:
             new_status = "cooling"
         else:
             new_status = "active"
 
         if new_status != current_status:
             # Also decay temperature
-            temp = rel.get("temperature", 50.0)
+            temp = rel.get("temperature", DEFAULT_TEMPERATURE)
             decay = min(temp, days_since * 0.5)
             new_temp = max(0.0, temp - decay)
 

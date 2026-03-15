@@ -1878,7 +1878,8 @@ function plazaSwitchTab(tab){
 
 function plazaLoadFeed(){
   var el=g('plzContent');if(!el)return;
-  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
+  var skelP='';for(var si=0;si<3;si++)skelP+='<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px"><div class="skel-row"><div class="skel skel-circle" style="width:36px;height:36px;flex-shrink:0"></div><div style="flex:1"><div class="skel skel-line w60"></div><div class="skel skel-line w40"></div></div></div><div class="skel skel-line w100" style="height:40px;margin:8px 0"></div></div>';
+  el.innerHTML=skelP;
 
   // Post button
   var postBtn='<button onclick="plazaNewPost()" style="width:100%;padding:10px;border:1px dashed rgba(124,92,252,.3);border-radius:10px;background:none;color:var(--ac2);font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:14px">'+(LANG==='zh'?'✨ 让分身发一条广场动态':'✨ Let your twin post')+'</button>';
@@ -1942,7 +1943,8 @@ function plazaComment(postId){
 
 function plazaLoadDiscover(){
   var el=g('plzContent');if(!el)return;
-  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
+  var skelD='';for(var si=0;si<4;si++)skelD+='<div class="skel-row" style="padding:14px"><div class="skel skel-circle" style="width:48px;height:48px;flex-shrink:0"></div><div style="flex:1"><div class="skel skel-line w80"></div><div class="skel skel-line w60"></div></div></div>';
+  el.innerHTML=skelD;
 
   fetchTimeout(DS_BASE+'/api/plaza/discover',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){

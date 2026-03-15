@@ -17,6 +17,13 @@ from dualsoul.database import get_db
 from dualsoul.models import AvatarGenerateRequest, AvatarUploadRequest, SwitchModeRequest, TwinPreviewRequest, UpdateProfileRequest, VoiceUploadRequest
 from dualsoul.twin_engine.learner import MIN_MESSAGES_FOR_LEARNING, analyze_style, get_message_count, learn_and_update
 
+# --- Constants ---
+MAX_DISPLAY_NAME_LENGTH = 50
+MAX_PERSONALITY_LENGTH = 500
+MAX_SPEECH_STYLE_LENGTH = 500
+MAX_AVATAR_SIZE = 2 * 1024 * 1024
+MAX_VOICE_SIZE = 5 * 1024 * 1024
+
 _AVATAR_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "avatars")
 os.makedirs(_AVATAR_DIR, exist_ok=True)
 _VOICE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "web", "voiceprints")
@@ -75,18 +82,18 @@ async def update_profile(req: UpdateProfileRequest, user=Depends(get_current_use
     updates = []
     params = []
     if req.display_name:
-        if len(req.display_name) > 50:
-            return {"success": False, "error": "Display name too long (max 50 chars)"}
+        if len(req.display_name) > MAX_DISPLAY_NAME_LENGTH:
+            return {"success": False, "error": f"Display name too long (max {MAX_DISPLAY_NAME_LENGTH} chars)"}
         updates.append("display_name=?")
         params.append(req.display_name)
     if req.twin_personality:
-        if len(req.twin_personality) > 500:
-            return {"success": False, "error": "Personality too long (max 500 chars)"}
+        if len(req.twin_personality) > MAX_PERSONALITY_LENGTH:
+            return {"success": False, "error": f"Personality too long (max {MAX_PERSONALITY_LENGTH} chars)"}
         updates.append("twin_personality=?")
         params.append(req.twin_personality)
     if req.twin_speech_style:
-        if len(req.twin_speech_style) > 500:
-            return {"success": False, "error": "Speech style too long (max 500 chars)"}
+        if len(req.twin_speech_style) > MAX_SPEECH_STYLE_LENGTH:
+            return {"success": False, "error": f"Speech style too long (max {MAX_SPEECH_STYLE_LENGTH} chars)"}
         updates.append("twin_speech_style=?")
         params.append(req.twin_speech_style)
     _VALID_LANGS = {"", "zh", "en", "ja", "ko", "fr", "de", "es", "pt", "ru", "ar", "hi", "th", "vi", "id", "auto"}
@@ -126,7 +133,7 @@ async def upload_avatar(req: AvatarUploadRequest, user=Depends(get_current_user)
         logger.debug(f"Avatar base64 decode failed: {e}")
         return {"success": False, "error": "Invalid base64 image"}
 
-    if len(raw) > 2 * 1024 * 1024:  # 2MB limit
+    if len(raw) > MAX_AVATAR_SIZE:  # 2MB limit
         return {"success": False, "error": "Image too large (max 2MB)"}
 
     # Validate magic bytes — must be a real image (PNG, JPEG, GIF, WebP)
@@ -169,7 +176,7 @@ async def generate_avatar(req: AvatarGenerateRequest, user=Depends(get_current_u
 
     # Save the generated image as twin avatar
     img_bytes = base64.b64decode(result["image_base64"])
-    if len(img_bytes) > 5 * 1024 * 1024:
+    if len(img_bytes) > MAX_VOICE_SIZE:
         return {"success": False, "error": "Generated image too large"}
 
     name_hash = hashlib.md5(f"{uid}_twin".encode()).hexdigest()[:12]
@@ -204,7 +211,7 @@ async def upload_voice(req: VoiceUploadRequest, user=Depends(get_current_user)):
     except Exception as e:
         logger.debug(f"Voice base64 decode failed: {e}")
         return {"success": False, "error": "Invalid base64 audio"}
-    if len(raw) > 5 * 1024 * 1024:
+    if len(raw) > MAX_VOICE_SIZE:
         return {"success": False, "error": "Audio too large (max 5MB)"}
 
     name_hash = hashlib.md5(f"{uid}_voice".encode()).hexdigest()[:12]
