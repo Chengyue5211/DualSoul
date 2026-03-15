@@ -76,13 +76,26 @@ class TwinResponder:
                 # Sender and receiver speak different languages — reply in sender's language
                 effective_target_lang = sender_lang
 
-        # Generate reply text
+        # Generate reply text — use agent tools for task-like requests
+        reply_text = None
         if AI_BASE_URL and AI_API_KEY:
-            reply_text = await self._ai_reply(
-                profile, incoming_msg, sender_mode, effective_target_lang,
-                social_context=social_context,
-                from_user_id=from_user_id,
-            )
+            # Detect if message is a task that needs agent tools
+            if self._needs_agent_tools(incoming_msg):
+                try:
+                    from dualsoul.twin_engine.agent_tools import agent_reply_with_tools
+                    reply_text = await agent_reply_with_tools(
+                        profile, incoming_msg, from_user_id=from_user_id,
+                    )
+                except Exception as e:
+                    logger.warning(f"Agent tools failed, falling back to chat: {e}")
+
+            # Fallback to normal chat reply
+            if not reply_text:
+                reply_text = await self._ai_reply(
+                    profile, incoming_msg, sender_mode, effective_target_lang,
+                    social_context=social_context,
+                    from_user_id=from_user_id,
+                )
         else:
             reply_text = self._fallback_reply(profile, incoming_msg, effective_target_lang)
 
@@ -858,6 +871,19 @@ class TwinResponder:
                 role = "user"  # friend's messages
             history.append({"role": role, "content": r["content"]})
         return history
+
+    @staticmethod
+    def _needs_agent_tools(msg: str) -> bool:
+        """Detect if a message is a task request that needs agent tools."""
+        task_keywords = [
+            "帮我查", "帮我搜", "查一下", "搜一下", "搜索", "查资料", "查找",
+            "帮我写", "帮我整理", "生成文档", "总结", "整理一份", "写一份",
+            "帮我发", "发到", "发给", "推送",
+            "最新", "趋势", "行业", "报告", "分析",
+            "search", "find", "look up", "generate", "write",
+        ]
+        msg_lower = msg.lower()
+        return any(kw in msg_lower for kw in task_keywords)
 
     async def _ai_reply(
         self, profile, incoming_msg: str, sender_mode: str, target_lang: str = "",
