@@ -6,7 +6,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from dualsoul.auth import get_current_user
 from dualsoul.connections import manager
@@ -23,8 +23,12 @@ _twin = TwinResponder()
 
 
 @router.post("/friends/add")
-async def add_friend(req: AddFriendRequest, user=Depends(get_current_user)):
+async def add_friend(req: AddFriendRequest, request: Request, user=Depends(get_current_user)):
     """Send a friend request by username. If auto_accept, skip pending and become friends directly."""
+    from dualsoul.rate_limit import check_action_rate
+    limited = await check_action_rate(request)
+    if limited:
+        return limited
     uid = user["user_id"]
     username = req.friend_username.strip()
     auto_accept = getattr(req, 'auto_accept', False)
@@ -305,8 +309,12 @@ async def get_messages(friend_id: str = "", limit: int = 50, user=Depends(get_cu
 
 
 @router.post("/messages/send")
-async def send_message(req: SendMessageRequest, user=Depends(get_current_user)):
+async def send_message(req: SendMessageRequest, request: Request, user=Depends(get_current_user)):
     """Send a message. If receiver_mode is 'twin', the recipient's twin auto-replies."""
+    from dualsoul.rate_limit import check_message_rate
+    limited = await check_message_rate(request)
+    if limited:
+        return limited
     uid = user["user_id"]
     content = req.content.strip()
     if not content:

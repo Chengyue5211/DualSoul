@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 # Set test database before importing app
 _tmpdir = tempfile.mkdtemp()
 os.environ["DUALSOUL_DATABASE_PATH"] = os.path.join(_tmpdir, "test.db")
-os.environ["DUALSOUL_JWT_SECRET"] = "test_secret_for_testing_only"
+os.environ["DUALSOUL_JWT_SECRET"] = "test_secret_for_testing_only_32bytes!"
 
 
 @pytest.fixture(scope="session")

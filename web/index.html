@@ -572,7 +572,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     </div>
     <div class="add-friend">
       <input id="addInput" placeholder="Add friend by username..." maxlength="50" aria-label="Add friend by username">
-      <button id="addFriendBtn" onclick="addFriend()">Add</button>
+      <button id="addFriendBtn" onclick="addFriend()" aria-label="Add friend">Add</button>
     </div>
     <div style="margin-bottom:14px">
       <button onclick="openShareModal()" id="inviteQuickBtn" style="width:100%;padding:10px;border:1px solid rgba(255,140,50,.3);border-radius:10px;background:rgba(255,140,50,.08);color:var(--orange);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🎁 邀请好友注册DualSoul</button>
@@ -678,7 +678,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
         onmousedown="voiceHoldStart(event)" onmouseup="voiceHoldEnd(event)">按住 说话</button>
       <button class="ci-icon" id="ciEmojiBtn" onclick="toggleEmoji()" style="font-size:22px">😊</button>
       <button class="ci-plus" id="ciPlusBtn" onclick="toggleChatToolbar()" style="display:flex">+</button>
-      <button class="ci-send" id="ciSendBtn" onclick="sendMsg()" style="display:none">Send</button>
+      <button class="ci-send" id="ciSendBtn" onclick="sendMsg()" style="display:none" aria-label="Send message">Send</button>
     </div>
     <div class="chat-toolbar" id="chatToolbar">
       <div class="ct-item" onclick="chatSendPhoto()"><div class="ct-icon">🖼</div><div class="ct-label" data-i18n="ctPhoto">照片</div></div>
@@ -941,9 +941,9 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 
 <!-- Bottom Nav -->
 <nav role="navigation" aria-label="Main">
-  <div class="ni on" onclick="swTab('Social',this)"><span class="nc">&#x1F4AC;</span><span class="nl" id="navChat">消息</span><span class="ni-badge" id="navBadge"></span></div>
-  <div class="ni" onclick="swTab('About',this)"><span class="nc">&#x1F50D;</span><span class="nl" id="navDiscover">发现</span></div>
-  <div class="ni" onclick="swTab('Profile',this)"><span class="nc">&#x1F464;</span><span class="nl" id="navMe">我</span></div>
+  <div class="ni on" onclick="swTab('Social',this)" role="button" tabindex="0" aria-label="Messages"><span class="nc">&#x1F4AC;</span><span class="nl" id="navChat">消息</span><span class="ni-badge" id="navBadge"></span></div>
+  <div class="ni" onclick="swTab('About',this)" role="button" tabindex="0" aria-label="Discover"><span class="nc">&#x1F50D;</span><span class="nl" id="navDiscover">发现</span></div>
+  <div class="ni" onclick="swTab('Profile',this)" role="button" tabindex="0" aria-label="Profile"><span class="nc">&#x1F464;</span><span class="nl" id="navMe">我</span></div>
 </nav>
 </div>
 

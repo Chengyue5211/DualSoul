@@ -37,6 +37,8 @@ class RateLimiter:
 # Pre-configured limiters
 _login_limiter = RateLimiter(max_requests=10, window_seconds=60)
 _register_limiter = RateLimiter(max_requests=5, window_seconds=60)
+_message_limiter = RateLimiter(max_requests=30, window_seconds=60)
+_action_limiter = RateLimiter(max_requests=20, window_seconds=60)
 
 _RATE_LIMIT_RESPONSE = JSONResponse(
     status_code=429,
@@ -54,5 +56,19 @@ async def check_login_rate(request: Request):
 async def check_register_rate(request: Request):
     """FastAPI dependency — rate limit registration attempts."""
     if _register_limiter.is_limited(request):
+        return _RATE_LIMIT_RESPONSE
+    return None
+
+
+async def check_message_rate(request: Request):
+    """FastAPI dependency — rate limit message sending (30/min)."""
+    if _message_limiter.is_limited(request):
+        return _RATE_LIMIT_RESPONSE
+    return None
+
+
+async def check_action_rate(request: Request):
+    """FastAPI dependency — rate limit general actions (20/min)."""
+    if _action_limiter.is_limited(request):
         return _RATE_LIMIT_RESPONSE
     return None
