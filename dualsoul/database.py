@@ -290,6 +290,32 @@ CREATE INDEX IF NOT EXISTS idx_rb_user_a ON relationship_bodies(user_a);
 CREATE INDEX IF NOT EXISTS idx_rb_user_b ON relationship_bodies(user_b);
 """
 
+SCHEMA_V7 = """
+CREATE TABLE IF NOT EXISTS agent_api_keys (
+    key_id TEXT PRIMARY KEY,
+    twin_owner_id TEXT NOT NULL,
+    external_platform TEXT NOT NULL,
+    api_key TEXT NOT NULL UNIQUE,
+    scopes TEXT DEFAULT 'twin:reply',
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    expires_at TEXT,
+    last_used_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_ak_key ON agent_api_keys(api_key);
+
+CREATE TABLE IF NOT EXISTS agent_message_log (
+    log_id TEXT PRIMARY KEY,
+    from_platform TEXT NOT NULL,
+    to_twin_id TEXT NOT NULL,
+    external_user_id TEXT DEFAULT '',
+    incoming_content TEXT DEFAULT '',
+    reply_content TEXT DEFAULT '',
+    success INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_aml_twin ON agent_message_log(to_twin_id, created_at DESC);
+"""
+
 # Additional column migrations for upgrades
 MIGRATIONS_V2 = [
     "ALTER TABLE social_messages ADD COLUMN source_type TEXT DEFAULT 'human_live'",
@@ -339,6 +365,7 @@ def init_db():
     conn.executescript(SCHEMA_V4)
     conn.executescript(SCHEMA_V5)
     conn.executescript(SCHEMA_V6)
+    conn.executescript(SCHEMA_V7)
     # Migrate twin_life stage column to support new 5-stage system
     # Check if the old CHECK constraint needs to be updated by inspecting the schema
     cur = conn.execute(
