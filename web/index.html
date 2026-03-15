@@ -23,7 +23,7 @@ a{color:var(--ac);text-decoration:none}
 .splash-inner{position:relative;width:180px;height:120px;margin-bottom:30px}
 .sp-av{width:72px;height:72px;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;overflow:hidden}
 .sp-real{background:var(--bg3);color:var(--tx);border:3px solid rgba(255,255,255,.15);animation:spSplitLeft 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
-.sp-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:#fff;border:3px solid rgba(124,92,252,.4);opacity:0;animation:spSplitRight 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
+.sp-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:var(--white);border:3px solid rgba(124,92,252,.4);opacity:0;animation:spSplitRight 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
 .sp-twin::after{content:'';position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.06) 3deg,transparent 6deg);animation:spCyberSpin 8s linear infinite}
 .sp-connect{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:2px;background:linear-gradient(90deg,var(--tx),var(--ac));opacity:0;animation:spConnectIn 0.8s ease 2s forwards}
 @keyframes spSplitLeft{0%{transform:translate(-50%,-50%)}100%{transform:translate(-110%,-50%)}}
@@ -46,14 +46,14 @@ a{color:var(--ac);text-decoration:none}
 .twin-notify-card .tn-body{font-size:12px;color:var(--tx);line-height:1.8;background:rgba(124,92,252,.06);border-radius:10px;padding:12px;margin-bottom:14px;white-space:pre-line}
 .twin-notify-card .tn-btns{display:flex;gap:8px}
 .twin-notify-card .tn-btns button{flex:1;padding:10px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-.twin-notify-card .tn-go{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+.twin-notify-card .tn-go{background:linear-gradient(135deg,var(--ac),var(--ac2));color:var(--white)}
 .twin-notify-card .tn-ok{background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)!important}
 @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
 
 /* Call UI */
 .call-overlay{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,#0c0c18 0%,#1a1a2e 50%,#0c0c18 100%);animation:fadeIn .3s ease}
-.call-overlay .call-avatar{width:100px;height:100px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:700;color:#fff;margin-bottom:16px}
-.call-overlay .call-name{font-size:20px;font-weight:700;color:#fff;margin-bottom:6px}
+.call-overlay .call-avatar{width:100px;height:100px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:700;color:var(--white);margin-bottom:16px}
+.call-overlay .call-name{font-size:20px;font-weight:700;color:var(--white);margin-bottom:6px}
 .call-overlay .call-status{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:40px}
 .call-overlay .call-timer{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:30px;font-variant-numeric:tabular-nums}
 .call-overlay .call-video{position:absolute;inset:0;z-index:0}
@@ -63,14 +63,14 @@ a{color:var(--ac);text-decoration:none}
 .call-btns{display:flex;gap:20px;z-index:1}
 .call-btns .cb{width:60px;height:60px;border-radius:50%;border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
 .call-btns .cb:active{transform:scale(.9)}
-.cb-accept{background:var(--green);color:#fff}
-.cb-reject{background:var(--red);color:#fff}
-.cb-hangup{background:var(--red);color:#fff}
-.cb-mute{background:rgba(255,255,255,.15);color:#fff}
+.cb-accept{background:var(--green);color:var(--white)}
+.cb-reject{background:var(--red);color:var(--white)}
+.cb-hangup{background:var(--red);color:var(--white)}
+.cb-mute{background:rgba(255,255,255,.15);color:var(--white)}
 .cb-mute.on{background:rgba(231,76,60,.3);color:var(--red)}
-.cb-speaker{background:rgba(255,255,255,.15);color:#fff}
+.cb-speaker{background:rgba(255,255,255,.15);color:var(--white)}
 .cb-speaker.on{background:rgba(46,204,113,.3);color:var(--green)}
-.cb-video-toggle{background:rgba(255,255,255,.15);color:#fff}
+.cb-video-toggle{background:rgba(255,255,255,.15);color:var(--white)}
 .cb-video-toggle.off{background:rgba(231,76,60,.3);color:var(--red)}
 /* Ringing animation */
 @keyframes ringPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,204,113,.4)}50%{box-shadow:0 0 0 20px rgba(46,204,113,0)}}
@@ -87,7 +87,7 @@ a{color:var(--ac);text-decoration:none}
 .auth-form input{width:100%;padding:12px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--bg2);color:var(--tx);font-size:14px;margin-bottom:10px;font-family:inherit}
 .auth-form input::placeholder{color:var(--tx2)}
 .auth-form input:focus{border-color:var(--ac);outline:none;box-shadow:0 0 0 2px rgba(124,92,252,.15)}
-.auth-form button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.auth-form button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px}
 .auth-form button:active{opacity:.9}
 .auth-switch{margin-top:14px;font-size:12px;color:var(--tx2)}
 .auth-switch span{color:var(--ac);cursor:pointer}
@@ -103,7 +103,7 @@ nav .ni .nc{display:block;font-size:18px;transition:.2s}
 nav .ni .nl{display:block;font-size:9px;color:var(--tx2);margin-top:1px}
 nav .ni.on .nl{color:var(--ac)}
 nav .ni.on .nc{transform:scale(1.15)}
-.ni-badge{position:absolute;top:2px;right:20%;background:var(--orange);color:#fff;font-size:7px;padding:1px 5px;border-radius:8px;font-weight:700;display:none}
+.ni-badge{position:absolute;top:2px;right:20%;background:var(--orange);color:var(--white);font-size:7px;padding:1px 5px;border-radius:8px;font-weight:700;display:none}
 
 /* Tabs */
 .tab{display:none;padding:0 14px 80px}.tab.v{display:block}
@@ -128,7 +128,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .add-friend{display:flex;gap:8px;margin-bottom:14px}
 .add-friend input{flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit}
 .add-friend input::placeholder{color:var(--tx2)}
-.add-friend button{padding:10px 18px;border-radius:10px;border:none;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.add-friend button{padding:10px 18px;border-radius:10px;border:none;background:var(--gd);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
 
 /* My Identity Bar — two separate avatars at top */
 /* Twin Life Dashboard */
@@ -183,7 +183,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .id-img.real{background:#2a2440;border:2px solid rgba(255,255,255,.12);box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .id-img.cyber{background:#081828;border:2px solid rgba(92,200,250,.25);box-shadow:0 0 10px rgba(92,200,250,.1)}
 .id-img.cyber img{filter:saturate(0.1) brightness(1.3) contrast(1.5) sepia(1) hue-rotate(170deg)}
-.id-img::after{content:'+';position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;background:var(--ac);color:#fff;border-radius:50%;font-size:12px;line-height:18px;text-align:center;opacity:0;transition:opacity .15s}
+.id-img::after{content:'+';position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;background:var(--ac);color:var(--white);border-radius:50%;font-size:12px;line-height:18px;text-align:center;opacity:0;transition:opacity .15s}
 .id-img:hover::after,.id-img:active::after{opacity:1}
 .id-name{font-size:10px;color:var(--tx2);text-align:center;line-height:1.3;word-break:keep-all}
 .id-chat-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;border-radius:12px;background:linear-gradient(135deg,rgba(124,92,252,.1),rgba(92,200,250,.06));border:1px solid rgba(124,92,252,.18);cursor:pointer;transition:background .15s;text-align:center;min-height:52px}
@@ -201,11 +201,11 @@ nav .ni.on .nc{transform:scale(1.15)}
 .fi-preview{font-size:12px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;line-height:1.3}
 .fi-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .fi-time{font-size:10px;color:rgba(255,255,255,.2)}
-.fi-unread{background:var(--orange);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 5px;border-radius:10px;flex-shrink:0}
-.fi-badge{background:var(--ac);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
+.fi-unread{background:var(--orange);color:var(--white);font-size:9px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 5px;border-radius:10px;flex-shrink:0}
+.fi-badge{background:var(--ac);color:var(--white);font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
 .pending-btns{display:flex;gap:6px}
 .pending-btns button{padding:5px 14px;border-radius:8px;border:none;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
-.btn-accept{background:var(--gd);color:#fff}
+.btn-accept{background:var(--gd);color:var(--white)}
 .btn-block{background:rgba(255,255,255,.06);color:var(--tx2)}
 
 /* Chat View */
@@ -282,7 +282,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .chat-input{display:flex;gap:6px;padding:10px 0;border-top:1px solid var(--bd);flex-shrink:0;align-items:flex-end}
 .chat-input textarea{flex:1;padding:10px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;resize:none;max-height:80px}
 .chat-input textarea::placeholder{color:var(--tx2)}
-.chat-input .ci-send{padding:10px 14px;border-radius:20px;border:none;background:var(--gd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.chat-input .ci-send{padding:10px 14px;border-radius:20px;border:none;background:var(--gd);color:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .chat-input .ci-icon{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--tx2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
 .chat-input .ci-icon:active{color:var(--ac);transform:scale(.9)}
 .chat-input .ci-plus{width:36px;height:36px;border-radius:50%;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .2s}
@@ -327,7 +327,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .profile-field label{display:block;font-size:10px;color:var(--tx2);margin-bottom:3px}
 .profile-field textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit;resize:vertical;min-height:60px}
 .profile-field textarea::placeholder{color:var(--tx2)}
-.profile-save{width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.profile-save{width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
 .profile-logout{width:100%;padding:10px;border:1px solid rgba(231,76,60,.2);border-radius:10px;background:transparent;color:rgba(231,76,60,.6);font-size:12px;cursor:pointer;font-family:inherit;margin-top:10px}
 
 /* Header */
@@ -339,7 +339,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .disc-section{margin-bottom:8px;background:var(--bg2);border-radius:12px;overflow:hidden}
 .disc-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .15s}
 .disc-item:active{background:rgba(255,255,255,.03)}
-.disc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:#fff}
+.disc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:var(--white)}
 .disc-info{flex:1;min-width:0}
 .disc-label{font-size:14px;font-weight:600;color:var(--tx)}
 .disc-desc{font-size:11px;color:var(--tx2);margin-top:2px}
@@ -386,7 +386,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .ob-dots{display:flex;justify-content:center;gap:8px;margin:20px 0}
 .ob-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);transition:.3s}
 .ob-dot.on{background:var(--ac);width:24px;border-radius:4px}
-.ob-btn{width:100%;max-width:320px;margin:0 auto 30px;padding:14px;border:none;border-radius:12px;background:var(--gd);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.ob-btn{width:100%;max-width:320px;margin:0 auto 30px;padding:14px;border:none;border-radius:12px;background:var(--gd);color:var(--white);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px}
 .ob-btn:active{opacity:.9}
 .ob-skip{text-align:center;margin-bottom:20px;font-size:11px;color:var(--tx2);cursor:pointer}
 
@@ -402,7 +402,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 .ts-input-area{padding:12px 0;display:flex;gap:8px;align-items:flex-end}
 .ts-input-area input,.ts-input-area textarea{flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit}
 .ts-input-area input::placeholder,.ts-input-area textarea::placeholder{color:var(--tx2)}
-.ts-input-area button{padding:10px 20px;border-radius:12px;border:none;background:var(--gd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.ts-input-area button{padding:10px 20px;border-radius:12px;border:none;background:var(--gd);color:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .ts-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0}
 .ts-chip{padding:8px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:11px;cursor:pointer;transition:.2s}
 .ts-chip.on{border-color:var(--ac);background:rgba(124,92,252,.15);color:var(--ac2)}
@@ -422,7 +422,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
 /* WeChat browser overlay */
-.wx-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#fff}
+.wx-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--white)}
 .wx-overlay .wx-arrow{position:absolute;top:12px;right:20px;font-size:48px;animation:bounce 1.5s ease infinite}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .wx-overlay .wx-text{font-size:16px;line-height:2;margin-top:60px}
@@ -431,9 +431,9 @@ nav .ni.on .nc{transform:scale(1.15)}
 .voice-wrap{text-align:center;padding:12px}
 .voice-sample-text{font-style:italic;color:var(--ac2);font-size:14px;margin:8px 0 16px;line-height:1.6}
 .voice-btn{width:64px;height:64px;border-radius:50%;border:none;font-size:28px;cursor:pointer;transition:all .2s}
-.voice-btn.idle{background:var(--ac);color:#fff}
-.voice-btn.recording{background:var(--red);color:var(--white);animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.voice-btn.idle{background:var(--ac);color:var(--white)}
+.voice-btn.recording{background:var(--red);color:var(--white);animation:pulseScale 1s infinite}
+@keyframes pulseScale{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 .voice-timer{font-size:12px;color:var(--tx2);margin-top:6px}
 .cam-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
 .cam-preview{position:relative;width:180px;height:180px;border-radius:50%;overflow:hidden;border:3px solid var(--ac);background:var(--bg3)}
@@ -444,10 +444,10 @@ nav .ni.on .nc{transform:scale(1.15)}
 .cam-result .av-box.twin-box{border-color:var(--ac);box-shadow:0 0 20px rgba(124,92,252,.3)}
 .cam-result .av-box img{width:100%;height:100%;object-fit:cover}
 .cam-result .av-label{font-size:10px;color:var(--tx2);text-align:center;margin-top:6px}
-.cam-arrow{font-size:24px;color:var(--ac);animation:pulse 1.5s ease infinite}
+.cam-arrow{font-size:24px;color:var(--ac);animation:pulseScale 1.5s ease infinite}
 .cam-btns{display:flex;gap:8px}
 .cam-btns button{padding:8px 20px;border-radius:10px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-.cam-btns .cam-take{background:var(--gd);color:#fff}
+.cam-btns .cam-take{background:var(--gd);color:var(--white)}
 .cam-btns .cam-retake{background:var(--bg3);color:var(--tx);border:1px solid var(--bd)}
 .cam-btns .cam-skip{background:transparent;color:var(--tx2)}
 /* Twin avatar filter styles */
@@ -466,6 +466,16 @@ nav .ni.on .nc{transform:scale(1.15)}
 .ts-option.on .ts-preview-img{border-color:var(--ac);box-shadow:0 0 12px rgba(124,92,252,.3)}
 .ts-option .ts-label{font-size:9px;color:var(--tx2)}
 .ts-option.on .ts-label{color:var(--ac2);font-weight:700}
+.skel{background:var(--bg3);border-radius:8px;overflow:hidden;position:relative}
+.skel::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);background-size:200% 100%;animation:skelShimmer 1.5s infinite}
+@keyframes skelShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-circle{border-radius:50%}
+.skel-row{display:flex;align-items:center;gap:12px;padding:12px}
+.skel-line{height:12px;margin:4px 0}
+.skel-line.w60{width:60%}.skel-line.w40{width:40%}.skel-line.w80{width:80%}.skel-line.w100{width:100%}
+.btn-primary{background:var(--gd);color:var(--white);border:none;border-radius:10px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-orange{background:linear-gradient(135deg,var(--orange),#ff6b1a);color:var(--white);border:none;border-radius:10px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.avatar-fallback{border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;color:var(--white);font-weight:700}
 </style>
 </head>
 <body>
@@ -489,7 +499,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   </div>
   <div class="sp-text" id="spText"></div>
 </div>
-<div class="toast-wrap" id="toastWrap"></div>
+<div class="toast-wrap" id="toastWrap" aria-live="polite" role="status"></div>
 
 <!-- Auth Page -->
 <div class="page v" id="authPage">
@@ -500,9 +510,9 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   <div class="tagline">Every person has two voices</div>
   <div id="inviteBanner" style="display:none;background:rgba(124,92,252,.1);border:1px solid rgba(124,92,252,.2);border-radius:10px;padding:10px 16px;margin-bottom:12px;font-size:12px;color:var(--ac2);text-align:center"></div>
   <div class="auth-form" id="authForm">
-    <input id="authUser" placeholder="Username" autocomplete="username">
-    <input id="authPass" type="password" placeholder="Password" autocomplete="current-password">
-    <input id="authName" placeholder="Display name (optional)" style="display:none" autocomplete="name">
+    <input id="authUser" placeholder="Username" autocomplete="username" aria-label="Username">
+    <input id="authPass" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+    <input id="authName" placeholder="Display name (optional)" style="display:none" autocomplete="name" aria-label="Display name">
     <button onclick="authSubmit()" id="authBtn">Login</button>
   </div>
   <div class="auth-switch">
@@ -561,7 +571,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       <span class="unread" id="unreadLabel"></span>
     </div>
     <div class="add-friend">
-      <input id="addInput" placeholder="Add friend by username..." maxlength="50">
+      <input id="addInput" placeholder="Add friend by username..." maxlength="50" aria-label="Add friend by username">
       <button id="addFriendBtn" onclick="addFriend()">Add</button>
     </div>
     <div style="margin-bottom:14px">
@@ -655,12 +665,12 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
         <span class="tt-label" id="ttLabel">分身代聊</span>
       </label>
     </div>
-    <div class="chat-msgs" id="chatMsgs">
+    <div class="chat-msgs" id="chatMsgs" aria-live="polite">
       <div class="empty">Start the conversation!</div>
     </div>
     <div class="chat-input">
       <button class="ci-icon" id="ciVoiceToggle" onclick="toggleVoiceMode()">🎤</button>
-      <textarea id="chatInput" rows="1" placeholder="Say something..."
+      <textarea id="chatInput" rows="1" placeholder="Say something..." aria-label="Type a message"
         oninput="this.style.height='36px';this.style.height=Math.min(this.scrollHeight,80)+'px';ciInputChange()"
         onfocus="closeChatToolbar()"></textarea>
       <button class="ci-voice-btn" id="ciVoiceHold"
@@ -930,7 +940,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 </div>
 
 <!-- Bottom Nav -->
-<nav>
+<nav role="navigation" aria-label="Main">
   <div class="ni on" onclick="swTab('Social',this)"><span class="nc">&#x1F4AC;</span><span class="nl" id="navChat">消息</span><span class="ni-badge" id="navBadge"></span></div>
   <div class="ni" onclick="swTab('About',this)"><span class="nc">&#x1F50D;</span><span class="nl" id="navDiscover">发现</span></div>
   <div class="ni" onclick="swTab('Profile',this)"><span class="nc">&#x1F464;</span><span class="nl" id="navMe">我</span></div>
@@ -939,6 +949,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 
 <script>
 var DS_BASE=location.pathname.indexOf('/ds')===0?'/ds':'';
+function fetchTimeout(url,opts,ms){ms=ms||8000;var ctrl=new AbortController();opts=opts||{};opts.signal=ctrl.signal;var timer=setTimeout(function(){ctrl.abort()},ms);return fetch(url,opts).finally(function(){clearTimeout(timer)})}
 var API='';
 var token='';
 var myId='';
@@ -1256,7 +1267,7 @@ function showDailyReport(nd){
 
 // Let twin warm up a cold relationship on demand
 function warmFriend(friendId,friendName){
-  fetch(DS_BASE+'/api/social/messages',{
+  fetchTimeout(DS_BASE+'/api/social/messages',{
     method:'POST',headers:{'Content-Type':'application/json',...headers()},
     body:JSON.stringify({to_user_id:friendId,content:'[分身自动问候]',sender_mode:'twin',receiver_mode:'twin'})
   }).then(function(){
@@ -1326,7 +1337,7 @@ function enterApp(isNewUser){
 }
 
 function checkTwinActivity(){
-  fetch(DS_BASE+'/api/social/twin/activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/social/twin/activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success||!d.activities||!d.activities.length)return;
     // Merge all activities into one summary notification
     var items=d.activities;
@@ -1340,7 +1351,7 @@ function checkTwinActivity(){
       });
       showTwinNotify({content:summary.trim(),friend_id:'',friend_name:''});
     }
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 // --- Onboarding ---
@@ -1489,25 +1500,25 @@ function tsRunStep(){
     inp.style.display='none';
     tsAddMsg('system',LANG==='zh'?'正在创建你的分身...':'Creating your twin...');
     // Save profile
-    fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+    fetchTimeout(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
       twin_personality:tsPersonality,twin_speech_style:tsStyle,preferred_lang:tsLang
-    })}).catch(function(){});
+    })}).catch(function(){toast(t('networkError'))});
     // Upload avatar if captured
     if(_capturedPhoto){
-      fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'real'})}).catch(function(){});
+      fetchTimeout(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'real'})}).catch(function(){toast(t('networkError'))});
       // Only upload as twin if AI didn't already generate one
       if(!_obAiGenerated){
-        fetch(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'twin'})}).catch(function(){});
+        fetchTimeout(DS_BASE+'/api/identity/avatar',{method:'POST',headers:headers(),body:JSON.stringify({image:_capturedPhoto,type:'twin'})}).catch(function(){toast(t('networkError'))});
       }
     }
     // Upload voice if recorded
     if(_voiceBlob){
       var reader=new FileReader();
-      reader.onloadend=function(){fetch(DS_BASE+'/api/identity/voice',{method:'POST',headers:headers(),body:JSON.stringify({audio:reader.result})}).catch(function(){})};
+      reader.onloadend=function(){fetchTimeout(DS_BASE+'/api/identity/voice',{method:'POST',headers:headers(),body:JSON.stringify({audio:reader.result})}).catch(function(){toast(t('networkError'))})};
       reader.readAsDataURL(_voiceBlob);
     }
     // Generate preview
-    fetch(DS_BASE+'/api/identity/twin/preview',{method:'POST',headers:headers(),body:JSON.stringify({
+    fetchTimeout(DS_BASE+'/api/identity/twin/preview',{method:'POST',headers:headers(),body:JSON.stringify({
       display_name:_regDisplayName,personality:tsPersonality,speech_style:tsStyle
     })}).then(function(r){return r.json()}).then(function(d){
       var reply=d.reply||(LANG==='zh'?'嘿！'+(_regDisplayName||'')+'不在的时候，我来！':'Hey! I\'m here when '+(_regDisplayName||'they')+' can\'t be!');
@@ -1606,7 +1617,7 @@ function obAiAvatar(){
   status.textContent=LANG==='zh'?'AI正在绘制你的分身头像，请稍候...':'AI is painting your twin avatar...';
   // Pick a random style for variety, defaulting to anime
   var style='anime';
-  fetch(DS_BASE+'/api/identity/avatar/generate',{
+  fetchTimeout(DS_BASE+'/api/identity/avatar/generate',{
     method:'POST',headers:headers(),
     body:JSON.stringify({image:_capturedPhoto,style:style})
   }).then(function(r){return r.json()}).then(function(d){
@@ -1768,7 +1779,7 @@ function openTwinFeed(){
   var html='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px" id="feedLoading">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
   openDiscPage(LANG==='zh'?'分身动态':'Twin Activity',html);
   // Load twin activity from API
-  fetch(DS_BASE+'/api/social/twin/activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/social/twin/activity',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     var body=document.querySelector('.disc-page .dp-body');if(!body)return;
     if(!d.success||!d.activities||!d.activities.length){
       body.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'暂无分身动态\n当你不在时，分身替你回复的消息会出现在这里':'No twin activity yet')+'</div>';
@@ -1816,7 +1827,7 @@ function qrAddFriend(){
   var inp=document.getElementById('qrManualInput');
   var u=inp?inp.value.trim():'';
   if(!u){toast(LANG==='zh'?'请输入用户名':'Enter username');return}
-  fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
+  fetchTimeout(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){toast(LANG==='zh'?'好友请求已发送':'Friend request sent');inp.value='';loadFriends()}
     else toast(d.error||'Failed');
@@ -1864,7 +1875,7 @@ function plazaLoadFeed(){
   // Post button
   var postBtn='<button onclick="plazaNewPost()" style="width:100%;padding:10px;border:1px dashed rgba(124,92,252,.3);border-radius:10px;background:none;color:var(--ac2);font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:14px">'+(LANG==='zh'?'✨ 让分身发一条广场动态':'✨ Let your twin post')+'</button>';
 
-  fetch(DS_BASE+'/api/plaza/feed?limit=20',{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/plaza/feed?limit=20',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--tx2)">Error</div>';return}
     var h=postBtn;
@@ -1896,7 +1907,7 @@ function plazaLoadFeed(){
 
 function plazaNewPost(){
   toast(LANG==='zh'?'分身正在想...':'Twin is thinking...');
-  fetch(DS_BASE+'/api/plaza/post',{method:'POST',headers:headers(),body:JSON.stringify({})})
+  fetchTimeout(DS_BASE+'/api/plaza/post',{method:'POST',headers:headers(),body:JSON.stringify({})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){
       toast(LANG==='zh'?'分身发了一条动态！':'Twin posted!');
@@ -1906,15 +1917,15 @@ function plazaNewPost(){
 }
 
 function plazaLike(postId){
-  fetch(DS_BASE+'/api/plaza/post/'+postId+'/like',{method:'POST',headers:headers()})
+  fetchTimeout(DS_BASE+'/api/plaza/post/'+postId+'/like',{method:'POST',headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)plazaLoadFeed();
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function plazaComment(postId){
   toast(LANG==='zh'?'分身正在评论...':'Twin commenting...');
-  fetch(DS_BASE+'/api/plaza/post/'+postId+'/comment',{method:'POST',headers:headers(),body:JSON.stringify({})})
+  fetchTimeout(DS_BASE+'/api/plaza/post/'+postId+'/comment',{method:'POST',headers:headers(),body:JSON.stringify({})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){toast(LANG==='zh'?'评论成功！':'Commented!');plazaLoadFeed()}
     else toast(d.error||'Failed');
@@ -1925,7 +1936,7 @@ function plazaLoadDiscover(){
   var el=g('plzContent');if(!el)return;
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
 
-  fetch(DS_BASE+'/api/plaza/discover',{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/plaza/discover',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success||!d.twins.length){
       el.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'暂时没有新分身可以发现\n邀请朋友来DualSoul吧！':'No new twins to discover.\nInvite friends to join!')+'</div>';
@@ -1951,7 +1962,7 @@ function plazaLoadDiscover(){
 
 function plazaTrialChat(targetUserId,targetName){
   toast(LANG==='zh'?'分身正在和'+targetName+'的分身试聊...':'Twins are chatting...');
-  fetch(DS_BASE+'/api/plaza/trial-chat/start',{method:'POST',headers:headers(),body:JSON.stringify({target_user_id:targetUserId})})
+  fetchTimeout(DS_BASE+'/api/plaza/trial-chat/start',{method:'POST',headers:headers(),body:JSON.stringify({target_user_id:targetUserId})})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){toast(d.error||'Failed');return}
     if(d.status==='completed'){
@@ -1968,13 +1979,13 @@ function _pollTrialChat(trialId,targetName){
   var iv=setInterval(function(){
     attempts++;
     if(attempts>20){clearInterval(iv);toast(LANG==='zh'?'试聊超时':'Trial timed out');return}
-    fetch(DS_BASE+'/api/plaza/trial-chat/'+trialId,{headers:headers()})
+    fetchTimeout(DS_BASE+'/api/plaza/trial-chat/'+trialId,{headers:headers()})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success&&d.status==='completed'){
         clearInterval(iv);
         showTrialResult(d);
       }
-    }).catch(function(){});
+    }).catch(function(){toast(t('networkError'))});
   },3000);
 }
 
@@ -2029,7 +2040,7 @@ function plazaLoadTrials(){
   var el=g('plzContent');if(!el)return;
   el.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
 
-  fetch(DS_BASE+'/api/plaza/trial-chats',{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/plaza/trial-chats',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success||!d.chats.length){
       el.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'还没有试聊记录\n去"发现分身"标签找个分身试试！':'No trial chats yet.\nGo to Discover tab to find twins!')+'</div>';
@@ -2054,7 +2065,7 @@ function plazaLoadTrials(){
 }
 
 function plazaViewTrial(trialId){
-  fetch(DS_BASE+'/api/plaza/trial-chat/'+trialId,{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/plaza/trial-chat/'+trialId,{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)showTrialResult(d);
   }).catch(function(){toast(LANG==='zh'?'网络错误':'Network error')});
@@ -2105,7 +2116,7 @@ function submitChangePassword(){
   if(!o||!n){toast(LANG==='zh'?'请填写密码':'Enter passwords');return}
   if(n!==c){toast(LANG==='zh'?'两次密码不一致':'Passwords don\'t match');return}
   if(n.length<4){toast(LANG==='zh'?'密码至少4位':'Password min 4 chars');return}
-  fetch(DS_BASE+'/api/auth/change-password',{method:'POST',headers:headers(),body:JSON.stringify({old_password:o,new_password:n})})
+  fetchTimeout(DS_BASE+'/api/auth/change-password',{method:'POST',headers:headers(),body:JSON.stringify({old_password:o,new_password:n})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){toast(LANG==='zh'?'密码已修改':'Password changed');var p=document.querySelector('.disc-page');if(p)p.remove()}
     else toast(d.error||'Failed');
@@ -2138,7 +2149,7 @@ function openEthicsPage(){
 
 function loadEthicsData(){
   var zh=LANG==='zh';
-  fetch(DS_BASE+'/api/ethics/boundaries',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/ethics/boundaries',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var b=d.data;
     var toggleDefs=[
@@ -2177,7 +2188,7 @@ function loadEthicsData(){
     g('ethicsContent').style.display='block';
   }).catch(function(){toast(zh?'加载失败':'Failed to load')});
   // Load action log
-  fetch(DS_BASE+'/api/ethics/action-log?limit=20',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/ethics/action-log?limit=20',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success||!d.data||!d.data.length){
       var el=g('ethicsLog');if(el)el.innerHTML='<div style="text-align:center;padding:16px;color:var(--tx2)">'+(zh?'暂无行为日志':'No actions yet')+'</div>';
       return;
@@ -2194,7 +2205,7 @@ function loadEthicsData(){
         '</div><div style="font-size:9px;color:var(--tx2);flex-shrink:0">'+tm+'</div></div>';
     }).join('');
     var el=g('ethicsLog');if(el)el.innerHTML=logHtml;
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function toggleEthics(key,el){
@@ -2203,7 +2214,7 @@ function toggleEthics(key,el){
   var currentlyOn=statusEl.textContent.trim()===(zh?'开启':'ON');
   var newVal=!currentlyOn;
   var body={};body[key]=newVal;
-  fetch(DS_BASE+'/api/ethics/boundaries',{method:'PUT',headers:headers(),body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/ethics/boundaries',{method:'PUT',headers:headers(),body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(d){
     if(d.success){
       var isWarn=key.indexOf('can_discuss')>=0||key.indexOf('can_share_personal')>=0||key.indexOf('can_make_promises')>=0||key.indexOf('can_argue')>=0;
       statusEl.textContent=newVal?(zh?'开启':'ON'):(zh?'关闭':'OFF');
@@ -2365,7 +2376,7 @@ function showTwinPermissionRequest(data){
 
 function respondTwinPermission(fromUserId,permission,btn){
   var wrap=btn.parentNode;
-  fetch(DS_BASE+'/api/social/friends/'+fromUserId+'/twin-permission',{
+  fetchTimeout(DS_BASE+'/api/social/friends/'+fromUserId+'/twin-permission',{
     method:'POST',headers:headers(),
     body:JSON.stringify({permission:permission})
   }).then(function(r){return r.json()}).then(function(d){
@@ -2415,16 +2426,16 @@ function appendIncoming(m){
 }
 
 function loadUnread(){
-  fetch(DS_BASE+'/api/social/unread',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/social/unread',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     var c=d.count||0;
     g('unreadLabel').textContent=c?c+' unread':'';
     var b=g('navBadge');b.style.display=c?'inline':'none';b.textContent=c>99?'99+':c;
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 var _friendUnread={};
 function loadFriendUnread(){
-  fetch(DS_BASE+'/api/social/unread/by-friend',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/social/unread/by-friend',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     _friendUnread=d.unread||{};
     // Update badges on existing friend items
     document.querySelectorAll('.fi-unread').forEach(function(el){
@@ -2440,7 +2451,7 @@ function loadFriendUnread(){
       tb.style.display=selfCount?'inline-block':'none';
       tb.textContent=selfCount>99?'99+':selfCount;
     }
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 // Auto-login + apply language
@@ -2527,7 +2538,7 @@ function toggleLifePanel(){
   localStorage.setItem('lifePanelOpen',isOpen?'0':'1');
 }
 function loadLifeDashboard(){
-  fetch(DS_BASE+'/api/life/dashboard',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/life/dashboard',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var data=d.data;
     var panel=g('lifePanel');
@@ -2614,7 +2625,7 @@ function loadLifeDashboard(){
     }else{
       tt.textContent=LANG==='zh'?'分身还没有活动，去聊天吧！':'No activity yet. Start chatting!';
     }
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function loadFriends(){
@@ -2622,8 +2633,8 @@ function loadFriends(){
   loadLifeDashboard();
   if(_profileName)refreshIdentityBar();
   var fl=g('friendList');
-  if(fl&&!fl.querySelector('.friend-item'))fl.innerHTML='<div class="empty ts-loading">'+(LANG==='zh'?'加载中...':'Loading...')+'</div>';
-  fetch(DS_BASE+'/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  if(fl&&!fl.querySelector('.friend-item')){var skelHtml='';for(var si=0;si<5;si++)skelHtml+='<div class="skel-row"><div class="skel skel-circle" style="width:44px;height:44px;flex-shrink:0"></div><div style="flex:1"><div class="skel skel-line w60"></div><div class="skel skel-line w40"></div></div></div>';fl.innerHTML=skelHtml;}
+  fetchTimeout(DS_BASE+'/api/social/friends',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success){if(fl)fl.innerHTML='<div class="empty">'+esc(d.error||t('networkError'))+'</div>';return;}
     var pending=[],accepted=[];
     d.friends.forEach(function(f){
@@ -2697,7 +2708,7 @@ function deleteFriend(connId,name){
   if(window._friendMenuOv)window._friendMenuOv.remove();
   var msg=LANG==='zh'?'确定删除好友 '+name+' 吗？':'Delete friend '+name+'?';
   if(!confirm(msg))return;
-  fetch(DS_BASE+'/api/social/friends/delete',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:connId,action:'delete'})})
+  fetchTimeout(DS_BASE+'/api/social/friends/delete',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:connId,action:'delete'})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){toast(LANG==='zh'?'已删除':'Deleted');loadFriends()}else toast(d.error||'Failed');
   }).catch(function(){toast(t('networkError'))});
@@ -2706,7 +2717,7 @@ function blockFriend(connId,name){
   if(window._friendMenuOv)window._friendMenuOv.remove();
   var msg=LANG==='zh'?'确定拉黑 '+name+' 吗？拉黑后对方无法给你发消息。':'Block '+name+'? They won\'t be able to message you.';
   if(!confirm(msg))return;
-  fetch(DS_BASE+'/api/social/friends/block',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:connId,action:'block'})})
+  fetchTimeout(DS_BASE+'/api/social/friends/block',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:connId,action:'block'})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){toast(LANG==='zh'?'已拉黑':'Blocked');loadFriends()}else toast(d.error||'Failed');
   }).catch(function(){toast(t('networkError'))});
@@ -2716,7 +2727,7 @@ function addFriend(){
   var u=g('addInput').value.trim();
   if(!u){toast(t('enterUsername'));return}
   var btn=g('addFriendBtn');if(btn){btn.disabled=true;btn.textContent='...'}
-  fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
+  fetchTimeout(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:u})})
   .then(function(r){return r.json()}).then(function(d){
     if(btn){btn.disabled=false;btn.textContent=t('add')||'Add'}
     if(d.success){toast(t('friendSent'));g('addInput').value='';loadFriends()}
@@ -2728,7 +2739,7 @@ function addFriend(){
 }
 
 function respondFriend(id,action){
-  fetch(DS_BASE+'/api/social/friends/respond',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:id,action:action})})
+  fetchTimeout(DS_BASE+'/api/social/friends/respond',{method:'POST',headers:headers(),body:JSON.stringify({conn_id:id,action:action})})
   .then(function(r){return r.json()}).then(function(d){if(d.success)loadFriends();else toast(d.error||'Failed')})
   .catch(function(){toast(t('networkError'))});
 }
@@ -2785,7 +2796,7 @@ function sendTwinChat(text,imageDataUrl){
   // Call twin self-chat API with optional image
   var payload={message:text,history:_twinChatHistory.slice(-8).map(function(m){return{role:m.mine?'me':'twin',content:m.text}})};
   if(imageDataUrl)payload.image=imageDataUrl;
-  fetch(DS_BASE+'/api/social/twin/chat',{method:'POST',headers:headers(),body:JSON.stringify(payload)
+  fetchTimeout(DS_BASE+'/api/social/twin/chat',{method:'POST',headers:headers(),body:JSON.stringify(payload)
   }).then(function(r){return r.json()}).then(function(d){
     var typing=g('twinTyping');if(typing)typing.remove();
     var reply=d.reply||(LANG==='zh'?'嗯，我还在学习你的风格，多聊几句我就更懂你了！':'Hmm, I\'m still learning your style. Chat more and I\'ll get better!');
@@ -2820,11 +2831,11 @@ function toggleTwinTakeover(){
   if(track){track.className='tt-track'+(_twinTakeover?' on':'');}
   if(label){label.textContent=_twinTakeover?(LANG==='zh'?'分身代聊中':'Twin chatting'):(LANG==='zh'?'分身代聊':'Twin takeover');}
   // Update server setting
-  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+  fetchTimeout(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
     twin_auto_reply:_twinTakeover?1:0
   })}).then(function(r){return r.json()}).then(function(d){
     if(d.success)toast(_twinTakeover?(LANG==='zh'?'分身接管对话':'Twin takes over'):(LANG==='zh'?'真人模式':'Real mode'));
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
   updateModeTag();
 }
 function syncTwinToggleUI(on){
@@ -2849,9 +2860,9 @@ function openChat(userId,name,friendMode){
     updateTwinStateIndicator('twin_receptionist','✦',LANG==='zh'?'分身接待中':'Twin Active');
   }
   // Sync toggle with server state
-  fetch(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(d.success)syncTwinToggleUI(d.data.twin_auto_reply);
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
   // Update chat header dual-avatar to reflect friend's current mode
   var ca=g('chatAvatar');
   var fm=friendMode||'real';
@@ -2860,8 +2871,8 @@ function openChat(userId,name,friendMode){
   ca.parentNode.replaceChild(newAv,ca);
   updateModeTag();
   var box=g('chatMsgs');
-  box.innerHTML='<div class="empty ts-loading">'+(LANG==='zh'?'加载消息...':'Loading...')+'</div>';
-  fetch(DS_BASE+'/api/social/messages?friend_id='+userId+'&limit=50',{headers:headers()})
+  var skelChat='';for(var si=0;si<4;si++){var align=si%2===0?'align-self:flex-start;max-width:65%':'align-self:flex-end;max-width:55%';skelChat+='<div style="display:flex;'+align+'"><div class="skel" style="height:36px;width:'+(100+si*30)+'px;border-radius:14px;margin:4px 0"></div></div>';}box.innerHTML=skelChat;
+  fetchTimeout(DS_BASE+'/api/social/messages?friend_id='+userId+'&limit=50',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success){box.innerHTML='<div class="empty">'+esc(d.error||t('networkError'))+'</div>';return}
     if(!d.messages.length){box.innerHTML='<div class="empty">'+t('startConversation')+'</div>';return}
@@ -2909,7 +2920,7 @@ function translateMsg(el,msgId){
   var myLang=LANG||'zh';
   var targetLang=myLang==='zh'?'en':'zh';
   el.textContent=t('translating');el.style.opacity='1';
-  fetch(DS_BASE+'/api/social/translate',{method:'POST',headers:headers(),body:JSON.stringify({
+  fetchTimeout(DS_BASE+'/api/social/translate',{method:'POST',headers:headers(),body:JSON.stringify({
     content:content,source_lang:'auto',target_lang:targetLang
   })}).then(function(r){return r.json()}).then(function(d){
     el.textContent='\u{1F310}';el.style.opacity='.6';
@@ -2949,7 +2960,7 @@ function handleAvatarPick(inp){
   var reader=new FileReader();
   reader.onload=function(){
     var b64=reader.result;
-    fetch(DS_BASE+'/api/identity/avatar',{
+    fetchTimeout(DS_BASE+'/api/identity/avatar',{
       method:'POST',headers:Object.assign({'Content-Type':'application/json'},headers()),
       body:JSON.stringify({image:b64,type:_avatarPickType})
     }).then(function(r){return r.json()}).then(function(d){
@@ -3023,7 +3034,7 @@ function generateAiAvatar(){
     reader.onload=function(){
       var b64=reader.result;
       // Call AI generate endpoint
-      fetch(DS_BASE+'/api/identity/avatar/generate',{
+      fetchTimeout(DS_BASE+'/api/identity/avatar/generate',{
         method:'POST',headers:headers(),
         body:JSON.stringify({image:b64,style:_aiAvatarStyle})
       }).then(function(r){return r.json()}).then(function(d){
@@ -3463,7 +3474,7 @@ function chatSendLocation(){
     box.scrollTop=box.scrollHeight;
     // Send as a text message with location prefix
     if(chatFriend&&!chatFriend.is_twin_chat){
-      fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
+      fetchTimeout(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
         to_user_id:chatFriend.user_id,content:locText,sender_mode:'real',receiver_mode:'real'
       })}).then(function(r){return r.json()}).then(function(d){
         if(!d.success)toast(d.error||'Send failed');
@@ -3480,7 +3491,7 @@ function chatSendLocation(){
           if(addr)addr.textContent=geo.display_name.split(',').slice(0,3).join(', ');
         }
       }
-    }).catch(function(){});
+    }).catch(function(){toast(t('networkError'))});
   },function(err){
     toast(LANG==='zh'?'定位失败，请检查权限':'Location failed: '+err.message);
   },{enableHighAccuracy:true,timeout:10000});
@@ -3572,7 +3583,7 @@ function sendMsg(){
   box.innerHTML+='<div class="msg mine">'+myAv+'<div><div class="bubble">'+esc(text)+'</div><div class="msg-time">now</div></div></div>';
   box.scrollTop=box.scrollHeight;
   var sendBtn=g('ciSendBtn');if(sendBtn){sendBtn.disabled=true;sendBtn.style.opacity='0.5'}
-  fetch(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
+  fetchTimeout(DS_BASE+'/api/social/messages/send',{method:'POST',headers:headers(),body:JSON.stringify({
     to_user_id:chatFriend.user_id,content:text,sender_mode:'real',receiver_mode:'real'
   })}).then(function(r){return r.json()}).then(function(d){
     if(sendBtn){sendBtn.disabled=false;sendBtn.style.opacity=''}
@@ -3594,7 +3605,7 @@ function sendMsg(){
 
 // Profile
 function loadProfile(){
-  fetch(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/identity/me',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var p=d.data;
     _profileName=p.display_name||p.username||'';
@@ -3626,11 +3637,11 @@ function loadProfile(){
     populateProfileStyleCards();
     populateProfileTwinStyles();
     loadTwinGrowth();
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function loadTwinGrowth(){
-  fetch(DS_BASE+'/api/identity/twin/growth',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/identity/twin/growth',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var s=d.data;
     var gc=g('gConv');if(gc)gc.textContent=s.total_conversations;
@@ -3639,7 +3650,7 @@ function loadTwinGrowth(){
     var gd=g('gDays');if(gd)gd.textContent=s.days_active;
     var gs=g('gStyle');
     if(gs)gs.innerHTML=s.style_learned?'<span style="color:#4ade80">&#10003; '+t('growthStyleLearned')+'</span>':'<span style="color:var(--tx2)">&#9675; '+t('growthStyleNotLearned')+'</span>';
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function shareTwinCard(){
@@ -3760,7 +3771,7 @@ function updateArToggle(on){
 
 function toggleAutoReply(cb){
   updateArToggle(cb.checked);
-  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+  fetchTimeout(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
     twin_auto_reply:cb.checked?1:0
   })}).then(function(r){return r.json()}).then(function(d){
     if(d.success)toast(cb.checked?'Offline twin activated!':'Offline twin disabled');
@@ -3769,11 +3780,11 @@ function toggleAutoReply(cb){
 }
 
 function saveGender(val){
-  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
+  fetchTimeout(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify({
     gender:val||'unset'
   })}).then(function(r){return r.json()}).then(function(d){
     if(d.success)toast(LANG==='zh'?'性别已更新':'Gender updated');
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 // Twin import from external platforms
@@ -3799,7 +3810,7 @@ function importTwinFile(){
           if(data.entities)payload.entities=data.entities;
         }
         toast(LANG==='zh'?'正在导入...':'Importing...');
-        fetch(DS_BASE+'/api/twin/import',{method:'POST',headers:headers(),body:JSON.stringify({
+        fetchTimeout(DS_BASE+'/api/twin/import',{method:'POST',headers:headers(),body:JSON.stringify({
           source:source,format:'tpf_v1',data:payload
         })}).then(function(r){return r.json()}).then(function(d){
           if(d.success){
@@ -3819,7 +3830,7 @@ function importTwinFile(){
 }
 
 function loadImportStatus(){
-  fetch(DS_BASE+'/api/twin/status',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/twin/status',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var box=g('importStatus');if(!box)return;
     if(d.twin_source==='local'||!d.nianlun_profile){box.style.display='none';return}
@@ -3832,7 +3843,7 @@ function loadImportStatus(){
       '记忆 '+p.memories_count+' 条 | '+
       '实体 '+p.entities_count+' 个<br>'+
       '<span style="font-size:9px">导入于 '+p.imported_at+'</span>';
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function showImportHelp(){
@@ -3860,7 +3871,7 @@ function saveProfile(){
   var s=g('profStyle').value.trim();
   if(p)body.twin_personality=p;
   if(s)body.twin_speech_style=s;
-  fetch(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify(body)})
+  fetchTimeout(DS_BASE+'/api/identity/profile',{method:'PUT',headers:headers(),body:JSON.stringify(body)})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)toast('Twin settings saved!');else toast(d.error||'Failed');
   }).catch(function(){toast(t('networkError'))});
@@ -3868,7 +3879,7 @@ function saveProfile(){
 
 // ========== Style Learning ==========
 function checkLearnStatus(){
-  fetch(DS_BASE+'/api/identity/twin/learn/status',{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/identity/twin/learn/status',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(!d.success)return;
     var el=g('learnStatus');
@@ -3885,14 +3896,14 @@ function checkLearnStatus(){
     if(btn)btn.disabled=!d.ready;
     if(btn&&!d.ready){btn.style.opacity='0.5';btn.style.cursor='not-allowed'}
     else if(btn){btn.style.opacity='1';btn.style.cursor='pointer'}
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 function learnStyle(){
   var btn=g('learnBtn');
   var resultDiv=g('learnResult');
   if(btn){btn.disabled=true;btn.textContent=t('learnLoading')}
   if(resultDiv)resultDiv.style.display='none';
-  fetch(DS_BASE+'/api/identity/twin/learn',{method:'POST',headers:headers()})
+  fetchTimeout(DS_BASE+'/api/identity/twin/learn',{method:'POST',headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(btn){btn.disabled=false;btn.textContent=t('learnBtn')}
     if(!d.success){
@@ -3919,7 +3930,7 @@ function learnStyle(){
   });
 }
 function applyLearnedStyle(){
-  fetch(DS_BASE+'/api/identity/twin/learn/apply',{method:'POST',headers:headers()})
+  fetchTimeout(DS_BASE+'/api/identity/twin/learn/apply',{method:'POST',headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){
       toast(t('learnApplied'));
@@ -3963,10 +3974,10 @@ function checkInviteParam(){
   var inviter=params.get('invite');
   if(inviter&&token){
     // Auto-add inviter as friend (skip pending, directly accepted)
-    fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:inviter,auto_accept:true})})
+    fetchTimeout(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:inviter,auto_accept:true})})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success)toast(LANG==='zh'?'已自动添加 '+inviter+' 为好友！':'Auto-added '+inviter+' as friend!');
-    }).catch(function(){});
+    }).catch(function(){toast(t('networkError'))});
     // Clean up URL
     if(history.replaceState){history.replaceState(null,'',location.pathname)}
   }
@@ -4008,7 +4019,7 @@ function openShareModal(){
   document.body.appendChild(overlay);
 
   // Fetch username fresh, then load AI text with link
-  fetch(DS_BASE+'/api/identity/me',{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/identity/me',{headers:headers()})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success&&d.data&&d.data.username)_profileUsername=d.data.username;
       var link=getInviteLink();
@@ -4048,7 +4059,7 @@ function quickCopyInvite(){
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     // Load AI text then fill preview
-    fetch(DS_BASE+'/api/invite/generate-text?platform=wechat',{headers:headers()})
+    fetchTimeout(DS_BASE+'/api/invite/generate-text?platform=wechat',{headers:headers()})
       .then(function(r){return r.json()}).then(function(d){
         var txt=(d.success?d.text:'真人+AI分身，第四种社交。你不在时它替你聊，跨语言自动翻，说话像你本人～')+'\n\n'+link;
         var el=document.getElementById('inviteFullPreview');if(el)el.textContent=txt;
@@ -4062,7 +4073,7 @@ function quickCopyInvite(){
       });
   };
   if(_profileUsername){doInvite(getInviteLink());return;}
-  fetch(DS_BASE+'/api/identity/me',{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/identity/me',{headers:headers()})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success&&d.data&&d.data.username)_profileUsername=d.data.username;
       doInvite(getInviteLink());
@@ -4072,7 +4083,7 @@ function quickCopyInvite(){
 var _shareText='';
 function _loadShareText(platform, link){
   var invLink=link||getInviteLink();
-  fetch(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     var txt=(d.success?d.text:(LANG==='zh'?'我在DualSoul上有个AI数字分身，来试试！':'I have an AI twin on DualSoul, try it!'));
     _shareText=txt;
@@ -4090,7 +4101,7 @@ function _loadShareText(platform, link){
   });
 }
 function _loadShareStats(){
-  fetch(DS_BASE+'/api/invite/stats',{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/invite/stats',{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){
       var el=g('shareStats');
@@ -4101,7 +4112,7 @@ function _loadShareStats(){
           'You\'ve invited <b>'+cnt+'</b> friend'+(cnt!==1?'s':''));
       }
     }
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 function shareVia(channel){
   var link=getInviteLink();
@@ -4111,7 +4122,7 @@ function shareVia(channel){
   if(channel==='copy'||channel==='wechat'||channel==='weibo'||channel==='sms'){
     // For wechat/weibo/sms: regenerate text for that platform, then copy
     if(channel!=='copy'){
-      fetch(DS_BASE+'/api/invite/generate-text?platform='+channel,{headers:headers()})
+      fetchTimeout(DS_BASE+'/api/invite/generate-text?platform='+channel,{headers:headers()})
       .then(function(r){return r.json()}).then(function(d){
         var txt=(d.success?d.text:text)+'\n\n'+link;
         _doCopy(txt);
@@ -4204,7 +4215,7 @@ function openTwinTraining(){
   var existing=document.querySelector('.twin-notify-overlay');if(existing)existing.remove();
 
   // Get current life dashboard data
-  fetch(DS_BASE+'/api/life/dashboard',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
+  fetchTimeout(DS_BASE+'/api/life/dashboard',{headers:headers()}).then(function(r){return r.json()}).then(function(d){
     var level=d.success?d.data.level:1;
     var similarity=d.success?d.data.similarity:0;
 
@@ -4242,7 +4253,7 @@ function openTwinTraining(){
       '</div>'+
     '</div>';
     document.body.appendChild(overlay);
-  }).catch(function(){});
+  }).catch(function(){toast(t('networkError'))});
 }
 
 function openTwinPromotion(){
@@ -4308,7 +4319,7 @@ function openTwinPromotion(){
   setTimeout(function(){
     var qc=g('promoQR');if(qc)drawQR(qc,getInviteLink());
     // Load stats
-    fetch(DS_BASE+'/api/invite/stats',{headers:headers()})
+    fetchTimeout(DS_BASE+'/api/invite/stats',{headers:headers()})
     .then(function(r){return r.json()}).then(function(d){
       if(d.success){
         var el=g('promoStats');if(!el)return;
@@ -4329,13 +4340,13 @@ function openTwinPromotion(){
         }
         el.innerHTML=h2;
       }
-    }).catch(function(){});
+    }).catch(function(){toast(t('networkError'))});
   },100);
 }
 
 function generateAndCopyInvite(platform){
   toast(LANG==='zh'?'分身正在写文案...':'Generating...');
-  fetch(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
+  fetchTimeout(DS_BASE+'/api/invite/generate-text?platform='+platform,{headers:headers()})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success){
       var fullText=d.text+'\n\n'+getInviteLink();
@@ -4372,7 +4383,7 @@ function handleFriendDiscovery(data){
   document.body.appendChild(overlay);
 }
 function addDiscoveredFriend(username){
-  fetch(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:username,auto_accept:true})})
+  fetchTimeout(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:username,auto_accept:true})})
   .then(function(r){return r.json()}).then(function(d){
     if(d.success)toast(LANG==='zh'?'已添加好友！':'Friend added!');
     else toast(d.error||'Failed');

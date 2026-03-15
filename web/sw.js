@@ -1,5 +1,5 @@
 // DualSoul Service Worker — offline shell + cache
-const CACHE_NAME = 'dualsoul-v43';
+const CACHE_NAME = 'dualsoul-v44';
 const SHELL_URLS = ['/', '/static/manifest.json'];
 
 // Install: cache the app shell
@@ -26,7 +26,18 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET requests and WebSocket
   if (event.request.method !== 'GET') return;
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws')) return;
+  if (url.pathname.startsWith('/ws')) return;
+
+  // API requests: network-only with offline JSON fallback
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        new Response(JSON.stringify({success: false, error: 'offline'}),
+          {status: 503, headers: {'Content-Type': 'application/json'}})
+      )
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
