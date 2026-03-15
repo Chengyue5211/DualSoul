@@ -90,6 +90,24 @@ def main():
     print(f"Saved:     {orig_size - min_size:>8,} bytes ({ratio:.1f}%)")
     print(f"Output:    {dst}")
 
+    # Auto-update SW cache version from content hash
+    import hashlib
+
+    sw_path = os.path.join(os.path.dirname(__file__), 'web', 'sw.js')
+    if os.path.exists(sw_path):
+        content_hash = hashlib.md5(minified.encode('utf-8')).hexdigest()[:8]
+        with open(sw_path, 'r', encoding='utf-8') as f:
+            sw_content = f.read()
+        new_sw = re.sub(
+            r"const CACHE_NAME = 'dualsoul-v\w+';",
+            f"const CACHE_NAME = 'dualsoul-v{content_hash}';",
+            sw_content,
+        )
+        if new_sw != sw_content:
+            with open(sw_path, 'w', encoding='utf-8') as f:
+                f.write(new_sw)
+            print(f"SW cache:  dualsoul-v{content_hash}")
+
 
 if __name__ == '__main__':
     main()

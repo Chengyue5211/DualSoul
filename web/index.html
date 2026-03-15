@@ -958,6 +958,18 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 <script>
 var DS_BASE=location.pathname.indexOf('/ds')===0?'/ds':'';
 function fetchTimeout(url,opts,ms){ms=ms||8000;var ctrl=new AbortController();opts=opts||{};opts.signal=ctrl.signal;var timer=setTimeout(function(){ctrl.abort()},ms);return fetch(url,opts).finally(function(){clearTimeout(timer)})}
+window.addEventListener('error',function(e){
+  try{
+    var msg=e.message||'';var file=(e.filename||'').split('/').pop();var line=e.lineno||0;
+    navigator.sendBeacon(DS_BASE+'/api/log/error',JSON.stringify({error:msg,file:file,line:line,ua:navigator.userAgent.slice(0,100)}));
+  }catch(x){}
+});
+window.addEventListener('unhandledrejection',function(e){
+  try{
+    var msg=e.reason?String(e.reason).slice(0,200):'unknown';
+    navigator.sendBeacon(DS_BASE+'/api/log/error',JSON.stringify({error:'Promise: '+msg,ua:navigator.userAgent.slice(0,100)}));
+  }catch(x){}
+});
 var API='';
 var token='';
 var myId='';
@@ -1217,16 +1229,20 @@ function showTwinNotify(nd){
   var content=nd.content||'';
   var overlay=document.createElement('div');
   overlay.className='twin-notify-overlay';
+  overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','tn-title');
   overlay.innerHTML='<div class="twin-notify-card">'+
     '<div class="tn-icon">👻</div>'+
-    '<div class="tn-title">'+(LANG==='zh'?'你的分身替你回了消息':'Your twin replied for you')+'</div>'+
+    '<div class="tn-title" id="tn-title">'+(LANG==='zh'?'你的分身替你回了消息':'Your twin replied for you')+'</div>'+
     '<div class="tn-body" style="max-height:40vh;overflow-y:auto">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
     '<div class="tn-btns">'+
       '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'知道了':'OK')+'</button>'+
       (friendId?'<button class="tn-go" onclick="goTwinNotifyChat(\''+esc(friendId)+'\',\''+esc(friendName)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'查看对话':'View Chat')+'</button>':'')+
     '</div>'+
   '</div>';
+  overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
+  overlay.tabIndex=-1;
   document.body.appendChild(overlay);
+  overlay.focus();
   if(navigator.vibrate)navigator.vibrate(200);
 }
 
@@ -1258,16 +1274,20 @@ function showDailyReport(nd){
 
   var overlay=document.createElement('div');
   overlay.className='twin-notify-overlay';
+  overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','tn-title');
   overlay.innerHTML='<div class="twin-notify-card" style="max-width:340px">'+
     '<div style="text-align:center;margin-bottom:8px"><span style="font-size:28px">\u2600\uFE0F</span></div>'+
-    '<div class="tn-title" style="font-size:14px">'+(LANG==='zh'?'分身日报':'Daily Report')+'</div>'+
+    '<div class="tn-title" id="tn-title" style="font-size:14px">'+(LANG==='zh'?'分身日报':'Daily Report')+'</div>'+
     '<div class="tn-body" style="max-height:40vh;overflow-y:auto;line-height:1.8;font-size:13px">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
     coldHtml+
     '<div class="tn-btns">'+
       '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'收到！':'Got it!')+'</button>'+
     '</div>'+
   '</div>';
+  overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
+  overlay.tabIndex=-1;
   document.body.appendChild(overlay);
+  overlay.focus();
   if(navigator.vibrate)navigator.vibrate([100,50,100]);
   // Refresh life dashboard after receiving daily report
   loadLifeDashboard();
@@ -2030,10 +2050,11 @@ function showTrialResult(data){
 
   var overlay=document.createElement('div');
   overlay.className='twin-notify-overlay';
+  overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','tn-title');
   overlay.innerHTML=
     '<div class="twin-notify-card" style="max-width:380px;width:90%">'+
     '<div class="tn-icon">🤝</div>'+
-    '<div class="tn-title">'+(LANG==='zh'?'试聊结果':'Trial Chat Result')+'</div>'+
+    '<div class="tn-title" id="tn-title">'+(LANG==='zh'?'试聊结果':'Trial Chat Result')+'</div>'+
     '<div style="text-align:center;margin-bottom:12px">'+
       '<div style="font-size:32px;font-weight:800;color:'+scoreColor+'">'+scorePct+'%</div>'+
       '<div style="font-size:11px;color:'+scoreColor+'">'+scoreLabel+'</div>'+
@@ -2043,7 +2064,10 @@ function showTrialResult(data){
       (score>=0.4&&otherUsername?'<button class="tn-go" onclick="addDiscoveredFriend(\''+esc(otherUsername)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>':'')+
       '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'关闭':'Close')+'</button>'+
     '</div></div>';
+  overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
+  overlay.tabIndex=-1;
   document.body.appendChild(overlay);
+  overlay.focus();
 }
 
 function plazaLoadTrials(){
@@ -3557,9 +3581,13 @@ function sendFavItem(favId){
 // Image preview — tap to view full screen, tap again to close
 function previewImg(src){
   var ov=document.createElement('div');ov.className='img-preview-overlay';
+  ov.setAttribute('role','dialog');
   ov.innerHTML='<img src="'+src+'">';
   ov.onclick=function(){ov.remove()};
+  ov.addEventListener('keydown',function(e){if(e.key==='Escape')ov.remove()});
+  ov.tabIndex=-1;
   document.body.appendChild(ov);
+  ov.focus();
 }
 
 function sendFileMsg(file,type){
@@ -3999,7 +4027,10 @@ function openShareModal(){
 
   var overlay=document.createElement('div');
   overlay.className='share-modal-overlay';
+  overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
+  overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
+  overlay.tabIndex=-1;
 
   var modal=document.createElement('div');
   modal.className='share-modal';
@@ -4027,6 +4058,7 @@ function openShareModal(){
 
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
+  overlay.focus();
 
   // Fetch username fresh, then load AI text with link
   fetchTimeout(DS_BASE+'/api/identity/me',{headers:headers()})
@@ -4055,7 +4087,10 @@ function quickCopyInvite(){
     var old=document.querySelector('.share-modal-overlay');if(old)old.remove();
     var overlay=document.createElement('div');
     overlay.className='share-modal-overlay';
+    overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
     overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
+    overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
+    overlay.tabIndex=-1;
     var modal=document.createElement('div');
     modal.className='share-modal';
     modal.innerHTML=
@@ -4068,6 +4103,7 @@ function quickCopyInvite(){
       '<button class="sm-cancel" style="margin-top:6px" onclick="this.closest(\'.share-modal-overlay\').remove()">'+(LANG==='zh'?'关闭':'Close')+'</button>';
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    overlay.focus();
     // Load AI text then fill preview
     fetchTimeout(DS_BASE+'/api/invite/generate-text?platform=wechat',{headers:headers()})
       .then(function(r){return r.json()}).then(function(d){
@@ -4231,11 +4267,12 @@ function openTwinTraining(){
 
     var overlay=document.createElement('div');
     overlay.className='twin-notify-overlay';
+    overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','tn-title');
     overlay.style.alignItems='flex-start';
     overlay.style.paddingTop='40px';
     overlay.innerHTML='<div class="twin-notify-card" style="max-width:360px;text-align:left">'+
       '<div style="text-align:center;margin-bottom:12px"><span style="font-size:36px">\uD83E\uDDD2</span></div>'+
-      '<div class="tn-title" style="font-size:16px;text-align:center">'+(LANG==='zh'?'让分身更像你':'Make Your Twin More Like You')+'</div>'+
+      '<div class="tn-title" id="tn-title" style="font-size:16px;text-align:center">'+(LANG==='zh'?'让分身更像你':'Make Your Twin More Like You')+'</div>'+
       '<div style="margin:14px 0;padding:12px;background:var(--bg3);border-radius:10px;text-align:center">'+
         '<div style="font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'当前相似度':'Current similarity')+'</div>'+
         '<div style="font-size:28px;font-weight:900;color:var(--ac2)">'+similarity+'%</div>'+
@@ -4262,7 +4299,10 @@ function openTwinTraining(){
         '<button onclick="openTwinChat();this.closest(\'.twin-notify-overlay\').remove()" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'先和分身聊聊':'Chat with Twin')+'</button>'+
       '</div>'+
     '</div>';
+    overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
+    overlay.tabIndex=-1;
     document.body.appendChild(overlay);
+    overlay.focus();
   }).catch(function(){toast(t('networkError'))});
 }
 
@@ -4381,16 +4421,20 @@ function handleFriendDiscovery(data){
   if(!data||!data.suggested_username)return;
   var overlay=document.createElement('div');
   overlay.className='twin-notify-overlay';
+  overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','tn-title');
   overlay.innerHTML=
     '<div class="twin-notify-card">'+
     '<div class="tn-icon">🔍</div>'+
-    '<div class="tn-title">'+(LANG==='zh'?'分身发现了新朋友':'Twin Found a Friend')+'</div>'+
+    '<div class="tn-title" id="tn-title">'+(LANG==='zh'?'分身发现了新朋友':'Twin Found a Friend')+'</div>'+
     '<div class="tn-body">'+esc(data.content||'')+'</div>'+
     '<div class="tn-btns">'+
       '<button class="tn-go" onclick="addDiscoveredFriend(\''+esc(data.suggested_username)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>'+
       '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'以后再说':'Later')+'</button>'+
     '</div></div>';
+  overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
+  overlay.tabIndex=-1;
   document.body.appendChild(overlay);
+  overlay.focus();
 }
 function addDiscoveredFriend(username){
   fetchTimeout(DS_BASE+'/api/social/friends/add',{method:'POST',headers:headers(),body:JSON.stringify({friend_username:username,auto_accept:true})})

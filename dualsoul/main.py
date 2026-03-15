@@ -167,6 +167,18 @@ document.getElementById('content').innerHTML = marked.parse(md);
 </html>""")
 
 
+@app.post("/api/log/error")
+async def log_client_error(request: Request):
+    """Receive frontend error reports (best-effort, no auth required)."""
+    try:
+        body = await request.body()
+        data = json.loads(body)
+        logger.warning(f"[ClientError] {data.get('error', '')} | {data.get('file', '')}:{data.get('line', '')} | {data.get('ua', '')[:80]}")
+    except Exception:
+        pass
+    return {"ok": True}
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "version": __version__}
