@@ -60,7 +60,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")):
 
     try:
         user = verify_token(token)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"WS token validation failed: {e}")
         await websocket.close(code=4001, reason="Invalid token")
         return
 
@@ -82,7 +83,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")):
             try:
                 import json
                 msg = json.loads(data)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"WS JSON parse failed: {e}")
                 continue
 
             msg_type = msg.get("type", "")

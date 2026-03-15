@@ -294,6 +294,7 @@ CREATE INDEX IF NOT EXISTS idx_rb_user_b ON relationship_bodies(user_b);
 MIGRATIONS_V2 = [
     "ALTER TABLE social_messages ADD COLUMN source_type TEXT DEFAULT 'human_live'",
     "ALTER TABLE social_connections ADD COLUMN twin_permission TEXT DEFAULT 'pending'",
+    "ALTER TABLE users ADD COLUMN token_gen INTEGER DEFAULT 0",
 ]
 
 # Schema V4b — Migrate twin_life stage to new 5-stage system
@@ -416,7 +417,7 @@ def get_db():
     try:
         yield conn
         conn.commit()
-    except Exception:
+    except Exception:  # re-raised — rollback is cleanup only
         conn.rollback()
         raise
     finally:

@@ -756,8 +756,8 @@ async def _notify_owner_twin_replied(owner_id: str, friend_id: str, friend_msg: 
                 "created_at": now,
             },
         })
-    except Exception:
-        pass  # Notification is best-effort
+    except Exception as e:
+        logger.debug(f"Best-effort notification failed: {e}")  # Notification is best-effort
 
 
 async def _auto_detect_and_push_translation(recipient_id: str, content: str, for_msg_id: str):
@@ -776,5 +776,5 @@ async def _auto_detect_and_push_translation(recipient_id: str, content: str, for
                     "translated_content": result["translated_content"],
                 },
             })
-    except Exception:
-        pass  # Auto-detection is best-effort
+    except Exception as e:
+        logger.debug(f"Auto language detection/translation failed: {e}")  # Auto-detection is best-effort

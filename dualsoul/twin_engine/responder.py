@@ -288,8 +288,8 @@ class TwinResponder:
                 if cold:
                     fname, days = cold[0]
                     reply_text += f"\n\n对了，你已经{days}天没跟{fname}聊了，要不要我帮你打个招呼？"
-            except Exception:
-                pass  # Best-effort, don't break main reply
+            except Exception as e:
+                logger.debug(f"Cold friends check failed: {e}")  # Best-effort, don't break main reply
 
         return reply_text
 
@@ -638,8 +638,8 @@ class TwinResponder:
                             "created_at": now,
                         },
                     })
-            except Exception:
-                pass  # Twin reply is best-effort
+            except Exception as e:
+                logger.debug(f"Twin auto-reply notification failed: {e}")  # Twin reply is best-effort
 
         return confirm
 
@@ -879,8 +879,8 @@ class TwinResponder:
                         f"\n注意：对方的情绪是「{emo['emotion']}」(强度{emo['intensity']:.1f})。"
                         f"{emo['suggestion']}\n"
                     )
-            except Exception:
-                pass  # Emotion detection is best-effort
+            except Exception as e:
+                logger.debug(f"Emotion detection failed: {e}")  # Emotion detection is best-effort
 
             # When auto-replying for owner, use minimal prompt with pattern + examples
             system_prompt = (

@@ -747,7 +747,8 @@ async def _send_daily_report_for_user(uid: str, name: str, user: dict):
                     },
                 )
                 report = resp.json()["choices"][0]["message"]["content"].strip()
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to generate daily report via AI: {e}")
             report = None
     else:
         report = None
@@ -956,7 +957,8 @@ async def detect_emotion(content: str) -> dict:
                 },
             )
             raw = resp.json()["choices"][0]["message"]["content"].strip()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Emotion detection failed: {e}")
         return {"emotion": "neutral", "intensity": 0.5, "suggestion": ""}
 
     # Parse: EMOTION:happy INTENSITY:0.8 SUGGESTION:share the joy

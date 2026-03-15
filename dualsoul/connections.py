@@ -23,8 +23,8 @@ class ConnectionManager:
         if old:
             try:
                 await old.close(code=4000, reason="Replaced by new connection")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Old WS close failed for {user_id}: {e}")
         self._connections[user_id] = websocket
         self._last_active[user_id] = datetime.now()
         logger.info(f"WS connected: {user_id} (total: {len(self._connections)})")
@@ -54,7 +54,8 @@ class ConnectionManager:
         try:
             await ws.send_json(data)
             return True
-        except Exception:
+        except Exception as e:
+            logger.debug(f"WS send failed for {user_id}: {e}")
             self.disconnect(user_id)
             return False
 

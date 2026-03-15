@@ -230,12 +230,12 @@ def get_relationship_summary(uid: str, fid: str) -> dict:
     shared_words = []
     try:
         milestones = json.loads(rel.get("milestones") or "[]")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Failed to parse milestones JSON: {e}")
     try:
         shared_words = json.loads(rel.get("shared_words") or "[]")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Failed to parse shared_words JSON: {e}")
 
     temp = rel.get("temperature", 50.0)
     temp_status = (

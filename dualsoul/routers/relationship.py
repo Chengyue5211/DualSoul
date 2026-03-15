@@ -145,7 +145,8 @@ async def add_manual_milestone(
 
     try:
         existing = json.loads(rel.get("milestones") or "[]")
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to parse milestones JSON: {e}")
         existing = []
 
     # Prevent duplicate labels

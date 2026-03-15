@@ -427,7 +427,8 @@ async def _generate_twin_comment(user_id: str, post_content: str) -> str | None:
                 json={"model": AI_MODEL, "max_tokens": 40, "messages": [{"role": "user", "content": prompt}]},
             )
             return resp.json()["choices"][0]["message"]["content"].strip()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"AI compatibility summary generation failed: {e}")
         return None
 
 
@@ -574,7 +575,8 @@ async def _score_compatibility(name_a, name_b, profile_a, profile_b, messages) -
                 except ValueError:
                     continue
             return 0.5
-    except Exception:
+    except Exception as e:
+        logger.warning(f"AI compatibility scoring failed: {e}")
         return 0.5
 
 
