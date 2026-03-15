@@ -295,6 +295,10 @@ MIGRATIONS_V2 = [
     "ALTER TABLE social_messages ADD COLUMN source_type TEXT DEFAULT 'human_live'",
     "ALTER TABLE social_connections ADD COLUMN twin_permission TEXT DEFAULT 'pending'",
     "ALTER TABLE users ADD COLUMN token_gen INTEGER DEFAULT 0",
+    # Narrative memory columns
+    "ALTER TABLE twin_memories ADD COLUMN friend_id TEXT DEFAULT ''",
+    "ALTER TABLE twin_memories ADD COLUMN message_count INTEGER DEFAULT 0",
+    "ALTER TABLE twin_memories ADD COLUMN relationship_signal TEXT DEFAULT ''",
 ]
 
 # Schema V4b — Migrate twin_life stage to new 5-stage system
@@ -403,6 +407,40 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_sc_user ON social_connections(user_id, status);
             CREATE INDEX IF NOT EXISTS idx_sc_friend ON social_connections(friend_id, status);
         """)
+    # Narrative memory: expand twin_memories CHECK constraint to include 'conversation'
+    try:
+        conn.execute("INSERT INTO twin_memories (memory_id,user_id,memory_type,period_start,period_end,summary_text) VALUES ('__test__','__test__','conversation','','','')")
+        conn.execute("DELETE FROM twin_memories WHERE memory_id='__test__'")
+    except sqlite3.IntegrityError:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS twin_memories_new (
+                memory_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                memory_type TEXT NOT NULL
+                    CHECK(memory_type IN ('conversation','daily','weekly','monthly','quarterly','yearly')),
+                period_start TEXT NOT NULL,
+                period_end TEXT NOT NULL,
+                summary_text TEXT NOT NULL,
+                emotional_tone TEXT DEFAULT '',
+                themes TEXT DEFAULT '',
+                key_events TEXT DEFAULT '',
+                growth_signals TEXT DEFAULT '',
+                source TEXT DEFAULT 'nianlun',
+                imported_at TEXT DEFAULT (datetime('now','localtime')),
+                friend_id TEXT DEFAULT '',
+                message_count INTEGER DEFAULT 0,
+                relationship_signal TEXT DEFAULT ''
+            );
+            INSERT OR IGNORE INTO twin_memories_new
+                SELECT memory_id, user_id, memory_type, period_start, period_end,
+                       summary_text, emotional_tone, themes, key_events, growth_signals,
+                       source, imported_at,
+                       COALESCE(friend_id,''), COALESCE(message_count,0), COALESCE(relationship_signal,'')
+                FROM twin_memories;
+            DROP TABLE twin_memories;
+            ALTER TABLE twin_memories_new RENAME TO twin_memories;
+        """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_tm_user_friend ON twin_memories(user_id, friend_id, period_end DESC)")
     conn.commit()
     conn.close()
 

@@ -904,6 +904,22 @@ class TwinResponder:
                 f"{lang_instruction}"
             )
 
+        # Inject narrative memory — past conversation summaries
+        if from_user_id:
+            try:
+                from dualsoul.twin_engine.narrative_memory import get_narrative_context
+                memories = get_narrative_context(profile.user_id, from_user_id, limit=3)
+                if memories:
+                    mem_lines = "\n".join(
+                        f"- {m['summary']} ({m['tone']})" for m in memories
+                    )
+                    system_prompt += (
+                        f"\n\n[你和对方的过往记忆]\n{mem_lines}\n"
+                        f"请自然地在对话中体现你记得这些内容，不要生硬地复述。"
+                    )
+            except Exception as e:
+                logger.debug(f"Narrative memory load failed: {e}")
+
         # Build messages with conversation history
         messages = [{"role": "system", "content": system_prompt}]
 

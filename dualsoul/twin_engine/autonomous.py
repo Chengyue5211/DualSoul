@@ -56,6 +56,12 @@ async def autonomous_social_loop():
         except Exception as e:
             logger.error(f"[Autonomous] Error in round: {e}", exc_info=True)
 
+        # Narrative memory: summarize completed conversations
+        try:
+            await _summarize_pending_conversations()
+        except Exception as e:
+            logger.error(f"[NarrativeMemory] Summarization error: {e}", exc_info=True)
+
         # Decay energy/mood for inactive twins every cycle
         # Run in executor so synchronous DB call doesn't block the event loop
         try:
@@ -76,6 +82,17 @@ async def autonomous_social_loop():
                         (today_str,)
                     ).fetchone()
                 if not _sent:
+                    # Rollup yesterday's narrative memories before generating report
+                    try:
+                        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+                        from dualsoul.twin_engine.narrative_memory import rollup_daily, cleanup_old_memories
+                        with get_db() as _rdb:
+                            _users = _rdb.execute("SELECT user_id FROM users WHERE twin_auto_reply=1").fetchall()
+                        for _u in _users:
+                            await rollup_daily(_u["user_id"], yesterday)
+                        cleanup_old_memories(30)
+                    except Exception as e:
+                        logger.error(f"[NarrativeMemory] Rollup error: {e}", exc_info=True)
                     await _generate_daily_report()
             except Exception as e:
                 logger.error(f"[DailyReport] Error: {e}", exc_info=True)
@@ -100,6 +117,33 @@ async def autonomous_social_loop():
                 logger.error(f"[RelationshipMemory] Error: {e}", exc_info=True)
 
         await asyncio.sleep(CHECK_INTERVAL)
+
+
+async def _summarize_pending_conversations():
+    """Scan active users and summarize conversation segments that ended 10+ min ago."""
+    from dualsoul.twin_engine.narrative_memory import (
+        find_unsummarized_conversations, summarize_conversation,
+    )
+
+    with get_db() as db:
+        users = db.execute(
+            "SELECT user_id FROM users WHERE twin_auto_reply=1"
+        ).fetchall()
+
+    total = 0
+    for user in users:
+        uid = user["user_id"]
+        try:
+            segments = find_unsummarized_conversations(uid)
+            for seg in segments[:5]:  # Max 5 per user per cycle
+                result = await summarize_conversation(uid, seg["friend_id"], seg["messages"])
+                if result:
+                    total += 1
+        except Exception as e:
+            logger.warning(f"[NarrativeMemory] Error for {uid}: {e}")
+
+    if total:
+        logger.info(f"[NarrativeMemory] Summarized {total} conversation segments")
 
 
 async def _run_autonomous_round():
@@ -854,16 +898,25 @@ async def _warm_cold_relationships():
             if care_permission != "granted":
                 continue
 
-            # Generate a natural warm-up message
+            # Generate a natural warm-up message with narrative memory
             owner_profile = get_twin_profile(uid)
             if not owner_profile:
                 continue
+            memory_hint = ""
+            try:
+                from dualsoul.twin_engine.narrative_memory import get_narrative_context
+                memories = get_narrative_context(uid, fid, limit=1)
+                if memories:
+                    memory_hint = f"\n你们上次聊的是：{memories[0]['summary']}\n可以自然地接上之前的话题。"
+            except Exception:
+                pass
             greeting = await _twin._ai_reply(
                 owner_profile,
                 (
                     f"你是{name}的分身。你发现主人和好友{friend_name}已经好久没聊天了，"
                     f"关系在冷却中。请用主人的风格，给{friend_name}发一条自然的问候消息，"
                     f"比如关心对方近况、聊点轻松话题。只说一句话，自然随意，不要刻意。"
+                    f"{memory_hint}"
                 ),
                 "twin",
             )
