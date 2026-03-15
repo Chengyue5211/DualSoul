@@ -188,6 +188,176 @@ async def on_friend_online(data):
         break  # Only one greeting per online event
 
 
+@on("self_online")
+async def on_self_online(data):
+    """When user comes online, their twin IMMEDIATELY does something visible.
+
+    This is the #1 most important handler for making the twin feel alive.
+    The user opens the app → within 5 seconds → sees their twin in action.
+    """
+    user_id = data["user_id"]
+
+    # Check twin is enabled
+    with get_db() as db:
+        user = db.execute(
+            "SELECT user_id, display_name, username, twin_auto_reply, twin_personality "
+            "FROM users WHERE user_id=?",
+            (user_id,),
+        ).fetchone()
+    if not user or not user["twin_auto_reply"] or not user["twin_personality"]:
+        return
+
+    name = user["display_name"] or user["username"]
+
+    # Wait 5 seconds for the app to finish loading
+    await asyncio.sleep(5)
+
+    # Re-check still online
+    if not manager.is_online(user_id):
+        return
+
+    # Find a friend to reach out to (haven't chatted in 8+ hours)
+    with get_db() as db:
+        friend = db.execute(
+            """SELECT u.user_id, u.display_name, u.username
+               FROM social_connections sc
+               JOIN users u ON u.user_id = CASE
+                   WHEN sc.user_id=? THEN sc.friend_id ELSE sc.user_id END
+               WHERE (sc.user_id=? OR sc.friend_id=?) AND sc.status='accepted'
+                 AND u.user_id NOT IN (
+                     SELECT CASE WHEN from_user_id=? THEN to_user_id ELSE from_user_id END
+                     FROM social_messages
+                     WHERE (from_user_id=? OR to_user_id=?)
+                       AND from_user_id!=to_user_id
+                       AND created_at > datetime('now','localtime','-8 hours')
+                 )
+               ORDER BY RANDOM() LIMIT 1""",
+            (user_id, user_id, user_id, user_id, user_id, user_id),
+        ).fetchone()
+
+    if not friend:
+        # No friends to greet — try commenting on a plaza post instead
+        with get_db() as db:
+            recent_post = db.execute(
+                """SELECT post_id, user_id, content FROM plaza_posts
+                   WHERE user_id!=? AND created_at > datetime('now','localtime','-24 hours')
+                   ORDER BY created_at DESC LIMIT 1""",
+                (user_id,),
+            ).fetchone()
+
+        if recent_post:
+            from dualsoul.twin_engine.personality import get_twin_profile
+            profile = get_twin_profile(user_id)
+            if profile:
+                twin = get_twin_responder()
+                comment = await twin._ai_reply(
+                    profile,
+                    f"你的看到广场上有人发了：\"{recent_post['content'][:80]}\"\n用{name}的风格写一条简短评论。只输出评论内容。",
+                    "twin",
+                )
+                if comment:
+                    comment_id = gen_id("pc_")
+                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    with get_db() as db:
+                        db.execute(
+                            """INSERT INTO plaza_comments
+                               (comment_id, post_id, user_id, content, metadata, created_at)
+                               VALUES (?, ?, ?, ?, '{"auto_comment":true,"on_login":true}', ?)""",
+                            (comment_id, recent_post["post_id"], user_id, comment, now_str),
+                        )
+                        db.execute("UPDATE plaza_posts SET comment_count=comment_count+1 WHERE post_id=?",
+                                   (recent_post["post_id"],))
+
+                    # Notify user their twin did something
+                    await manager.send_to(user_id, {
+                        "type": "twin_notification",
+                        "data": {
+                            "title": "👻 " + (name + "的分身"),
+                            "body": "刚在广场评论了一条动态：" + comment[:30],
+                            "icon": "💬",
+                        },
+                    })
+                    logger.info(f"[SelfOnline] {name}'s twin commented on plaza (login action)")
+        return
+
+    fid = friend["user_id"]
+    friend_name = friend["display_name"] or friend["username"]
+
+    # Check permission
+    from dualsoul.twin_engine.autonomous import _check_twin_permission
+    if _check_twin_permission(user_id, fid) != "granted":
+        return
+
+    # Generate greeting with narrative memory
+    from dualsoul.twin_engine.personality import get_twin_profile
+    profile = get_twin_profile(user_id)
+    if not profile:
+        return
+
+    memory_hint = ""
+    try:
+        from dualsoul.twin_engine.narrative_memory import get_narrative_context
+        memories = get_narrative_context(user_id, fid, limit=1)
+        if memories:
+            memory_hint = f"\n你们上次聊的是：{memories[0]['summary']}。可以自然地接上话题。"
+    except Exception:
+        pass
+
+    twin = get_twin_responder()
+    greeting = await twin._ai_reply(
+        profile,
+        (
+            f"你是{name}的分身。主人刚上线，你想跟好友{friend_name}打个招呼。"
+            f"用主人的风格，自然地发一条消息。只说一句话。{memory_hint}"
+        ),
+        "twin",
+    )
+    if not greeting:
+        return
+
+    from dualsoul.twin_engine.ethics import pre_send_check
+    check = pre_send_check(user_id, greeting, action_type="greeting")
+    if not check["allowed"]:
+        return
+
+    msg_id = gen_id("sm_")
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    meta = json.dumps({"proactive_greeting": True, "trigger": "self_online"})
+
+    with get_db() as db:
+        db.execute(
+            """INSERT INTO social_messages
+               (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                content, msg_type, ai_generated, auto_reply, metadata, created_at)
+               VALUES (?, ?, ?, 'twin', 'twin', ?, 'text', 1, 0, ?, ?)""",
+            (msg_id, user_id, fid, greeting, meta, now_str),
+        )
+
+    # Push to user — they SEE their twin greeting someone
+    await manager.send_to(user_id, {
+        "type": "new_message",
+        "data": {"msg_id": msg_id, "from_user_id": user_id, "to_user_id": fid,
+                 "content": greeting, "sender_mode": "twin", "ai_generated": True, "created_at": now_str},
+    })
+    await manager.send_to(fid, {
+        "type": "new_message",
+        "data": {"msg_id": msg_id, "from_user_id": user_id, "to_user_id": fid,
+                 "content": greeting, "sender_mode": "twin", "ai_generated": True, "created_at": now_str},
+    })
+
+    # Also notify user that their twin did something
+    await manager.send_to(user_id, {
+        "type": "twin_notification",
+        "data": {
+            "title": "👻 " + (name + "的分身"),
+            "body": "刚给" + friend_name + "打了招呼：" + greeting[:30],
+            "icon": "💬",
+        },
+    })
+
+    logger.info(f"[SelfOnline] {name}'s twin greeted {friend_name} (login action)")
+
+
 @on("friend_offline")
 async def on_friend_offline(data):
     """When a user goes offline, schedule a 2h check for autonomous twin chat."""

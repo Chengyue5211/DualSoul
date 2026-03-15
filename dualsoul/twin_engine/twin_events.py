@@ -26,6 +26,7 @@ _debounce_tasks: dict[tuple[str, str], asyncio.Task] = {}
 DEBOUNCE_WINDOWS: dict[str, float] = {
     "message_sent": 10.0,
     "friend_online": 5.0,
+    "self_online": 300.0,  # 5 min debounce — don't trigger on every reconnect
     "relationship_temp_changed": 60.0,
 }
 

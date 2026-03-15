@@ -72,6 +72,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")):
     await _broadcast_twin_state(user_id, TwinState.HUMAN_ACTIVE)
     from dualsoul.twin_engine.twin_events import emit
     emit("friend_online", {"user_id": user_id}, debounce_key=user_id)
+    emit("self_online", {"user_id": user_id}, debounce_key=f"self:{user_id}")
 
     try:
         while True:
