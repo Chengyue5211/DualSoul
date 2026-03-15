@@ -36,14 +36,23 @@ async def register(req: RegisterRequest, request: Request):
             return {"success": False, "error": "Username already taken"}
 
         user_id = gen_id("u_")
+        display_name = req.display_name or username
         inviter_username = (req.invited_by or "").strip()
+
+        # Auto-generate default twin personality so twin can work immediately
+        default_personality = "友善、好奇、真诚"
+        default_style = "自然亲切，简短口语化"
+
         db.execute(
-            "INSERT INTO users (user_id, username, password_hash, display_name, reg_source, invited_by) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (user_id, username, hash_password(req.password), req.display_name or username,
-             req.reg_source or "dualsoul", inviter_username),
+            "INSERT INTO users (user_id, username, password_hash, display_name, "
+            "reg_source, invited_by, twin_personality, twin_speech_style) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (user_id, username, hash_password(req.password), display_name,
+             req.reg_source or "dualsoul", inviter_username,
+             default_personality, default_style),
         )
-        # Increment inviter's invite_count (only if inviter actually exists)
+
+        # Increment inviter's invite_count + auto-add as friends
         if inviter_username:
             inviter = db.execute(
                 "SELECT user_id FROM users WHERE username=?", (inviter_username,)
@@ -53,6 +62,20 @@ async def register(req: RegisterRequest, request: Request):
                     "UPDATE users SET invite_count = invite_count + 1 WHERE username=?",
                     (inviter_username,),
                 )
+                # Auto-add as friends (skip pending, directly accepted)
+                conn_id = gen_id("sc_")
+                from datetime import datetime
+                now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                try:
+                    db.execute(
+                        "INSERT OR IGNORE INTO social_connections "
+                        "(conn_id, user_id, friend_id, status, accepted_at) "
+                        "VALUES (?, ?, ?, 'accepted', ?)",
+                        (conn_id, inviter["user_id"], user_id, now_str),
+                    )
+                except Exception:
+                    pass  # Duplicate connection, safe to ignore
+
                 from dualsoul.twin_engine.twin_events import emit
                 emit("user_registered", {"user_id": user_id, "username": username, "inviter_id": inviter["user_id"]})
 

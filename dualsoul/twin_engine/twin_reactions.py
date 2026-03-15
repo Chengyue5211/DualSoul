@@ -258,27 +258,28 @@ async def on_user_registered(data):
 
 @on("plaza_post_created")
 async def on_plaza_post(data):
-    """When someone posts on plaza, their friends' twins may comment (30% chance)."""
+    """When someone posts on plaza, other twins may comment (60% chance).
+
+    Plaza is a PUBLIC social space — twins comment regardless of online status
+    and regardless of friend relationship. This is how twins socialize openly.
+    """
     poster_id = data["user_id"]
     post_id = data["post_id"]
     content = data.get("content", "")
 
     with get_db() as db:
-        friends = db.execute(
-            """SELECT u.user_id, u.display_name, u.username
-               FROM social_connections sc
-               JOIN users u ON u.user_id = CASE
-                   WHEN sc.user_id=? THEN sc.friend_id ELSE sc.user_id END
-               WHERE (sc.user_id=? OR sc.friend_id=?) AND sc.status='accepted'
-                 AND u.twin_auto_reply=1""",
-            (poster_id, poster_id, poster_id),
+        # Find ALL active users with twins enabled (not just friends)
+        candidates = db.execute(
+            """SELECT user_id, display_name, username FROM users
+               WHERE twin_auto_reply=1 AND user_id!=?
+                 AND twin_personality!='' AND twin_speech_style!=''
+               ORDER BY RANDOM() LIMIT 5""",
+            (poster_id,),
         ).fetchall()
 
-    for friend in friends:
+    for friend in candidates:
         fid = friend["user_id"]
-        if fid == poster_id or manager.is_online(fid):
-            continue
-        if random.random() > 0.3:  # 30% chance
+        if random.random() > 0.6:  # 60% chance per candidate
             continue
 
         from dualsoul.twin_engine.personality import get_twin_profile
