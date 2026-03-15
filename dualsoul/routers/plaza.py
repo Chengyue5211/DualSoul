@@ -96,6 +96,9 @@ async def create_post(content: str = "", post_type: str = "update", user=Depends
     award_xp(uid, 10, reason="plaza_post")
     increment_stat(uid, "total_plaza_posts")
 
+    from dualsoul.twin_engine.twin_events import emit
+    emit("plaza_post_created", {"user_id": uid, "post_id": post_id, "content": content})
+
     return {"success": True, "post_id": post_id, "content": content, "ai_generated": ai_generated}
 
 

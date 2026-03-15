@@ -53,6 +53,8 @@ async def register(req: RegisterRequest, request: Request):
                     "UPDATE users SET invite_count = invite_count + 1 WHERE username=?",
                     (inviter_username,),
                 )
+                from dualsoul.twin_engine.twin_events import emit
+                emit("user_registered", {"user_id": user_id, "username": username, "inviter_id": inviter["user_id"]})
 
     token = create_token(user_id, username, 0)
     return {

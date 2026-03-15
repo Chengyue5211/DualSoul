@@ -169,6 +169,8 @@ async def respond_friend(req: RespondFriendRequest, user=Depends(get_current_use
         # Initialize relationship temperature at warm
         update_relationship_temp(uid, requester_id, 50.0)
         update_relationship_temp(requester_id, uid, 50.0)
+        from dualsoul.twin_engine.twin_events import emit
+        emit("friend_accepted", {"user_id": uid, "friend_id": requester_id})
 
     return {"success": True, "status": new_status}
 
@@ -431,6 +433,9 @@ async def send_message(req: SendMessageRequest, request: Request, user=Depends(g
                     target_lang=req.target_lang, msg_id=msg_id,
                     delay_seconds=TWIN_REPLY_DELAY_SECONDS,
                 ))
+
+    from dualsoul.twin_engine.twin_events import emit
+    emit("message_sent", {"from_user_id": uid, "to_user_id": req.to_user_id, "content": content, "msg_id": msg_id}, debounce_key=f"{uid}:{req.to_user_id}")
 
     return result
 

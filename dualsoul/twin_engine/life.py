@@ -303,6 +303,8 @@ def update_relationship_temp(user_id: str, friend_id: str, delta: float):
             "UPDATE twin_life SET relationship_temps=?, updated_at=? WHERE user_id=?",
             (json.dumps(temps), now, user_id),
         )
+    from dualsoul.twin_engine.twin_events import emit
+    emit("relationship_temp_changed", {"user_id": user_id, "friend_id": friend_id, "new_temp": new_temp}, debounce_key=f"temp:{user_id}:{friend_id}")
     return new_temp
 
 

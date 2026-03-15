@@ -28,6 +28,7 @@ from dualsoul.twin_engine.autonomous import autonomous_social_loop
 async def lifespan(app: FastAPI):
     init_db()
     logger.info(f"DualSoul v{__version__} — database initialized")
+    import dualsoul.twin_engine.twin_reactions  # noqa: F401 — registers event handlers
     task = asyncio.create_task(autonomous_social_loop())
     logger.info("Autonomous twin social engine started")
     yield

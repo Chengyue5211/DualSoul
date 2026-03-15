@@ -70,6 +70,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")):
 
     # Broadcast "human_active" state to friends
     await _broadcast_twin_state(user_id, TwinState.HUMAN_ACTIVE)
+    from dualsoul.twin_engine.twin_events import emit
+    emit("friend_online", {"user_id": user_id}, debounce_key=user_id)
 
     try:
         while True:
@@ -111,6 +113,8 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query("")):
                 TwinState.TWIN_RECEPTIONIST if auto_reply else TwinState.TWIN_STANDBY
             )
             await _broadcast_twin_state(user_id, offline_state)
+            from dualsoul.twin_engine.twin_events import emit
+            emit("friend_offline", {"user_id": user_id})
         except Exception as e:
             logger.warning(f"[TwinState] offline broadcast failed: {e}")
     except Exception as e:

@@ -97,24 +97,13 @@ async def autonomous_social_loop():
             except Exception as e:
                 logger.error(f"[DailyReport] Error: {e}", exc_info=True)
 
-        # Relationship care: every 3 hours (every 6th cycle)
-        cycle += 1
-        if cycle % 6 == 0:
-            try:
-                await _warm_cold_relationships()
-            except Exception as e:
-                logger.error(f"[RelationshipCare] Error: {e}", exc_info=True)
-
         # Run friend discovery every 6 hours (every 12th cycle at 30min interval)
+        cycle += 1
         if cycle % 12 == 0:
             try:
                 await _run_friend_discovery()
             except Exception as e:
                 logger.error(f"[FriendDiscovery] Error: {e}", exc_info=True)
-            try:
-                await _update_relationship_milestones()
-            except Exception as e:
-                logger.error(f"[RelationshipMemory] Error: {e}", exc_info=True)
 
         await asyncio.sleep(CHECK_INTERVAL)
 
@@ -175,61 +164,70 @@ async def _run_autonomous_round():
     logger.info(f"[Autonomous] {len(candidates)} users offline 2h+, checking for conversations")
 
     for user in candidates:
-        uid = user["user_id"]
+        await _autonomous_chat_for_user(dict(user))
 
-        # Check daily limit
-        with get_db() as db:
-            today = now.strftime("%Y-%m-%d")
-            count = db.execute(
-                """
-                SELECT COUNT(*) as cnt FROM social_messages
-                WHERE from_user_id=? AND sender_mode='twin' AND ai_generated=1
-                    AND auto_reply=0
-                    AND created_at > ? AND metadata LIKE '%autonomous%'
-                """,
-                (uid, today),
-            ).fetchone()
-            if count and count["cnt"] >= MAX_DAILY_CONVOS:
-                continue
 
-            # Pick a random friend who is also offline (twin-to-twin works best)
-            friends = db.execute(
-                """
-                SELECT u.user_id, u.display_name, u.username
-                FROM social_connections sc
-                JOIN users u ON u.user_id = CASE
-                    WHEN sc.user_id=? THEN sc.friend_id ELSE sc.user_id END
-                WHERE (sc.user_id=? OR sc.friend_id=?)
-                    AND sc.status='accepted'
-                    AND u.twin_auto_reply=1
-                """,
-                (uid, uid, uid),
-            ).fetchall()
+async def _autonomous_chat_for_user(user: dict):
+    """Try to initiate one autonomous twin chat for a single user.
 
-        if not friends:
-            continue
+    Extracted so twin_reactions.py can call it directly on events.
+    """
+    uid = user["user_id"]
+    now = datetime.now()
 
-        # Prefer friends we haven't chatted with recently
-        friend = random.choice(friends)
-        fid = friend["user_id"]
+    # Check daily limit
+    with get_db() as db:
+        today = now.strftime("%Y-%m-%d")
+        count = db.execute(
+            """
+            SELECT COUNT(*) as cnt FROM social_messages
+            WHERE from_user_id=? AND sender_mode='twin' AND ai_generated=1
+                AND auto_reply=0
+                AND created_at > ? AND metadata LIKE '%autonomous%'
+            """,
+            (uid, today),
+        ).fetchone()
+        if count and count["cnt"] >= MAX_DAILY_CONVOS:
+            return
 
-        # Don't initiate if we already had an autonomous chat with this friend today
-        with get_db() as db:
-            existing = db.execute(
-                """
-                SELECT COUNT(*) as cnt FROM social_messages
-                WHERE ((from_user_id=? AND to_user_id=?) OR (from_user_id=? AND to_user_id=?))
-                    AND sender_mode='twin' AND metadata LIKE '%autonomous%'
-                    AND created_at > ?
-                """,
-                (uid, fid, fid, uid, today),
-            ).fetchone()
-            if existing and existing["cnt"] > 0:
-                continue
+        # Pick a random friend who is also offline (twin-to-twin works best)
+        friends = db.execute(
+            """
+            SELECT u.user_id, u.display_name, u.username
+            FROM social_connections sc
+            JOIN users u ON u.user_id = CASE
+                WHEN sc.user_id=? THEN sc.friend_id ELSE sc.user_id END
+            WHERE (sc.user_id=? OR sc.friend_id=?)
+                AND sc.status='accepted'
+                AND u.twin_auto_reply=1
+            """,
+            (uid, uid, uid),
+        ).fetchall()
 
-        # Initiate twin-to-twin conversation!
-        logger.info(f"[Autonomous] {user['display_name']}'s twin → {friend['display_name']}'s twin")
-        await _autonomous_twin_chat(user, friend)
+    if not friends:
+        return
+
+    # Prefer friends we haven't chatted with recently
+    friend = random.choice(friends)
+    fid = friend["user_id"]
+
+    # Don't initiate if we already had an autonomous chat with this friend today
+    with get_db() as db:
+        existing = db.execute(
+            """
+            SELECT COUNT(*) as cnt FROM social_messages
+            WHERE ((from_user_id=? AND to_user_id=?) OR (from_user_id=? AND to_user_id=?))
+                AND sender_mode='twin' AND metadata LIKE '%autonomous%'
+                AND created_at > ?
+            """,
+            (uid, fid, fid, uid, today),
+        ).fetchone()
+        if existing and existing["cnt"] > 0:
+            return
+
+    # Initiate twin-to-twin conversation!
+    logger.info(f"[Autonomous] {user.get('display_name', '')}'s twin → {friend['display_name']}'s twin")
+    await _autonomous_twin_chat(user, friend)
 
 
 def _check_twin_permission(uid: str, fid: str) -> str:
@@ -863,113 +861,123 @@ async def _warm_cold_relationships():
             if temp > 25:  # Only care about really cold ones
                 continue
 
-            # Don't warm the same person twice in 3 days
-            with get_db() as db:
-                recent = db.execute(
-                    """SELECT COUNT(*) as cnt FROM social_messages
-                    WHERE from_user_id=? AND to_user_id=? AND metadata LIKE '%relationship_care%'
-                    AND created_at > datetime('now','localtime','-3 days')""",
-                    (uid, fid),
-                ).fetchone()
-                if recent and recent["cnt"] > 0:
-                    continue
+            done = await _warm_single_relationship(uid, name, fid, temp)
+            if done:
+                break  # One warm-up per user per cycle
 
-                friend = db.execute(
-                    "SELECT display_name, username FROM users WHERE user_id=?",
-                    (fid,),
-                ).fetchone()
-                if not friend:
-                    continue
 
-                # Check they're still friends
-                conn = db.execute(
-                    """SELECT conn_id FROM social_connections
-                    WHERE status='accepted' AND
-                    ((user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?))""",
-                    (uid, fid, fid, uid),
-                ).fetchone()
-                if not conn:
-                    continue
+async def _warm_single_relationship(uid: str, name: str, fid: str, temp: float) -> bool:
+    """Proactively warm one cold relationship. Returns True if a message was sent.
 
-            friend_name = friend["display_name"] or friend["username"]
+    Extracted so twin_reactions.py can call it directly on events.
+    """
+    # Don't warm the same person twice in 3 days
+    with get_db() as db:
+        recent = db.execute(
+            """SELECT COUNT(*) as cnt FROM social_messages
+            WHERE from_user_id=? AND to_user_id=? AND metadata LIKE '%relationship_care%'
+            AND created_at > datetime('now','localtime','-3 days')""",
+            (uid, fid),
+        ).fetchone()
+        if recent and recent["cnt"] > 0:
+            return False
 
-            # Check twin permission before sending care message
-            care_permission = _check_twin_permission(uid, fid)
-            if care_permission != "granted":
-                continue
+        friend = db.execute(
+            "SELECT display_name, username FROM users WHERE user_id=?",
+            (fid,),
+        ).fetchone()
+        if not friend:
+            return False
 
-            # Generate a natural warm-up message with narrative memory
-            owner_profile = get_twin_profile(uid)
-            if not owner_profile:
-                continue
-            memory_hint = ""
-            try:
-                from dualsoul.twin_engine.narrative_memory import get_narrative_context
-                memories = get_narrative_context(uid, fid, limit=1)
-                if memories:
-                    memory_hint = f"\n你们上次聊的是：{memories[0]['summary']}\n可以自然地接上之前的话题。"
-            except Exception:
-                pass
-            greeting = await _twin._ai_reply(
-                owner_profile,
-                (
-                    f"你是{name}的分身。你发现主人和好友{friend_name}已经好久没聊天了，"
-                    f"关系在冷却中。请用主人的风格，给{friend_name}发一条自然的问候消息，"
-                    f"比如关心对方近况、聊点轻松话题。只说一句话，自然随意，不要刻意。"
-                    f"{memory_hint}"
-                ),
-                "twin",
-            )
-            if not greeting:
-                continue
+        # Check they're still friends
+        conn = db.execute(
+            """SELECT conn_id FROM social_connections
+            WHERE status='accepted' AND
+            ((user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?))""",
+            (uid, fid, fid, uid),
+        ).fetchone()
+        if not conn:
+            return False
 
-            # Ethics check for the greeting
-            care_check = pre_send_check(uid, greeting, action_type="greeting")
-            if not care_check["allowed"]:
-                logger.info(f"[RelationshipCare] Blocked for {name}: {care_check['reason']}")
-                continue
+    friend_name = friend["display_name"] or friend["username"]
 
-            # Send as twin message
-            meta = json.dumps({"relationship_care": True, "cold_temp": temp})
-            msg_id = gen_id("sm_")
-            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Check twin permission before sending care message
+    care_permission = _check_twin_permission(uid, fid)
+    if care_permission != "granted":
+        return False
 
-            with get_db() as db:
-                db.execute(
-                    """INSERT INTO social_messages
-                    (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
-                     content, msg_type, ai_generated, auto_reply, metadata, created_at)
-                    VALUES (?, ?, ?, 'twin', 'twin', ?, 'text', 1, 0, ?, ?)""",
-                    (msg_id, uid, fid, greeting, meta, now_str),
-                )
+    # Generate a natural warm-up message with narrative memory
+    owner_profile = get_twin_profile(uid)
+    if not owner_profile:
+        return False
+    memory_hint = ""
+    try:
+        from dualsoul.twin_engine.narrative_memory import get_narrative_context
+        memories = get_narrative_context(uid, fid, limit=1)
+        if memories:
+            memory_hint = f"\n你们上次聊的是：{memories[0]['summary']}\n可以自然地接上之前的话题。"
+    except Exception:
+        pass
+    greeting = await _twin._ai_reply(
+        owner_profile,
+        (
+            f"你是{name}的分身。你发现主人和好友{friend_name}已经好久没聊天了，"
+            f"关系在冷却中。请用主人的风格，给{friend_name}发一条自然的问候消息，"
+            f"比如关心对方近况、聊点轻松话题。只说一句话，自然随意，不要刻意。"
+            f"{memory_hint}"
+        ),
+        "twin",
+    )
+    if not greeting:
+        return False
 
-            msg_data = {
-                "msg_id": msg_id, "from_user_id": uid, "to_user_id": fid,
-                "sender_mode": "twin", "receiver_mode": "twin",
-                "content": greeting, "ai_generated": 1, "created_at": now_str,
-            }
-            await manager.send_to(uid, {"type": "new_message", "data": msg_data})
-            await manager.send_to(fid, {"type": "new_message", "data": msg_data})
+    # Ethics check for the greeting
+    care_check = pre_send_check(uid, greeting, action_type="greeting")
+    if not care_check["allowed"]:
+        logger.info(f"[RelationshipCare] Blocked for {name}: {care_check['reason']}")
+        return False
 
-            # Warm up the temperature a bit
-            update_relationship_temp(uid, fid, 5.0)
-            update_relationship_temp(fid, uid, 5.0)
+    # Send as twin message
+    meta = json.dumps({"relationship_care": True, "cold_temp": temp})
+    msg_id = gen_id("sm_")
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # Also notify the owner
-            notify = f"你和{friend_name}好久没聊了（{round(temp)}℃），我替你打了个招呼：「{greeting[:40]}」"
-            notify_id = gen_id("sm_")
-            notify_meta = json.dumps({"relationship_care_notify": True, "friend_id": fid})
-            with get_db() as db:
-                db.execute(
-                    """INSERT INTO social_messages
-                    (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
-                     content, msg_type, ai_generated, metadata)
-                    VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1, ?)""",
-                    (notify_id, uid, uid, notify, notify_meta),
-                )
+    with get_db() as db:
+        db.execute(
+            """INSERT INTO social_messages
+            (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+             content, msg_type, ai_generated, auto_reply, metadata, created_at)
+            VALUES (?, ?, ?, 'twin', 'twin', ?, 'text', 1, 0, ?, ?)""",
+            (msg_id, uid, fid, greeting, meta, now_str),
+        )
 
-            logger.info(f"[RelationshipCare] {name}'s twin warmed up {friend_name} ({temp}℃)")
-            break  # One warm-up per user per cycle
+    msg_data = {
+        "msg_id": msg_id, "from_user_id": uid, "to_user_id": fid,
+        "sender_mode": "twin", "receiver_mode": "twin",
+        "content": greeting, "ai_generated": 1, "created_at": now_str,
+    }
+    await manager.send_to(uid, {"type": "new_message", "data": msg_data})
+    await manager.send_to(fid, {"type": "new_message", "data": msg_data})
+
+    # Warm up the temperature a bit
+    update_relationship_temp(uid, fid, 5.0)
+    update_relationship_temp(fid, uid, 5.0)
+
+    # Also notify the owner
+    notify = f"你和{friend_name}好久没聊了（{round(temp)}℃），我替你打了个招呼：「{greeting[:40]}」"
+    notify_id = gen_id("sm_")
+    notify_meta = json.dumps({"relationship_care_notify": True, "friend_id": fid})
+    with get_db() as db:
+        db.execute(
+            """INSERT INTO social_messages
+            (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+             content, msg_type, ai_generated, metadata)
+            VALUES (?, ?, ?, 'twin', 'real', ?, 'text', 1, ?)""",
+            (notify_id, uid, uid, notify, notify_meta),
+        )
+
+    logger.info(f"[RelationshipCare] {name}'s twin warmed up {friend_name} ({temp}℃)")
+    return True
 
 
 async def detect_emotion(content: str) -> dict:
