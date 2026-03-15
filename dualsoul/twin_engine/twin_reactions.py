@@ -40,9 +40,8 @@ async def on_friend_online(data):
         fid = friend["user_id"]
         if fid == user_id:
             continue
-        # Only greet if friend is offline (their twin acts)
-        if manager.is_online(fid):
-            continue
+        # Twin can greet regardless of online status — greeting is a social act
+        # (previously blocked when online, causing twins to never greet)
 
         # Check last message — only greet if 3+ days since last chat
         with get_db() as db:
@@ -142,6 +141,50 @@ async def on_friend_online(data):
         })
 
         logger.info(f"[TwinEvent] {friend_name}'s twin greeted {user_name} (3d+ gap)")
+
+        # Trigger recipient's twin to auto-reply to the greeting
+        with get_db() as db:
+            recipient_row = db.execute(
+                "SELECT twin_auto_reply FROM users WHERE user_id=?", (user_id,)
+            ).fetchone()
+        if recipient_row and recipient_row["twin_auto_reply"]:
+            try:
+                recipient_profile = get_twin_profile(user_id)
+                if recipient_profile:
+                    await asyncio.sleep(3)  # Natural delay before reply
+                    reply = await twin._ai_reply(
+                        recipient_profile,
+                        greeting,
+                        "twin",
+                        social_context="auto_reply",
+                        from_user_id=fid,
+                    )
+                    if reply:
+                        reply_id = gen_id("sm_")
+                        reply_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        reply_meta = json.dumps({"auto_reply_to_greeting": True})
+                        with get_db() as db:
+                            db.execute(
+                                """INSERT INTO social_messages
+                                   (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                                    content, msg_type, ai_generated, auto_reply, metadata, created_at)
+                                   VALUES (?, ?, ?, 'twin', 'twin', ?, 'text', 1, 1, ?, ?)""",
+                                (reply_id, user_id, fid, reply, reply_meta, reply_time),
+                            )
+                        await manager.send_to(user_id, {
+                            "type": "new_message",
+                            "data": {"msg_id": reply_id, "from_user_id": user_id, "to_user_id": fid,
+                                     "content": reply, "sender_mode": "twin", "ai_generated": True, "created_at": reply_time},
+                        })
+                        await manager.send_to(fid, {
+                            "type": "new_message",
+                            "data": {"msg_id": reply_id, "from_user_id": user_id, "to_user_id": fid,
+                                     "content": reply, "sender_mode": "twin", "ai_generated": True, "created_at": reply_time},
+                        })
+                        logger.info(f"[TwinEvent] {user_name}'s twin replied to greeting from {friend_name}")
+            except Exception as e:
+                logger.debug(f"[TwinEvent] Auto-reply to greeting failed: {e}")
+
         break  # Only one greeting per online event
 
 
