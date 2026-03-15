@@ -260,6 +260,73 @@ def get_relationship_summary(uid: str, fid: str) -> dict:
     }
 
 
+def get_relationships_batch(uid: str, friend_ids: list[str]) -> dict[str, dict]:
+    """Batch-fetch relationship summaries for multiple friends in ONE query."""
+    if not friend_ids:
+        return {}
+
+    # Build canonical pairs
+    pairs = []
+    pair_to_fid = {}
+    for fid in friend_ids:
+        a, b = _canonical_pair(uid, fid)
+        pairs.append((a, b))
+        pair_to_fid[(a, b)] = fid
+
+    # Single query for all relationships
+    conditions = " OR ".join(["(user_a=? AND user_b=?)"] * len(pairs))
+    params = []
+    for a, b in pairs:
+        params.extend([a, b])
+
+    result = {}
+    with get_db() as db:
+        rows = db.execute(
+            f"SELECT * FROM relationship_bodies WHERE {conditions}",
+            params,
+        ).fetchall()
+
+    found_pairs = set()
+    for row in rows:
+        r = dict(row)
+        pair_key = (r["user_a"], r["user_b"])
+        found_pairs.add(pair_key)
+        fid = pair_to_fid.get(pair_key)
+        if fid:
+            temp = r.get("temperature", 50.0)
+            milestones = []
+            try:
+                milestones = json.loads(r.get("milestones") or "[]")
+            except Exception:
+                pass
+            result[fid] = {
+                "temperature": temp,
+                "temperature_status": "hot" if temp >= 75 else "warm" if temp >= 45 else "cool" if temp >= 20 else "cold",
+                "total_messages": r.get("total_messages", 0),
+                "streak_days": r.get("streak_days", 0),
+                "last_interaction": r.get("last_interaction", ""),
+                "status": r.get("status", "active"),
+                "relationship_label": r.get("relationship_label", ""),
+                "milestone_count": len(milestones),
+            }
+
+    # Fill defaults for friends without a relationship body
+    for fid in friend_ids:
+        if fid not in result:
+            result[fid] = {
+                "temperature": 50.0,
+                "temperature_status": "warm",
+                "total_messages": 0,
+                "streak_days": 0,
+                "last_interaction": "",
+                "status": "active",
+                "relationship_label": "",
+                "milestone_count": 0,
+            }
+
+    return result
+
+
 def update_relationship_status(uid: str, fid: str):
     """Auto-update relationship status based on last interaction time."""
     try:

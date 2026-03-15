@@ -69,25 +69,28 @@ async def get_relationships_overview(user=Depends(get_current_user)):
     if not friends:
         return {"success": True, "relationships": []}
 
-    # Get relationship data for each friend
+    # Batch-fetch all relationship data in ONE query (no N+1)
+    friend_ids = [f["user_id"] for f in friends]
+    from dualsoul.twin_engine.relationship_body import get_relationships_batch
+    rel_batch = get_relationships_batch(uid, friend_ids)
+
     result = []
     for f in friends:
         fid = f["user_id"]
-        update_relationship_status(uid, fid)
-        summary = get_relationship_summary(uid, fid)
+        summary = rel_batch.get(fid, {})
         result.append({
             "friend_id": fid,
             "friend_name": f["display_name"] or f["username"],
             "avatar": f.get("avatar") or "",
             "twin_avatar": f.get("twin_avatar") or "",
-            "temperature": summary["temperature"],
-            "temperature_status": summary["temperature_status"],
-            "total_messages": summary["total_messages"],
-            "streak_days": summary["streak_days"],
-            "last_interaction": summary["last_interaction"],
-            "status": summary["status"],
-            "relationship_label": summary["relationship_label"],
-            "milestone_count": len(summary["milestones"]),
+            "temperature": summary.get("temperature", 50.0),
+            "temperature_status": summary.get("temperature_status", "warm"),
+            "total_messages": summary.get("total_messages", 0),
+            "streak_days": summary.get("streak_days", 0),
+            "last_interaction": summary.get("last_interaction", ""),
+            "status": summary.get("status", "active"),
+            "relationship_label": summary.get("relationship_label", ""),
+            "milestone_count": summary.get("milestone_count", 0),
         })
 
     # Sort by temperature descending
