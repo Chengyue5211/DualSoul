@@ -86,6 +86,9 @@ if os.path.isdir(_web_dir):
 
     @app.get("/")
     async def serve_index():
+        min_path = os.path.join(_web_dir, "index.min.html")
+        if os.path.exists(min_path):
+            return FileResponse(min_path)
         return FileResponse(os.path.join(_web_dir, "index.html"))
 
     @app.get("/sw.js")
