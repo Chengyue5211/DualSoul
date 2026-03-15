@@ -56,8 +56,8 @@ async def on_friend_online(data):
         if last_msg:
             try:
                 last_dt = datetime.strptime(last_msg["created_at"][:19], "%Y-%m-%d %H:%M:%S")
-                if (datetime.now() - last_dt).days < 3:
-                    continue
+                if (datetime.now() - last_dt).days < 1:
+                    continue  # Chatted within 1 day, skip greeting
             except ValueError:
                 continue
 

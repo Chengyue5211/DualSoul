@@ -100,8 +100,16 @@ async def autonomous_social_loop():
             except Exception as e:
                 logger.error(f"[DailyReport] Error: {e}", exc_info=True)
 
-        # Run friend discovery + plaza social every 6 hours (every 12th cycle)
+        # Proactive relationship maintenance for ALL users (including online)
+        # Every 3 hours (every 6th cycle), twins reach out to cold relationships
         cycle += 1
+        if cycle % 6 == 0:
+            try:
+                await _proactive_relationship_care()
+            except Exception as e:
+                logger.error(f"[ProactiveCare] Error: {e}", exc_info=True)
+
+        # Run friend discovery + plaza social every 6 hours (every 12th cycle)
         if cycle % 12 == 0:
             try:
                 await _run_friend_discovery()
@@ -560,6 +568,127 @@ async def _autonomous_plaza_social():
             logger.info(f"[PlazaSocial] {name}'s twin auto-trial-chatting with {target_name}")
         except Exception as e:
             logger.warning(f"[PlazaSocial] Auto-trial-chat failed for {name}: {e}")
+
+
+async def _proactive_relationship_care():
+    """Proactive care: twins reach out to friends they haven't talked to in 1+ days.
+
+    Unlike _run_autonomous_round (offline-only), this runs for ALL users
+    including those who are online. The twin maintains relationships in the
+    background, so the user sees activity when they open the app.
+    """
+    logger.info("[ProactiveCare] Checking relationships for all users")
+
+    with get_db() as db:
+        users = db.execute(
+            "SELECT user_id, display_name, username FROM users WHERE twin_auto_reply=1"
+        ).fetchall()
+
+    for user in users:
+        uid = user["user_id"]
+        name = user["display_name"] or user["username"]
+
+        # Find friends not chatted with in 1+ days
+        with get_db() as db:
+            cold_friends = db.execute(
+                """SELECT u.user_id, u.display_name, u.username
+                   FROM social_connections sc
+                   JOIN users u ON u.user_id = CASE
+                       WHEN sc.user_id=? THEN sc.friend_id ELSE sc.user_id END
+                   WHERE (sc.user_id=? OR sc.friend_id=?) AND sc.status='accepted'
+                     AND u.twin_auto_reply=1
+                     AND u.user_id NOT IN (
+                         SELECT CASE WHEN from_user_id=? THEN to_user_id ELSE from_user_id END
+                         FROM social_messages
+                         WHERE (from_user_id=? OR to_user_id=?)
+                           AND from_user_id!=to_user_id
+                           AND created_at > datetime('now','localtime','-1 day')
+                     )
+                   ORDER BY RANDOM() LIMIT 1""",
+                (uid, uid, uid, uid, uid, uid),
+            ).fetchone()
+
+        if not cold_friends:
+            continue
+
+        fid = cold_friends["user_id"]
+        friend_name = cold_friends["display_name"] or cold_friends["username"]
+
+        # Check daily limit: max 2 proactive messages per day
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        with get_db() as db:
+            sent_today = db.execute(
+                """SELECT COUNT(*) as cnt FROM social_messages
+                   WHERE from_user_id=? AND sender_mode='twin' AND ai_generated=1
+                     AND metadata LIKE '%proactive_care%' AND created_at > ?""",
+                (uid, today_str),
+            ).fetchone()
+        if sent_today and sent_today["cnt"] >= 2:
+            continue
+
+        # Check twin permission
+        perm = _check_twin_permission(uid, fid)
+        if perm != "granted":
+            continue
+
+        # Generate a natural message
+        profile = get_twin_profile(uid)
+        if not profile:
+            continue
+
+        # Get narrative memory for context
+        memory_hint = ""
+        try:
+            from dualsoul.twin_engine.narrative_memory import get_narrative_context
+            memories = get_narrative_context(uid, fid, limit=1)
+            if memories:
+                memory_hint = f"\n你们上次聊的是：{memories[0]['summary']}。可以自然地接上话题。"
+        except Exception:
+            pass
+
+        greeting = await _twin._ai_reply(
+            profile,
+            (
+                f"你是{name}的分身。你发现主人和好友{friend_name}有一天没聊天了。"
+                f"用主人的风格，自然地发一条消息。"
+                f"可以是问候、分享想法、聊点轻松的话题。"
+                f"只说一句话，自然随意。{memory_hint}"
+            ),
+            "twin",
+        )
+        if not greeting:
+            continue
+
+        # Ethics check
+        from dualsoul.twin_engine.ethics import pre_send_check
+        check = pre_send_check(uid, greeting, action_type="greeting")
+        if not check["allowed"]:
+            continue
+
+        # Send message
+        msg_id = gen_id("sm_")
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        meta = json.dumps({"proactive_care": True})
+
+        with get_db() as db:
+            db.execute(
+                """INSERT INTO social_messages
+                   (msg_id, from_user_id, to_user_id, sender_mode, receiver_mode,
+                    content, msg_type, ai_generated, auto_reply, metadata, created_at)
+                   VALUES (?, ?, ?, 'twin', 'twin', ?, 'text', 1, 0, ?, ?)""",
+                (msg_id, uid, fid, greeting, meta, now_str),
+            )
+
+        # Push to both users
+        msg_data = {
+            "type": "new_message",
+            "data": {"msg_id": msg_id, "from_user_id": uid, "to_user_id": fid,
+                     "content": greeting, "sender_mode": "twin", "ai_generated": True, "created_at": now_str},
+        }
+        await manager.send_to(uid, msg_data)
+        await manager.send_to(fid, msg_data)
+
+        logger.info(f"[ProactiveCare] {name}'s twin → {friend_name} (1d+ no chat)")
 
 
 async def _run_friend_discovery():
