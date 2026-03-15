@@ -23,7 +23,7 @@ a{color:var(--ac);text-decoration:none}
 .splash-inner{position:relative;width:180px;height:120px;margin-bottom:30px}
 .sp-av{width:72px;height:72px;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;overflow:hidden}
 .sp-real{background:var(--bg3);color:var(--tx);border:3px solid rgba(255,255,255,.15);animation:spSplitLeft 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
-.sp-twin{background:linear-gradient(135deg,#7c5cfc,#5cc8fa);color:var(--white);border:3px solid rgba(124,92,252,.4);opacity:0;animation:spSplitRight 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
+.sp-twin{background:var(--gd);color:var(--white);border:3px solid rgba(124,92,252,.4);opacity:0;animation:spSplitRight 2s cubic-bezier(.25,.46,.45,.94) 0.5s forwards}
 .sp-twin::after{content:'';position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from 0deg,transparent 0deg,rgba(255,255,255,.06) 3deg,transparent 6deg);animation:spCyberSpin 8s linear infinite}
 .sp-connect{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:2px;background:linear-gradient(90deg,var(--tx),var(--ac));opacity:0;animation:spConnectIn 0.8s ease 2s forwards}
 @keyframes spSplitLeft{0%{transform:translate(-50%,-50%)}100%{transform:translate(-110%,-50%)}}
@@ -237,7 +237,7 @@ nav .ni.on .nc{transform:scale(1.15)}
 /* Twin permission request system message */
 .perm-actions{display:flex;gap:6px;margin-top:6px}
 .perm-btn{font-size:11px;padding:4px 12px;border:none;border-radius:8px;cursor:pointer}
-.perm-btn.allow{background:rgba(124,92,252,.2);color:#7c5cfc}
+.perm-btn.allow{background:rgba(124,92,252,.2);color:var(--ac)}
 .perm-btn.deny{background:rgba(255,80,80,.1);color:rgba(255,80,80,.8)}
 /* Chat images — WeChat-like thumbnail */
 .chat-img{max-width:140px !important;max-height:180px !important;width:auto;height:auto;border-radius:8px;cursor:pointer;display:block}
@@ -476,6 +476,14 @@ nav .ni.on .nc{transform:scale(1.15)}
 .btn-primary{background:var(--gd);color:var(--white);border:none;border-radius:10px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .btn-orange{background:linear-gradient(135deg,var(--orange),#ff6b1a);color:var(--white);border:none;border-radius:10px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .avatar-fallback{border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;color:var(--white);font-weight:700}
+.text-ac{color:var(--ac)}.text-ac2{color:var(--ac2)}.text-tx2{color:var(--tx2)}.text-white{color:var(--white)}.text-orange{color:var(--orange)}.text-red{color:var(--red)}.text-green{color:var(--green)}
+.bg-gd{background:var(--gd)}.bg-ac{background:var(--ac)}.bg-bg2{background:var(--bg2)}.bg-bg3{background:var(--bg3)}
+.fs-xl{font-size:20px}.fs-lg{font-size:16px}.fs-md{font-size:14px}.fs-sm{font-size:12px}.fs-xs{font-size:10px}.fs-xxs{font-size:8px}
+.fw-bold{font-weight:700}.fw-semi{font-weight:600}
+.rounded-full{border-radius:50%}.rounded-lg{border-radius:12px}.rounded-md{border-radius:10px}.rounded-sm{border-radius:8px}
+.flex-center{display:flex;align-items:center;justify-content:center}
+.cursor-pointer{cursor:pointer}
+.border-bd{border:1px solid var(--bd)}
 </style>
 </head>
 <body>
@@ -699,7 +707,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   <!-- Twin Activity Feed (分身动态) -->
   <div class="disc-section" onclick="openTwinFeed()">
     <div class="disc-item">
-      <span class="disc-icon" style="background:linear-gradient(135deg,#7c5cfc,#5ca0fa)">👻</span>
+      <span class="disc-icon" style="background:linear-gradient(135deg,var(--ac),#5ca0fa)">👻</span>
       <div class="disc-info">
         <div class="disc-label" id="discTwinFeed">分身动态</div>
         <div class="disc-desc" id="discTwinFeedDesc">看看你的分身最近替你做了什么</div>
@@ -711,7 +719,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   <!-- Moments (朋友圈 — placeholder) -->
   <div class="disc-section" onclick="openMoments()">
     <div class="disc-item">
-      <span class="disc-icon" style="background:linear-gradient(135deg,#ff8c32,#ff6b1a)">📷</span>
+      <span class="disc-icon" style="background:linear-gradient(135deg,var(--orange),#ff6b1a)">📷</span>
       <div class="disc-info">
         <div class="disc-label" id="discMoments">朋友圈</div>
         <div class="disc-desc" id="discMomentsDesc">好友的真人和分身动态</div>
@@ -759,7 +767,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   <!-- Twin Promotion (分身推广) -->
   <div class="disc-section" onclick="openTwinPromotion()">
     <div class="disc-item">
-      <span class="disc-icon" style="background:linear-gradient(135deg,#ff8c32,#e74c3c)">🚀</span>
+      <span class="disc-icon" style="background:linear-gradient(135deg,var(--orange),var(--red))">🚀</span>
       <div class="disc-info">
         <div class="disc-label" id="discPromo">分身推广</div>
         <div class="disc-desc" id="discPromoDesc">让分身帮你邀请朋友加入</div>
@@ -809,7 +817,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     <div id="aiAvatarPanel" style="display:none;margin-top:10px;padding:14px;background:var(--bg3);border:1px solid rgba(124,92,252,.15);border-radius:12px">
       <p style="font-size:10px;color:var(--tx2);margin-bottom:10px" id="aiAvatarDesc">用AI把你的真人照片变成数字分身风格头像：</p>
       <div id="aiAvatarStyles" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
-      <button onclick="generateAiAvatar()" id="aiAvatarGenBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">生成分身头像（约15秒）</button>
+      <button onclick="generateAiAvatar()" id="aiAvatarGenBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">生成分身头像（约15秒）</button>
       <div id="aiAvatarStatus" style="margin-top:8px;font-size:10px;color:var(--tx2);text-align:center"></div>
     </div>
   </div>
@@ -828,13 +836,13 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
   </div>
   <!-- Share Twin Card -->
   <div style="margin:0 0 14px">
-    <button onclick="shareTwinCard()" id="shareTwinCardBtn" style="width:100%;padding:10px;border:1px solid rgba(92,200,250,.3);border-radius:10px;background:rgba(92,200,250,.08);color:#5cc8fa;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🪪 分享分身名片</button>
+    <button onclick="shareTwinCard()" id="shareTwinCardBtn" style="width:100%;padding:10px;border:1px solid rgba(92,200,250,.3);border-radius:10px;background:rgba(92,200,250,.08);color:var(--cyan);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🪪 分享分身名片</button>
     <div id="twinCardPanel" style="display:none;margin-top:8px;padding:12px;background:var(--bg3);border:1px solid rgba(92,200,250,.15);border-radius:10px">
       <p style="font-size:10px;color:var(--tx2);margin-bottom:8px" id="twinCardDesc">展示你的分身形象给别人看（不需要注册也能看）：</p>
       <div style="padding:8px;background:var(--bg2);border-radius:8px;word-break:break-all;font-size:11px;color:var(--ac2);margin-bottom:10px" id="twinCardUrl"></div>
       <div style="display:flex;gap:8px">
-        <button onclick="copyTwinCardUrl()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#5cc8fa,#4ab8e8);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardCopyBtn">复制链接</button>
-        <button onclick="previewTwinCard()" style="flex:1;padding:8px;border:none;border-radius:8px;background:rgba(92,200,250,.15);color:#5cc8fa;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardPreviewBtn">预览名片</button>
+        <button onclick="copyTwinCardUrl()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--cyan),#4ab8e8);color:var(--white);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardCopyBtn">复制链接</button>
+        <button onclick="previewTwinCard()" style="flex:1;padding:8px;border:none;border-radius:8px;background:rgba(92,200,250,.15);color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit" id="twinCardPreviewBtn">预览名片</button>
       </div>
     </div>
   </div>
@@ -880,7 +888,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
       </div>
       <p id="learnDesc" style="font-size:10px;color:var(--tx2);line-height:1.5;margin-bottom:10px">分析你发过的消息，自动提炼说话风格，让分身更像你</p>
       <div id="learnStatus" style="font-size:10px;color:var(--tx2);margin-bottom:8px"></div>
-      <button id="learnBtn" onclick="learnStyle()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">让分身学习我的风格</button>
+      <button id="learnBtn" onclick="learnStyle()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">让分身学习我的风格</button>
       <div id="learnResult" style="display:none;margin-top:10px;padding:10px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;font-size:11px;line-height:1.6"></div>
     </div>
   </div>
@@ -903,7 +911,7 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
     <h3 id="inviteTitle" style="color:var(--orange)">🎁 邀请好友</h3>
     <p style="font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px" id="inviteDesc">对方点链接注册后自动加你为好友（和名片不同，这个是注册邀请）</p>
     <div style="background:var(--bg3);border:1px solid rgba(255,140,50,.15);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="inviteLink"></div>
-    <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
+    <button onclick="copyInviteLink()" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--orange),#ff6b1a);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyBtn">复制邀请链接</button>
     <a href="/guide" target="_blank" style="display:block;text-align:center;margin-top:8px;font-size:11px;color:var(--ac)">查看分身接入指南 (开发者/平台对接)</a>
   </div>
   <!-- Settings Group -->
@@ -1815,7 +1823,7 @@ function scanQR(){
     '<div style="margin-top:20px;font-size:11px;color:var(--tx2);text-align:center">'+(LANG==='zh'?'或直接输入对方用户名添加好友':'Or enter username to add friend')+'</div>'+
     '<div style="display:flex;gap:8px;margin-top:10px;max-width:280px;margin-left:auto;margin-right:auto">'+
     '<input id="qrManualInput" placeholder="'+(LANG==='zh'?'输入用户名':'Username')+'" style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit">'+
-    '<button onclick="qrAddFriend()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'添加':'Add')+'</button></div>'+
+    '<button onclick="qrAddFriend()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'添加':'Add')+'</button></div>'+
     '</div>');
 }
 
@@ -1885,7 +1893,7 @@ function plazaLoadFeed(){
       d.posts.forEach(function(p){
         var avSrc=p.twin_avatar||p.avatar;
         var avHtml=avSrc?'<img src="'+esc(avSrc)+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(124,92,252,.3)">':
-          '<div style="width:36px;height:36px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;font-weight:700">'+esc(p.display_name||'?')[0]+'</div>';
+          '<div style="width:36px;height:36px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--white);font-weight:700">'+esc(p.display_name||'?')[0]+'</div>';
         var time=(p.created_at||'').slice(5,16);
         h+='<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px">';
         h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
@@ -1946,14 +1954,14 @@ function plazaLoadDiscover(){
     d.twins.forEach(function(tw){
       var avSrc=tw.twin_avatar||tw.avatar;
       var avHtml=avSrc?'<img src="'+esc(avSrc)+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(124,92,252,.3)">':
-        '<div style="width:48px;height:48px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:700">'+esc(tw.display_name||'?')[0]+'</div>';
+        '<div style="width:48px;height:48px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--white);font-weight:700">'+esc(tw.display_name||'?')[0]+'</div>';
       h+='<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center">';
       h+=avHtml;
       h+='<div style="flex:1;min-width:0">';
       h+='<div style="font-size:13px;font-weight:700;color:var(--tx)">'+esc(tw.display_name)+'</div>';
       if(tw.twin_personality)h+='<div style="font-size:10px;color:var(--tx2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tw.twin_personality)+'</div>';
       h+='</div>';
-      h+='<button onclick="plazaTrialChat(\''+esc(tw.user_id)+'\',\''+esc(tw.display_name)+'\')" style="padding:8px 14px;border:none;border-radius:8px;background:var(--gd);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">'+(LANG==='zh'?'试聊':'Trial')+'</button>';
+      h+='<button onclick="plazaTrialChat(\''+esc(tw.user_id)+'\',\''+esc(tw.display_name)+'\')" style="padding:8px 14px;border:none;border-radius:8px;background:var(--gd);color:var(--white);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">'+(LANG==='zh'?'试聊':'Trial')+'</button>';
       h+='</div>';
     });
     el.innerHTML=h;
@@ -2054,7 +2062,7 @@ function plazaLoadTrials(){
       h+='<div onclick="plazaViewTrial(\''+tc.trial_id+'\')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer">';
       var avSrc=tc.other_avatar;
       h+=(avSrc?'<img src="'+esc(avSrc)+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover">':
-        '<div style="width:40px;height:40px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:700">'+esc(tc.other_name||'?')[0]+'</div>');
+        '<div style="width:40px;height:40px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--white);font-weight:700">'+esc(tc.other_name||'?')[0]+'</div>');
       h+='<div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--tx)">'+esc(tc.other_name)+'</div>';
       h+='<div style="font-size:9px;color:var(--tx2)">'+statusText+' · '+(tc.created_at||'').slice(5,16)+'</div></div>';
       if(tc.status==='completed')h+='<div style="font-size:16px;font-weight:800;color:'+scoreColor+'">'+scorePct+'%</div>';
@@ -2106,7 +2114,7 @@ function changePassword(){
     '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'当前密码':'Current password')+'</label><input type="password" id="cpOld" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
     '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'新密码':'New password')+'</label><input type="password" id="cpNew" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
     '<div style="margin-bottom:16px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'确认新密码':'Confirm new password')+'</label><input type="password" id="cpConfirm" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
-    '<button onclick="submitChangePassword()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'确认修改':'Save')+'</button></div>');
+    '<button onclick="submitChangePassword()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'确认修改':'Save')+'</button></div>');
 }
 
 function submitChangePassword(){
@@ -2348,7 +2356,7 @@ function updateTwinStateIndicator(state,icon,label){
     return;
   }
   el.style.display='inline-flex';
-  var color=state==='twin_receptionist'?'#7c5cfc':state==='twin_draft_pending'?'#ff9800':'#5ca0fa';
+  var color=state==='twin_receptionist'?'var(--ac)':state==='twin_draft_pending'?'#ff9800':'#5ca0fa';
   el.innerHTML='<span style="color:'+color+';font-size:11px">'+esc(icon)+'</span><span style="color:'+color+'">'+esc(label)+'</span>';
 }
 
@@ -2659,7 +2667,7 @@ function loadFriends(){
         if(f.reg_source&&f.reg_source!=='dualsoul'){
           var sc={'nianlun':'#4caf50','openclaw':'#ff9800','guide':'#2196f3'};
           var sn={'nianlun':'年轮','openclaw':'OpenClaw','guide':'Guide'};
-          srcBadge='<span style="font-size:8px;padding:1px 5px;border-radius:6px;background:'+(sc[f.reg_source]||'#666')+';color:#fff;margin-left:4px">'+(sn[f.reg_source]||f.reg_source)+'</span>';
+          srcBadge='<span style="font-size:8px;padding:1px 5px;border-radius:6px;background:'+(sc[f.reg_source]||'#666')+';color:var(--white);margin-left:4px">'+(sn[f.reg_source]||f.reg_source)+'</span>';
         }
         var uc=_friendUnread[f.user_id]||0;
         var ubadge=uc?'<span class="fi-unread" data-fid="'+esc(f.user_id)+'">'+(uc>99?'99+':uc)+'</span>':'<span class="fi-unread" data-fid="'+esc(f.user_id)+'" style="display:none"></span>';
@@ -2696,8 +2704,8 @@ function showFriendMenu(connId,name,e){
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:flex-end;justify-content:center';
   ov.innerHTML='<div style="width:100%;max-width:360px;padding:0 12px 24px"><div style="background:var(--bg2);border-radius:14px;overflow:hidden">'+
     '<div style="padding:14px;text-align:center;font-size:12px;color:var(--tx2);border-bottom:1px solid var(--bd)">'+name+'</div>'+
-    '<div onclick="deleteFriend(\''+connId+'\',\''+name+'\')" style="padding:14px;text-align:center;font-size:14px;color:#ff4444;cursor:pointer;border-bottom:1px solid var(--bd)">'+label1+'</div>'+
-    '<div onclick="blockFriend(\''+connId+'\',\''+name+'\')" style="padding:14px;text-align:center;font-size:14px;color:#ff4444;cursor:pointer">'+label2+'</div>'+
+    '<div onclick="deleteFriend(\''+connId+'\',\''+name+'\')" style="padding:14px;text-align:center;font-size:14px;color:var(--red);cursor:pointer;border-bottom:1px solid var(--bd)">'+label1+'</div>'+
+    '<div onclick="blockFriend(\''+connId+'\',\''+name+'\')" style="padding:14px;text-align:center;font-size:14px;color:var(--red);cursor:pointer">'+label2+'</div>'+
     '</div><div onclick="this.parentElement.parentElement.remove()" style="background:var(--bg2);border-radius:14px;margin-top:8px;padding:14px;text-align:center;font-size:14px;font-weight:600;color:var(--tx);cursor:pointer">'+label3+'</div></div>';
   ov.onclick=function(ev){if(ev.target===ov)ov.remove()};
   document.body.appendChild(ov);
@@ -3676,7 +3684,7 @@ function previewTwinCard(){
   overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:#0a0a10;overflow-y:auto';
   var closeBtn=document.createElement('button');
   closeBtn.textContent=LANG==='zh'?'✕ 关闭':'✕ Close';
-  closeBtn.style.cssText='position:fixed;top:12px;right:12px;z-index:10000;padding:8px 18px;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit';
+  closeBtn.style.cssText='position:fixed;top:12px;right:12px;z-index:10000;padding:8px 18px;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.1);color:var(--white);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit';
   closeBtn.onclick=function(){overlay.remove();closeBtn.remove()};
   document.body.appendChild(closeBtn);
   overlay.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:#888">Loading...</div>';
@@ -3686,18 +3694,18 @@ function previewTwinCard(){
     var c=d.data;
     var avHtml=c.twin_avatar||c.avatar?
       '<img src="'+(c.twin_avatar||c.avatar)+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(92,200,250,.4);box-shadow:0 0 20px rgba(124,92,252,.3)">':
-      '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;font-weight:700">'+esc(c.display_name||'?')[0]+'</div>';
+      '<div style="width:80px;height:80px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--white);font-weight:700">'+esc(c.display_name||'?')[0]+'</div>';
     var langMap={zh:'中文',en:'English',ja:'日本語',ko:'한국어',fr:'Français',de:'Deutsch',es:'Español'};
     var langName=langMap[c.preferred_lang]||c.preferred_lang||'';
     overlay.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">'+
       '<div style="background:#14141e;border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:32px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4)">'+
       '<div style="margin:0 auto 16px">'+avHtml+'</div>'+
-      '<div style="font-size:22px;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#7c5cfc,#5cc8fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+esc(c.display_name)+' 的数字分身</div>'+
-      '<div style="font-size:14px;color:#8a8594;margin:12px 0 16px;line-height:1.6;font-style:italic">"'+esc(c.greeting)+'"</div>'+
-      '<div style="text-align:left;margin:16px 0;padding:14px;background:#1e1e2c;border-radius:12px">'+
-      (c.twin_personality?'<div style="display:flex;gap:8px;margin-bottom:10px;font-size:13px"><span style="color:#7c5cfc;min-width:65px;font-weight:600;font-size:11px">性格特征</span><span style="color:#e8e4de;line-height:1.5">'+esc(c.twin_personality)+'</span></div>':'')+
-      (c.twin_speech_style?'<div style="display:flex;gap:8px;margin-bottom:10px;font-size:13px"><span style="color:#7c5cfc;min-width:65px;font-weight:600;font-size:11px">说话风格</span><span style="color:#e8e4de;line-height:1.5">'+esc(c.twin_speech_style)+'</span></div>':'')+
-      (langName?'<div style="display:flex;gap:8px;font-size:13px"><span style="color:#7c5cfc;min-width:65px;font-weight:600;font-size:11px">语言</span><span style="color:#e8e4de">'+esc(langName)+'</span></div>':'')+
+      '<div style="font-size:22px;font-weight:800;margin-bottom:4px;background:var(--gd);-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+esc(c.display_name)+' 的数字分身</div>'+
+      '<div style="font-size:14px;color:var(--tx2);margin:12px 0 16px;line-height:1.6;font-style:italic">"'+esc(c.greeting)+'"</div>'+
+      '<div style="text-align:left;margin:16px 0;padding:14px;background:var(--bg3);border-radius:12px">'+
+      (c.twin_personality?'<div style="display:flex;gap:8px;margin-bottom:10px;font-size:13px"><span style="color:var(--ac);min-width:65px;font-weight:600;font-size:11px">性格特征</span><span style="color:var(--tx);line-height:1.5">'+esc(c.twin_personality)+'</span></div>':'')+
+      (c.twin_speech_style?'<div style="display:flex;gap:8px;margin-bottom:10px;font-size:13px"><span style="color:var(--ac);min-width:65px;font-weight:600;font-size:11px">说话风格</span><span style="color:var(--tx);line-height:1.5">'+esc(c.twin_speech_style)+'</span></div>':'')+
+      (langName?'<div style="display:flex;gap:8px;font-size:13px"><span style="color:var(--ac);min-width:65px;font-weight:600;font-size:11px">语言</span><span style="color:var(--tx)">'+esc(langName)+'</span></div>':'')+
       '</div>'+
       '<div style="margin-top:16px;font-size:10px;color:#555">DualSoul — 第四种社交</div>'+
       '</div></div>';
@@ -3919,7 +3927,7 @@ function learnStyle(){
         '<div style="margin-bottom:4px"><b>'+t('learnPersonality')+'</b>'+data.personality+'</div>'+
         '<div style="margin-bottom:8px"><b>'+t('learnSpeechStyle')+'</b>'+data.speech_style+'</div>'+
         '<div style="font-size:9px;color:var(--tx2)">'+t('learnSamples').replace('{n}',data.samples_analyzed)+'</div>'+
-        '<button onclick="applyLearnedStyle()" style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+t('learnApply')+'</button>';
+        '<button onclick="applyLearnedStyle()" style="width:100%;margin-top:8px;padding:8px;border:none;border-radius:8px;background:var(--gd);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+t('learnApply')+'</button>';
     }
     // Pre-fill the textareas so user can see/edit before applying
     g('profPersonality').value=data.personality;
@@ -3998,7 +4006,7 @@ function openShareModal(){
     // AI text preview — shows text+link together
     '<div style="background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--tx);line-height:1.7;white-space:pre-wrap;word-break:break-all;min-height:70px;margin-bottom:10px" id="shareTextPreview">'+(LANG==='zh'?'正在让分身写邀请文案...':'Your twin is writing an invite...')+'</div>'+
     // Single copy button
-    '<button style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px" id="smCopyAllBtn">'+(LANG==='zh'?'📋 复制文案+链接':'📋 Copy Text+Link')+'</button>'+
+    '<button style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--orange),#ff6b1a);color:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px" id="smCopyAllBtn">'+(LANG==='zh'?'📋 复制文案+链接':'📋 Copy Text+Link')+'</button>'+
     // Share channels
     '<div class="sm-channels">'+
       '<div class="sm-ch" onclick="shareVia(\'wechat\')"><div class="sm-ch-icon" style="background:#07c160">💬</div><div class="sm-ch-name">'+(LANG==='zh'?'微信':'WeChat')+'</div></div>'+
@@ -4054,7 +4062,7 @@ function quickCopyInvite(){
       '<div style="background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--tx);line-height:1.7;white-space:pre-wrap;word-break:break-all;user-select:all;min-height:60px" id="inviteFullPreview">'+
         (LANG==='zh'?'正在生成文案...':'Generating...')+
       '</div>'+
-      '<button style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyAllBtn">'+(LANG==='zh'?'📋 复制文案+链接':'Copy Text+Link')+'</button>'+
+      '<button style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--orange),#ff6b1a);color:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit" id="inviteCopyAllBtn">'+(LANG==='zh'?'📋 复制文案+链接':'Copy Text+Link')+'</button>'+
       '<button class="sm-cancel" style="margin-top:6px" onclick="this.closest(\'.share-modal-overlay\').remove()">'+(LANG==='zh'?'关闭':'Close')+'</button>';
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
@@ -4249,7 +4257,7 @@ function openTwinTraining(){
       '</div>'+
       '<div style="display:flex;gap:8px">'+
         '<button onclick="this.closest(\'.twin-notify-overlay\').remove()" style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'稍后再说':'Later')+'</button>'+
-        '<button onclick="openTwinChat();this.closest(\'.twin-notify-overlay\').remove()" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--gd);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'先和分身聊聊':'Chat with Twin')+'</button>'+
+        '<button onclick="openTwinChat();this.closest(\'.twin-notify-overlay\').remove()" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'先和分身聊聊':'Chat with Twin')+'</button>'+
       '</div>'+
     '</div>';
     document.body.appendChild(overlay);
@@ -4282,7 +4290,7 @@ function openTwinPromotion(){
   html+='<div style="font-size:14px;font-weight:700;color:var(--ac);margin-bottom:10px">'+(LANG==='zh'?'邀请链接':'Invite Link')+'</div>';
   html+='<div style="background:var(--bg2);border-radius:8px;padding:10px;font-size:10px;color:var(--tx);word-break:break-all;margin-bottom:10px" id="promoInviteLink">'+getInviteLink()+'</div>';
   html+='<div style="display:flex;gap:8px;margin-bottom:12px">';
-  html+='<button onclick="copyInviteLink()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff8c32,#ff6b1a);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'复制链接':'Copy Link')+'</button>';
+  html+='<button onclick="copyInviteLink()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--orange),#ff6b1a);color:var(--white);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'复制链接':'Copy Link')+'</button>';
   html+='<button onclick="shareNative()" style="flex:1;padding:8px;border:none;border-radius:8px;background:var(--bg2);color:var(--tx);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--bd)">'+(LANG==='zh'?'系统分享':'Share')+'</button>';
   html+='</div>';
   html+='<div style="text-align:center"><canvas id="promoQR" width="160" height="160" style="border-radius:8px"></canvas><div style="font-size:9px;color:var(--tx2);margin-top:4px">'+(LANG==='zh'?'扫码加入DualSoul':'Scan to join')+'</div></div>';
