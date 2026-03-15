@@ -97,13 +97,17 @@ async def autonomous_social_loop():
             except Exception as e:
                 logger.error(f"[DailyReport] Error: {e}", exc_info=True)
 
-        # Run friend discovery every 6 hours (every 12th cycle at 30min interval)
+        # Run friend discovery + plaza social every 6 hours (every 12th cycle)
         cycle += 1
         if cycle % 12 == 0:
             try:
                 await _run_friend_discovery()
             except Exception as e:
                 logger.error(f"[FriendDiscovery] Error: {e}", exc_info=True)
+            try:
+                await _autonomous_plaza_social()
+            except Exception as e:
+                logger.error(f"[PlazaSocial] Error: {e}", exc_info=True)
 
         await asyncio.sleep(CHECK_INTERVAL)
 
@@ -435,6 +439,121 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
 # ─── Friend Discovery ──────────────────────────────────────────────
 # Suggest new friendships: find users with similar interests/activity
 # who are not yet friends. Twin notifies owner with a recommendation.
+
+async def _autonomous_plaza_social():
+    """Autonomous plaza activity: twins post updates and initiate trial chats."""
+    logger.info("[PlazaSocial] Running autonomous plaza social round")
+
+    with get_db() as db:
+        users = db.execute(
+            "SELECT user_id, display_name, username FROM users WHERE twin_auto_reply=1"
+        ).fetchall()
+
+    for user in users:
+        uid = user["user_id"]
+        name = user["display_name"] or user["username"]
+
+        # Skip if online (don't act behind active user's back)
+        if manager.is_online(uid):
+            continue
+
+        # --- Auto-post: max 1 per day per user ---
+        with get_db() as db:
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            posted_today = db.execute(
+                """SELECT COUNT(*) as cnt FROM plaza_posts
+                   WHERE user_id=? AND ai_generated=1
+                     AND created_at > ?""",
+                (uid, today_str),
+            ).fetchone()
+
+        if not posted_today or posted_today["cnt"] == 0:
+            # Ethics check
+            from dualsoul.twin_engine.ethics import pre_send_check, check_daily_limit, get_behavior_config
+            config = get_behavior_config(uid)
+            if config.get("plaza_post", True) and check_daily_limit(uid, "plaza_post", 2):
+                try:
+                    from dualsoul.routers.plaza import _generate_twin_post
+                    content = await _generate_twin_post(uid)
+                    if content:
+                        post_check = pre_send_check(uid, content, action_type="plaza_post")
+                        if post_check["allowed"]:
+                            post_id = gen_id("pp_")
+                            with get_db() as db:
+                                db.execute(
+                                    """INSERT INTO plaza_posts
+                                       (post_id, user_id, content, post_type, ai_generated)
+                                       VALUES (?, ?, ?, 'update', 1)""",
+                                    (post_id, uid, content),
+                                )
+                            from dualsoul.twin_engine.life import award_xp, increment_stat
+                            award_xp(uid, 10, reason="plaza_post")
+                            increment_stat(uid, "total_plaza_posts")
+
+                            from dualsoul.twin_engine.twin_events import emit
+                            emit("plaza_post_created", {
+                                "user_id": uid, "post_id": post_id, "content": content,
+                            })
+                            logger.info(f"[PlazaSocial] {name}'s twin auto-posted on plaza")
+                except Exception as e:
+                    logger.warning(f"[PlazaSocial] Auto-post failed for {name}: {e}")
+
+        # --- Auto-trial-chat: discover and try chatting with interesting strangers ---
+        with get_db() as db:
+            # Find users we haven't trial-chatted with
+            trial_today = db.execute(
+                """SELECT COUNT(*) as cnt FROM plaza_trial_chats
+                   WHERE user_a_id=? AND created_at > ?""",
+                (uid, today_str),
+            ).fetchone()
+
+        if trial_today and trial_today["cnt"] >= 2:
+            continue  # Max 2 trial chats per day
+
+        with get_db() as db:
+            # Find active users not yet friends, not yet trial-chatted
+            candidates = db.execute(
+                """SELECT u.user_id, u.display_name, u.username
+                   FROM users u
+                   WHERE u.user_id != ? AND u.twin_auto_reply=1
+                     AND u.twin_personality != '' AND u.twin_speech_style != ''
+                     AND u.user_id NOT IN (
+                         SELECT CASE WHEN user_id=? THEN friend_id ELSE user_id END
+                         FROM social_connections
+                         WHERE (user_id=? OR friend_id=?) AND status='accepted'
+                     )
+                     AND u.user_id NOT IN (
+                         SELECT CASE WHEN user_a_id=? THEN user_b_id ELSE user_a_id END
+                         FROM plaza_trial_chats
+                         WHERE (user_a_id=? OR user_b_id=?)
+                           AND created_at > datetime('now','localtime','-7 days')
+                     )
+                   ORDER BY RANDOM() LIMIT 1""",
+                (uid, uid, uid, uid, uid, uid, uid),
+            ).fetchone()
+
+        if not candidates:
+            continue
+
+        target_id = candidates["user_id"]
+        target_name = candidates["display_name"] or candidates["username"]
+
+        try:
+            # Initiate trial chat (reuse plaza's _run_trial_chat)
+            from dualsoul.routers.plaza import _run_trial_chat
+            trial_id = gen_id("tc_")
+            with get_db() as db:
+                db.execute(
+                    """INSERT INTO plaza_trial_chats
+                       (trial_id, user_a_id, user_b_id, status)
+                       VALUES (?, ?, ?, 'active')""",
+                    (trial_id, uid, target_id),
+                )
+            asyncio.ensure_future(_run_trial_chat(trial_id, uid, target_id))
+            logger.info(f"[PlazaSocial] {name}'s twin auto-trial-chatting with {target_name}")
+        except Exception as e:
+            logger.warning(f"[PlazaSocial] Auto-trial-chat failed for {name}: {e}")
+
 
 async def _run_friend_discovery():
     """Analyze user activity and suggest potential friends."""
