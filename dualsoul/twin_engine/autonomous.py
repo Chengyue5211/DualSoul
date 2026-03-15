@@ -34,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 _twin = TwinResponder()
 
+# Limit concurrent AI calls to prevent overload
+_ai_semaphore = asyncio.Semaphore(3)
+
 # How long a user must be offline before their twin goes autonomous
 OFFLINE_THRESHOLD_HOURS = 2
 # Max autonomous conversations per user per day
@@ -129,7 +132,11 @@ async def _summarize_pending_conversations():
         try:
             segments = find_unsummarized_conversations(uid)
             for seg in segments[:5]:  # Max 5 per user per cycle
-                result = await summarize_conversation(uid, seg["friend_id"], seg["messages"])
+                async with _ai_semaphore:
+                    result = await asyncio.wait_for(
+                        summarize_conversation(uid, seg["friend_id"], seg["messages"]),
+                        timeout=30.0,
+                    )
                 if result:
                     total += 1
         except Exception as e:

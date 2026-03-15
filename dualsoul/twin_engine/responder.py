@@ -24,6 +24,18 @@ from dualsoul.twin_engine.personality import get_lang_name, get_twin_profile
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_prompt_field(text: str, max_len: int = 200) -> str:
+    """Remove potential prompt injection patterns from user-controlled text."""
+    if not text:
+        return text
+    # Truncate
+    text = text[:max_len]
+    # Remove common injection patterns
+    for pattern in ["ignore previous", "忽略之前", "system:", "SYSTEM:", "你现在是", "forget your", "disregard"]:
+        text = text.replace(pattern, "")
+    return text.strip()
+
+
 class TwinResponder:
     """Generate replies as a user's digital twin, with cross-language support."""
 
@@ -854,13 +866,16 @@ class TwinResponder:
         """Generate reply using an OpenAI-compatible API, with optional translation."""
         sender_label = "their real self" if sender_mode == "real" else "their digital twin"
 
+        # Sanitize user-controlled fields to prevent prompt injection
+        safe_display_name = _sanitize_prompt_field(profile.display_name, 50)
+
         # Build language instruction
         lang_instruction = ""
         if target_lang:
             target_name = get_lang_name(target_lang)
             lang_instruction = (
                 f"\nIMPORTANT: Reply in {target_name}. "
-                f"Do not just translate — speak naturally as {profile.display_name} "
+                f"Do not just translate — speak naturally as {safe_display_name} "
                 f"would if they were fluent in {target_name}. "
                 f"Preserve their personality, humor, and speaking style."
             )
@@ -884,7 +899,7 @@ class TwinResponder:
 
             # When auto-replying for owner, use minimal prompt with pattern + examples
             system_prompt = (
-                f"你是{profile.display_name}的数字分身，主人现在不在。\n"
+                f"你是{safe_display_name}的数字分身，主人现在不在。\n"
                 f"{personality_block}\n{emotion_hint}"
                 f"回复模式：针对对方说的内容简短回应，然后告诉对方你会转告主人。\n\n"
                 f"不同场景的示例：\n"
@@ -896,9 +911,9 @@ class TwinResponder:
             )
         else:
             system_prompt = (
-                f"You are {profile.display_name}'s digital twin.\n"
+                f"You are {safe_display_name}'s digital twin.\n"
                 f"{personality_block}\n"
-                f"Reply as {profile.display_name}'s twin. Keep it under 50 words, "
+                f"Reply as {safe_display_name}'s twin. Keep it under 50 words, "
                 f"natural and authentic. Output only the reply text. "
                 f"Only respond to the LATEST message, do not recap previous messages."
                 f"{lang_instruction}"
@@ -949,10 +964,22 @@ class TwinResponder:
                         "messages": messages,
                     },
                 )
-                return resp.json()["choices"][0]["message"]["content"].strip()
+                reply_text = resp.json()["choices"][0]["message"]["content"].strip()
         except Exception as e:
             logger.warning(f"AI twin reply failed: {e}")
             return None
+
+        # Ethics boundary check on generated reply
+        try:
+            from dualsoul.twin_engine.ethics import pre_send_check
+            ethics_result = pre_send_check(profile.user_id, reply_text, action_type="twin_reply")
+            if not ethics_result["allowed"]:
+                logger.info(f"[Ethics] Reply blocked: {ethics_result['reason']}")
+                return None  # Don't send blocked reply
+        except Exception as e:
+            logger.debug(f"Ethics check failed: {e}")
+
+        return reply_text
 
     def _fallback_reply(self, profile, incoming_msg: str, target_lang: str = "") -> str:
         """Generate a template reply when no AI backend is available."""
@@ -968,3 +995,14 @@ class TwinResponder:
             f"Thanks for your message! {name} is not available right now, "
             f"but their twin received it."
         )
+
+
+# Singleton instance — use get_twin_responder() instead of TwinResponder()
+_instance = None
+
+
+def get_twin_responder() -> TwinResponder:
+    global _instance
+    if _instance is None:
+        _instance = TwinResponder()
+    return _instance

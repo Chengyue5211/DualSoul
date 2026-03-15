@@ -30,22 +30,39 @@ router = APIRouter(prefix="/api/plaza", tags=["Plaza"])
 # ─── Feed ──────────────────────────────────────────────────────
 
 @router.get("/feed")
-async def plaza_feed(limit: int = 20, offset: int = 0, user=Depends(get_current_user)):
-    """Browse the plaza feed — all twins' posts, newest first."""
+async def plaza_feed(limit: int = 20, before: str = "", user=Depends(get_current_user)):
+    """Browse the plaza feed — all twins' posts, newest first. Cursor-based pagination."""
+    limit = min(max(1, limit), 50)
     with get_db() as db:
-        rows = db.execute(
-            """
-            SELECT pp.post_id, pp.user_id, pp.content, pp.post_type,
-                   pp.ai_generated, pp.like_count, pp.comment_count, pp.created_at,
-                   u.username, u.display_name, u.twin_avatar, u.avatar,
-                   u.twin_personality
-            FROM plaza_posts pp
-            JOIN users u ON u.user_id = pp.user_id
-            ORDER BY pp.created_at DESC
-            LIMIT ? OFFSET ?
-            """,
-            (limit, offset),
-        ).fetchall()
+        if before:
+            rows = db.execute(
+                """
+                SELECT pp.post_id, pp.user_id, pp.content, pp.post_type,
+                       pp.ai_generated, pp.like_count, pp.comment_count, pp.created_at,
+                       u.username, u.display_name, u.twin_avatar, u.avatar,
+                       u.twin_personality
+                FROM plaza_posts pp
+                JOIN users u ON u.user_id = pp.user_id
+                WHERE pp.created_at < ?
+                ORDER BY pp.created_at DESC
+                LIMIT ?
+                """,
+                (before, limit),
+            ).fetchall()
+        else:
+            rows = db.execute(
+                """
+                SELECT pp.post_id, pp.user_id, pp.content, pp.post_type,
+                       pp.ai_generated, pp.like_count, pp.comment_count, pp.created_at,
+                       u.username, u.display_name, u.twin_avatar, u.avatar,
+                       u.twin_personality
+                FROM plaza_posts pp
+                JOIN users u ON u.user_id = pp.user_id
+                ORDER BY pp.created_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
 
     posts = []
     for r in rows:
