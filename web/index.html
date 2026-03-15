@@ -1235,8 +1235,8 @@ function showTwinNotify(nd){
     '<div class="tn-title" id="tn-title">'+(LANG==='zh'?'你的分身替你回了消息':'Your twin replied for you')+'</div>'+
     '<div class="tn-body" style="max-height:40vh;overflow-y:auto">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
     '<div class="tn-btns">'+
-      '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'知道了':'OK')+'</button>'+
-      (friendId?'<button class="tn-go" onclick="goTwinNotifyChat(\''+esc(friendId)+'\',\''+esc(friendName)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'查看对话':'View Chat')+'</button>':'')+
+      '<button class="tn-ok" aria-label="'+(LANG==='zh'?'关闭':'Close')+'" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'知道了':'OK')+'</button>'+
+      (friendId?'<button class="tn-go" aria-label="'+(LANG==='zh'?'查看对话':'View chat')+'" onclick="goTwinNotifyChat(\''+esc(friendId)+'\',\''+esc(friendName)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'查看对话':'View Chat')+'</button>':'')+
     '</div>'+
   '</div>';
   overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
@@ -1266,7 +1266,7 @@ function showDailyReport(nd){
     coldFriends.forEach(function(cf){
       coldHtml+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
       coldHtml+='<span style="font-size:11px;color:var(--tx)">'+esc(cf.name)+' <span style="color:var(--tx2);font-size:9px">'+cf.temp+'\u00B0C</span></span>';
-      coldHtml+='<button onclick="warmFriend(\''+cf.fid+'\',\''+esc(cf.name)+'\');this.textContent=\''+(LANG==='zh'?'已发送':'Sent')+'!\';this.disabled=true" style="padding:3px 10px;border:1px solid rgba(124,92,252,.3);border-radius:6px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:9px;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'让分身问候':'Send greeting')+'</button>';
+      coldHtml+='<button aria-label="'+(LANG==='zh'?'发送问候':'Send greeting')+'" onclick="warmFriend(\''+cf.fid+'\',\''+esc(cf.name)+'\');this.textContent=\''+(LANG==='zh'?'已发送':'Sent')+'!\';this.disabled=true" style="padding:3px 10px;border:1px solid rgba(124,92,252,.3);border-radius:6px;background:rgba(124,92,252,.08);color:var(--ac2);font-size:9px;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'让分身问候':'Send greeting')+'</button>';
       coldHtml+='</div>';
     });
     coldHtml+='</div>';
@@ -1281,7 +1281,7 @@ function showDailyReport(nd){
     '<div class="tn-body" style="max-height:40vh;overflow-y:auto;line-height:1.8;font-size:13px">'+esc(content).replace(/\n/g,'<br>')+'</div>'+
     coldHtml+
     '<div class="tn-btns">'+
-      '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'收到！':'Got it!')+'</button>'+
+      '<button class="tn-ok" aria-label="'+(LANG==='zh'?'关闭日报':'Close report')+'" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'收到！':'Got it!')+'</button>'+
     '</div>'+
   '</div>';
   overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
@@ -1485,7 +1485,7 @@ function tsRunStep(){
     ];
     var html='<div class="style-cards" id="styleCards">';
     cards.forEach(function(c){
-      html+='<div class="style-card" data-id="'+c.id+'" data-personality="'+esc(c.personality)+'" data-style="'+esc(c.style)+'" onclick="tsPickCard(this)">'+
+      html+='<div class="style-card" data-id="'+c.id+'" data-personality="'+esc(c.personality)+'" data-style="'+esc(c.style)+'" onclick="tsPickCard(this)" role="button" tabindex="0">'+
         '<div class="sc-name">'+esc(c.name)+'</div>'+
         '<div class="sc-example">'+esc(c.example)+'</div>'+
         '<div class="sc-tags">'+esc(c.personality)+'</div></div>';
@@ -1507,20 +1507,20 @@ function tsRunStep(){
     ];
     var html='<div class="ts-chips" id="tsFineTune">';
     tags.forEach(function(tag){
-      html+='<div class="ts-chip" onclick="tsToggleTag(this)">'+esc(tag)+'</div>';
+      html+='<div class="ts-chip" onclick="tsToggleTag(this)" role="button" tabindex="0">'+esc(tag)+'</div>';
     });
     html+='</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishTags()">'+(LANG==='zh'?'确定':'Done')+'</button>'+
-      '<div style="text-align:center;margin-top:6px"><span style="font-size:10px;color:var(--tx2);cursor:pointer" onclick="tsFinishTags()">'+(LANG==='zh'?'跳过微调':'Skip fine-tuning')+'</span></div>';
+      '<div style="text-align:center;margin-top:6px"><span style="font-size:10px;color:var(--tx2);cursor:pointer" onclick="tsFinishTags()" role="button" tabindex="0">'+(LANG==='zh'?'跳过微调':'Skip fine-tuning')+'</span></div>';
     inp.innerHTML=html;
   }else if(tsStep===4){
     tsAddMsg('system',LANG==='zh'?'最后一步——你主要用什么语言聊天？':'Last one — what language do you mostly chat in?');
     inp.style.display='flex';
     inp.innerHTML='<div class="ts-chips" id="tsLangChips">'+
-      '<div class="ts-chip on" onclick="tsPickLang(this,\'zh\')">中文</div>'+
-      '<div class="ts-chip" onclick="tsPickLang(this,\'en\')">English</div>'+
-      '<div class="ts-chip" onclick="tsPickLang(this,\'ja\')">日本語</div>'+
-      '<div class="ts-chip" onclick="tsPickLang(this,\'ko\')">한국어</div>'+
-      '<div class="ts-chip" onclick="tsPickLang(this,\'es\')">Español</div>'+
+      '<div class="ts-chip on" onclick="tsPickLang(this,\'zh\')" role="button" tabindex="0">中文</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'en\')" role="button" tabindex="0">English</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'ja\')" role="button" tabindex="0">日本語</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'ko\')" role="button" tabindex="0">한국어</div>'+
+      '<div class="ts-chip" onclick="tsPickLang(this,\'es\')" role="button" tabindex="0">Español</div>'+
       '</div><button class="ob-btn" style="margin-top:10px" onclick="tsFinishLang()">'+(LANG==='zh'?'完成':'Done')+'</button>';
     tsLang='zh';
   }else if(tsStep===5){
@@ -1578,8 +1578,8 @@ function startCamera(){
     video.srcObject=stream;video.style.display='block';
     if(overlay)overlay.style.display='none';
     var btns=g('camBtns');
-    btns.innerHTML='<button class="cam-take" onclick="takePhoto()">'+(LANG==='zh'?'📸 拍照':'📸 Capture')+'</button>'+
-      '<button class="cam-skip" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button>';
+    btns.innerHTML='<button class="cam-take" aria-label="'+(LANG==='zh'?'拍照':'Take photo')+'" onclick="takePhoto()">'+(LANG==='zh'?'📸 拍照':'📸 Capture')+'</button>'+
+      '<button class="cam-skip" aria-label="'+(LANG==='zh'?'跳过':'Skip')+'" onclick="skipCamera()">'+(LANG==='zh'?'跳过':'Skip')+'</button>';
   }).catch(function(err){
     toast(LANG==='zh'?'无法访问摄像头：'+err.message:'Camera access denied: '+err.message);
   });
@@ -1606,15 +1606,15 @@ function takePhoto(){
   styles.forEach(function(s,i){
     var onCls=i===0?'on':'';
     styleHtml+='<div class="ts-option '+onCls+'" onclick="pickTwinStyle(this,\''+s.cls+'\')" data-filter="'+s.cls+'">'+
-      '<div class="ts-preview-img"><img src="'+_capturedPhoto+'" class="twin-filter '+(i===0?s.cls:s.cls)+'" style="width:100%;height:100%;object-fit:cover"></div>'+
+      '<div class="ts-preview-img"><img src="'+_capturedPhoto+'" class="twin-filter '+(i===0?s.cls:s.cls)+'" style="width:100%;height:100%;object-fit:cover" alt="Avatar preview"></div>'+
       '<div class="ts-label">'+s.name[LANG]+'</div></div>';
   });
   styleHtml+='</div>';
   inp.innerHTML='<div class="cam-wrap">'+
     '<div class="cam-result">'+
-    '<div><div class="av-box"><img src="'+_capturedPhoto+'"></div><div class="av-label">'+(LANG==='zh'?'真人':'Real')+'</div></div>'+
+    '<div><div class="av-box"><img src="'+_capturedPhoto+'" alt="Avatar preview"></div><div class="av-label">'+(LANG==='zh'?'真人':'Real')+'</div></div>'+
     '<div class="cam-arrow">→</div>'+
-    '<div><div class="av-box twin-box" id="twinPreviewBox"><img src="'+_capturedPhoto+'" class="twin-filter '+styles[0].cls+'" id="twinPreviewImg"></div><div class="av-label" style="color:var(--ac2)">'+(LANG==='zh'?'数字分身':'Twin')+'</div></div>'+
+    '<div><div class="av-box twin-box" id="twinPreviewBox"><img src="'+_capturedPhoto+'" class="twin-filter '+styles[0].cls+'" id="twinPreviewImg" alt="Avatar preview"></div><div class="av-label" style="color:var(--ac2)">'+(LANG==='zh'?'数字分身':'Twin')+'</div></div>'+
     '</div>'+
     '<div style="margin:8px 0;text-align:center;font-size:10px;color:var(--tx2)">'+(LANG==='zh'?'选择分身风格：':'Choose twin style:')+'</div>'+
     styleHtml+
@@ -1703,10 +1703,10 @@ function toggleVoiceRecord(){
       if(_voiceTimer){clearInterval(_voiceTimer);_voiceTimer=null}
       if(_voiceSeconds>=3){
         var url=URL.createObjectURL(_voiceBlob);
-        playback.innerHTML='<audio controls src="'+url+'" style="width:100%;height:32px"></audio>';
-        g('voiceBtns').innerHTML='<button class="cam-take" onclick="confirmVoice()">'+(LANG==='zh'?'✓ 使用这段录音':'✓ Use this recording')+'</button>'+
-          '<button class="cam-skip" onclick="toggleVoiceRecord()" style="margin-left:6px">'+(LANG==='zh'?'重录':'Re-record')+'</button>'+
-          '<button class="cam-skip" onclick="skipVoice()" style="margin-left:6px">'+(LANG==='zh'?'跳过':'Skip')+'</button>';
+        playback.innerHTML='<audio controls src="'+url+'" style="width:100%;height:32px" aria-label="'+(LANG==='zh'?'录音回放':'Voice playback')+'"></audio>';
+        g('voiceBtns').innerHTML='<button class="cam-take" aria-label="'+(LANG==='zh'?'使用录音':'Use recording')+'" onclick="confirmVoice()">'+(LANG==='zh'?'✓ 使用这段录音':'✓ Use this recording')+'</button>'+
+          '<button class="cam-skip" aria-label="'+(LANG==='zh'?'重录':'Re-record')+'" onclick="toggleVoiceRecord()" style="margin-left:6px">'+(LANG==='zh'?'重录':'Re-record')+'</button>'+
+          '<button class="cam-skip" aria-label="'+(LANG==='zh'?'跳过':'Skip')+'" onclick="skipVoice()" style="margin-left:6px">'+(LANG==='zh'?'跳过':'Skip')+'</button>';
       }else{
         status.textContent=LANG==='zh'?'录音太短了，至少3秒':'Too short, at least 3 seconds';
         playback.innerHTML='';
@@ -1799,7 +1799,7 @@ function openDiscPage(title,bodyHtml){
   var old=document.querySelector('.disc-page');if(old)old.remove();
   var page=document.createElement('div');
   page.className='disc-page';
-  page.innerHTML='<div class="dp-header"><button class="dp-back" onclick="this.closest(\'.disc-page\').remove()">←</button><h3>'+esc(title)+'</h3></div><div class="dp-body">'+bodyHtml+'</div>';
+  page.innerHTML='<div class="dp-header"><button class="dp-back" aria-label="'+(LANG==='zh'?'返回':'Go back')+'" onclick="this.closest(\'.disc-page\').remove()">←</button><h3>'+esc(title)+'</h3></div><div class="dp-body">'+bodyHtml+'</div>';
   document.body.appendChild(page);
 }
 
@@ -1837,13 +1837,13 @@ function scanQR(){
     '<div style="text-align:center;padding:30px 20px">'+
     '<div style="font-size:48px;margin-bottom:16px">📱</div>'+
     '<div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:16px">'+(LANG==='zh'?'扫描好友的二维码':'Scan friend\'s QR code')+'</div>'+
-    '<div style="margin:20px auto;max-width:200px;padding:20px;background:var(--bg2);border:2px dashed var(--bd);border-radius:12px;text-align:center;cursor:pointer" onclick="startQRScan()">'+
+    '<div style="margin:20px auto;max-width:200px;padding:20px;background:var(--bg2);border:2px dashed var(--bd);border-radius:12px;text-align:center;cursor:pointer" onclick="startQRScan()" role="button" tabindex="0" aria-label="'+(LANG==='zh'?'扫描二维码':'Scan QR code')+'">'+
     '<div style="font-size:32px;margin-bottom:8px">📸</div>'+
     '<div style="font-size:11px;color:var(--tx2)">'+(LANG==='zh'?'点击打开相机扫码':'Tap to open camera')+'</div></div>'+
     '<div style="margin-top:20px;font-size:11px;color:var(--tx2);text-align:center">'+(LANG==='zh'?'或直接输入对方用户名添加好友':'Or enter username to add friend')+'</div>'+
     '<div style="display:flex;gap:8px;margin-top:10px;max-width:280px;margin-left:auto;margin-right:auto">'+
-    '<input id="qrManualInput" placeholder="'+(LANG==='zh'?'输入用户名':'Username')+'" style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit">'+
-    '<button onclick="qrAddFriend()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'添加':'Add')+'</button></div>'+
+    '<input id="qrManualInput" aria-label="'+(LANG==='zh'?'输入用户名':'Enter username')+'" placeholder="'+(LANG==='zh'?'输入用户名':'Username')+'" style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:12px;font-family:inherit">'+
+    '<button aria-label="'+(LANG==='zh'?'添加好友':'Add friend')+'" onclick="qrAddFriend()" style="padding:10px 16px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'添加':'Add')+'</button></div>'+
     '</div>');
 }
 
@@ -1867,13 +1867,13 @@ function openTwinPlaza(){
 
   // Tab bar: Feed | Discover | My Trials
   html+='<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--bd)">';
-  html+='<button onclick="plazaSwitchTab(\'feed\')" id="plzTabFeed" class="plz-tab plz-tab-active" style="flex:1;padding:10px;border:none;background:none;color:var(--ac);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border-bottom:2px solid var(--ac)">'+(LANG==='zh'?'动态':'Feed')+'</button>';
-  html+='<button onclick="plazaSwitchTab(\'discover\')" id="plzTabDiscover" class="plz-tab" style="flex:1;padding:10px;border:none;background:none;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent">'+(LANG==='zh'?'发现分身':'Discover')+'</button>';
-  html+='<button onclick="plazaSwitchTab(\'trials\')" id="plzTabTrials" class="plz-tab" style="flex:1;padding:10px;border:none;background:none;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent">'+(LANG==='zh'?'试聊记录':'Trials')+'</button>';
+  html+='<button role="tab" onclick="plazaSwitchTab(\'feed\')" id="plzTabFeed" class="plz-tab plz-tab-active" style="flex:1;padding:10px;border:none;background:none;color:var(--ac);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border-bottom:2px solid var(--ac)">'+(LANG==='zh'?'动态':'Feed')+'</button>';
+  html+='<button role="tab" onclick="plazaSwitchTab(\'discover\')" id="plzTabDiscover" class="plz-tab" style="flex:1;padding:10px;border:none;background:none;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent">'+(LANG==='zh'?'发现分身':'Discover')+'</button>';
+  html+='<button role="tab" onclick="plazaSwitchTab(\'trials\')" id="plzTabTrials" class="plz-tab" style="flex:1;padding:10px;border:none;background:none;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent">'+(LANG==='zh'?'试聊记录':'Trials')+'</button>';
   html+='</div>';
 
   // Content area
-  html+='<div id="plzContent"><div style="text-align:center;padding:30px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div></div>';
+  html+='<div id="plzContent" role="tabpanel"><div style="text-align:center;padding:30px;color:var(--tx2);font-size:12px">'+(LANG==='zh'?'加载中...':'Loading...')+'</div></div>';
 
   html+='</div>';
 
@@ -2061,8 +2061,8 @@ function showTrialResult(data){
     '</div>'+
     '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:12px;max-height:200px;overflow-y:auto">'+convoHtml+'</div>'+
     '<div class="tn-btns">'+
-      (score>=0.4&&otherUsername?'<button class="tn-go" onclick="addDiscoveredFriend(\''+esc(otherUsername)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>':'')+
-      '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'关闭':'Close')+'</button>'+
+      (score>=0.4&&otherUsername?'<button class="tn-go" aria-label="'+(LANG==='zh'?'加好友':'Add friend')+'" onclick="addDiscoveredFriend(\''+esc(otherUsername)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>':'')+
+      '<button class="tn-ok" aria-label="'+(LANG==='zh'?'关闭':'Close')+'" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'关闭':'Close')+'</button>'+
     '</div></div>';
   overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
   overlay.tabIndex=-1;
@@ -2085,9 +2085,9 @@ function plazaLoadTrials(){
       var scorePct=Math.round((tc.compatibility_score||0)*100);
       var scoreColor=tc.compatibility_score>=0.7?'#4ade80':tc.compatibility_score>=0.4?'#fbbf24':'var(--tx2)';
       var statusText=tc.status==='active'?(LANG==='zh'?'聊天中...':'Chatting...'):(LANG==='zh'?'已完成':'Done');
-      h+='<div onclick="plazaViewTrial(\''+tc.trial_id+'\')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer">';
+      h+='<div onclick="plazaViewTrial(\''+tc.trial_id+'\')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer" role="button" tabindex="0">';
       var avSrc=tc.other_avatar;
-      h+=(avSrc?'<img src="'+esc(avSrc)+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover">':
+      h+=(avSrc?'<img src="'+esc(avSrc)+'" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover">':
         '<div style="width:40px;height:40px;border-radius:50%;background:var(--gd);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--white);font-weight:700">'+esc(tc.other_name||'?')[0]+'</div>');
       h+='<div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--tx)">'+esc(tc.other_name)+'</div>';
       h+='<div style="font-size:9px;color:var(--tx2)">'+statusText+' · '+(tc.created_at||'').slice(5,16)+'</div></div>';
@@ -2140,7 +2140,7 @@ function changePassword(){
     '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'当前密码':'Current password')+'</label><input type="password" id="cpOld" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
     '<div style="margin-bottom:12px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'新密码':'New password')+'</label><input type="password" id="cpNew" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
     '<div style="margin-bottom:16px"><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">'+(LANG==='zh'?'确认新密码':'Confirm new password')+'</label><input type="password" id="cpConfirm" style="width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;box-sizing:border-box"></div>'+
-    '<button onclick="submitChangePassword()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'确认修改':'Save')+'</button></div>');
+    '<button aria-label="'+(LANG==='zh'?'确认修改':'Save password')+'" onclick="submitChangePassword()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--gd);color:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'+(LANG==='zh'?'确认修改':'Save')+'</button></div>');
 }
 
 function submitChangePassword(){
@@ -2543,8 +2543,8 @@ function buildAvatar(name,size,mode,avatarUrl,twinAvatarUrl){
   var frontSrc=isTwin?twinSrc:realSrc;
   var backSrc=isTwin?realSrc:twinSrc;
   return '<div class="dual-av" style="width:'+size+'px;height:'+size+'px">'+
-    '<div class="av-back '+backCls+'" style="width:'+back+'px;height:'+back+'px"><img src="'+backSrc+'"></div>'+
-    '<div class="av-front '+frontCls+'" style="width:'+front+'px;height:'+front+'px"><img src="'+frontSrc+'"></div></div>';
+    '<div class="av-back '+backCls+'" style="width:'+back+'px;height:'+back+'px"><img src="'+backSrc+'" alt=""></div>'+
+    '<div class="av-front '+frontCls+'" style="width:'+front+'px;height:'+front+'px"><img src="'+frontSrc+'" alt=""></div></div>';
 }
 
 // Init default SVGs on static HTML img elements
@@ -4428,7 +4428,7 @@ function handleFriendDiscovery(data){
     '<div class="tn-title" id="tn-title">'+(LANG==='zh'?'分身发现了新朋友':'Twin Found a Friend')+'</div>'+
     '<div class="tn-body">'+esc(data.content||'')+'</div>'+
     '<div class="tn-btns">'+
-      '<button class="tn-go" onclick="addDiscoveredFriend(\''+esc(data.suggested_username)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>'+
+      '<button class="tn-go" aria-label="'+(LANG==='zh'?'加好友':'Add friend')+'" onclick="addDiscoveredFriend(\''+esc(data.suggested_username)+'\');this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'加好友':'Add Friend')+'</button>'+
       '<button class="tn-ok" onclick="this.closest(\'.twin-notify-overlay\').remove()">'+(LANG==='zh'?'以后再说':'Later')+'</button>'+
     '</div></div>';
   overlay.addEventListener('keydown',function(e){if(e.key==='Escape')overlay.remove()});
