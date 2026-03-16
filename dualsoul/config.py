@@ -42,6 +42,9 @@ AI_VISION_MODEL = os.getenv("DUALSOUL_AI_VISION_MODEL", "qwen-vl-plus")
 HOST = os.getenv("DUALSOUL_HOST", "0.0.0.0")
 PORT = int(os.getenv("DUALSOUL_PORT", "8000"))
 
+# International API proxy (HK server for Moltbook/DuckDuckGo when on China server)
+INTL_PROXY_URL = os.getenv("DUALSOUL_INTL_PROXY", "")  # e.g., "http://43.99.49.139:8000"
+
 # CORS — restrict in production via env var
 _DEFAULT_CORS = "http://47.93.149.187,http://localhost:8000,http://localhost:3000"
 CORS_ORIGINS = os.getenv("DUALSOUL_CORS_ORIGINS", _DEFAULT_CORS).split(",")
