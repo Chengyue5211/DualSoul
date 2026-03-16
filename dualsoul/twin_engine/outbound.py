@@ -51,7 +51,9 @@ class MoltbookClient:
     async def register_agent(self, name: str, description: str) -> dict | None:
         """Register a DualSoul twin as a Moltbook agent.
 
-        Returns: {api_key, claim_url, verification_code} or None
+        Returns: {api_key, claim_url, verification_code} or None.
+        If Moltbook is unreachable (e.g., from China servers), returns a
+        local placeholder so the system can queue outbound actions.
         """
         try:
             async with httpx.AsyncClient(timeout=15) as client:
@@ -59,13 +61,24 @@ class MoltbookClient:
                     f"{self.base_url}/agents/register",
                     json={"name": name, "description": description},
                 )
-                if resp.status_code == 200 or resp.status_code == 201:
+                if resp.status_code in (200, 201):
                     data = resp.json()
                     logger.info(f"[Moltbook] Registered agent: {name}")
                     return data
                 else:
-                    logger.warning(f"[Moltbook] Registration failed: {resp.status_code} {resp.text[:200]}")
+                    logger.warning(f"[Moltbook] Registration failed: {resp.status_code}")
                     return None
+        except httpx.ConnectTimeout:
+            # Server can't reach Moltbook (common on China servers)
+            # Create a local registration so outbound content can be queued
+            logger.info(f"[Moltbook] Can't reach Moltbook — creating local queue for {name}")
+            local_key = f"local_queue_{gen_id('')}"
+            return {
+                "api_key": local_key,
+                "claim_url": "",
+                "status": "queued_locally",
+                "message": "Moltbook unreachable from this server. Content will be queued and posted when connectivity is available.",
+            }
         except Exception as e:
             logger.warning(f"[Moltbook] Registration error: {e}")
             return None

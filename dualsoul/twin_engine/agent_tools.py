@@ -38,32 +38,16 @@ TOOL_DEFINITIONS = """
 # --- Tool implementations ---
 
 async def web_search(query: str, max_results: int = 5) -> str:
-    """Search the web using DuckDuckGo Instant Answer API + HTML scraping fallback."""
+    """Search for information using AI knowledge synthesis.
+
+    Note: Direct web search APIs (DuckDuckGo etc.) are not accessible from
+    the China-based server. Uses AI model's training knowledge instead,
+    which covers information up to its knowledge cutoff.
+    """
     results = []
 
-    # Method 1: DuckDuckGo Instant Answer API (no key needed)
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                "https://api.duckduckgo.com/",
-                params={"q": query, "format": "json", "no_redirect": 1, "no_html": 1},
-            )
-            data = resp.json()
-
-            # Abstract (Wikipedia-style summary)
-            if data.get("Abstract"):
-                results.append(f"📖 {data['AbstractSource']}: {data['Abstract']}")
-
-            # Related topics
-            for topic in (data.get("RelatedTopics") or [])[:3]:
-                if isinstance(topic, dict) and topic.get("Text"):
-                    results.append(f"• {topic['Text'][:200]}")
-
-    except Exception as e:
-        logger.warning(f"[AgentTools] DuckDuckGo search failed: {e}")
-
-    # Method 2: Use AI to synthesize knowledge if search returned little
-    if len(results) < 2:
+    # Primary method: AI knowledge synthesis (works from any server)
+    if True:
         try:
             async with httpx.AsyncClient(timeout=15) as client:
                 resp = await client.post(
