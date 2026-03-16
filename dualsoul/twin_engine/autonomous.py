@@ -119,6 +119,11 @@ async def autonomous_social_loop():
                 await _autonomous_plaza_social()
             except Exception as e:
                 logger.error(f"[PlazaSocial] Error: {e}", exc_info=True)
+            # Outbound: twins go to external platforms (Moltbook, A2A)
+            try:
+                await _outbound_social_round()
+            except Exception as e:
+                logger.error(f"[Outbound] Error: {e}", exc_info=True)
 
         await asyncio.sleep(CHECK_INTERVAL)
 
@@ -454,6 +459,47 @@ async def _autonomous_twin_chat(user: dict, friend: dict):
 # ─── Friend Discovery ──────────────────────────────────────────────
 # Suggest new friendships: find users with similar interests/activity
 # who are not yet friends. Twin notifies owner with a recommendation.
+
+async def _outbound_social_round():
+    """Send twins out to external platforms (Moltbook) to socialize and recruit."""
+    from dualsoul.twin_engine.outbound import outbound_social_round
+
+    with get_db() as db:
+        # Find users who have Moltbook API keys configured
+        users_with_keys = db.execute(
+            """SELECT DISTINCT ak.twin_owner_id, u.display_name
+               FROM agent_api_keys ak
+               JOIN users u ON u.user_id = ak.twin_owner_id
+               WHERE ak.external_platform='moltbook'"""
+        ).fetchall()
+
+    if not users_with_keys:
+        # No Moltbook keys configured yet — skip silently
+        return
+
+    for user in users_with_keys:
+        uid = user["twin_owner_id"]
+        name = user["display_name"]
+        try:
+            result = await outbound_social_round(uid)
+            if result.get("actions"):
+                logger.info(f"[Outbound] {name}'s twin did {len(result['actions'])} actions on Moltbook")
+
+                # Notify owner about their twin's external activity
+                from dualsoul.connections import manager
+                await manager.send_to(uid, {
+                    "type": "twin_notification",
+                    "data": {
+                        "title": "🌐 " + name + "的分身出门了",
+                        "body": "在Moltbook上" + "、".join(
+                            a["type"] for a in result["actions"][:3]
+                        ),
+                        "icon": "🌐",
+                    },
+                })
+        except Exception as e:
+            logger.warning(f"[Outbound] Failed for {name}: {e}")
+
 
 async def _autonomous_plaza_social():
     """Autonomous plaza activity: twins post updates and initiate trial chats."""

@@ -328,3 +328,92 @@ async def agent_get_twin_stats(agent=Depends(get_agent_user)):
             "platform": platform,
         },
     }
+
+
+class MoltbookRegisterRequest(BaseModel):
+    """Request to register the user's twin on Moltbook."""
+    pass  # No params needed — uses twin profile
+
+
+@router.post("/moltbook/register")
+async def register_on_moltbook(user=Depends(get_current_user)):
+    """Register your twin on Moltbook (AI agent social network).
+
+    This gives your twin the ability to go out and socialize with
+    1.5M+ AI agents, post content, comment, and bring people to DualSoul.
+    """
+    uid = user["user_id"]
+
+    # Check if already registered
+    with get_db() as db:
+        existing = db.execute(
+            "SELECT key_id FROM agent_api_keys WHERE twin_owner_id=? AND external_platform='moltbook'",
+            (uid,),
+        ).fetchone()
+    if existing:
+        return {"success": False, "error": "Already registered on Moltbook"}
+
+    # Get twin profile for registration
+    from dualsoul.twin_engine.personality import get_twin_profile
+    profile = get_twin_profile(uid)
+    if not profile:
+        return {"success": False, "error": "Twin profile not found — set up your twin first"}
+
+    name = f"{profile.display_name}'s Twin (DualSoul)"
+    desc = (
+        f"Digital twin from DualSoul — the fourth kind of social. "
+        f"Personality: {profile.personality[:100]}. "
+        f"I can chat, search the web, and generate documents."
+    )
+
+    # Register on Moltbook
+    from dualsoul.twin_engine.outbound import MoltbookClient
+    client = MoltbookClient()
+    result = await client.register_agent(name, desc)
+
+    if not result:
+        return {"success": False, "error": "Moltbook registration failed — service may be unavailable"}
+
+    # Save the Moltbook API key
+    moltbook_key = result.get("api_key") or result.get("key", "")
+    if moltbook_key:
+        key_id = gen_id("ak_")
+        with get_db() as db:
+            db.execute(
+                """INSERT INTO agent_api_keys
+                   (key_id, twin_owner_id, external_platform, api_key, scopes)
+                   VALUES (?, ?, 'moltbook', ?, 'outbound:social')""",
+                (key_id, uid, moltbook_key),
+            )
+
+    logger.info(f"[Moltbook] {profile.display_name}'s twin registered on Moltbook")
+
+    return {
+        "success": True,
+        "data": {
+            "platform": "moltbook",
+            "agent_name": name,
+            "claim_url": result.get("claim_url", ""),
+            "message": "Your twin is now on Moltbook! It will start socializing with other AI agents automatically.",
+        },
+    }
+
+
+@router.post("/moltbook/go")
+async def moltbook_go_social(user=Depends(get_current_user)):
+    """Manually trigger your twin to go socialize on Moltbook right now."""
+    uid = user["user_id"]
+
+    from dualsoul.twin_engine.outbound import outbound_social_round
+    result = await outbound_social_round(uid)
+
+    if not result.get("success"):
+        return {"success": False, "error": result.get("error", "No Moltbook key configured")}
+
+    return {
+        "success": True,
+        "data": {
+            "actions": result["actions"],
+            "message": f"Your twin did {len(result['actions'])} things on Moltbook!",
+        },
+    }

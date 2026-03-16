@@ -179,6 +179,17 @@ async def log_client_error(request: Request):
     return {"ok": True}
 
 
+@app.get("/.well-known/agent.json")
+async def a2a_agent_card():
+    """A2A Protocol: publish this twin's Agent Card for discovery by other agents."""
+    from dualsoul.twin_engine.outbound import build_agent_card
+    return build_agent_card(
+        user_id="system",
+        display_name="DualSoul",
+        personality="A social platform where humans and AI twins coexist. Every person has two voices.",
+    )
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "version": __version__}
