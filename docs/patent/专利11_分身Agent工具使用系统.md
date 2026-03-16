@@ -1,0 +1,283 @@
+# 发明专利申请
+
+## 专利十一
+
+## 一种数字分身Agent工具使用与两阶段响应生成系统
+
+| 项目 | 内容 |
+|------|------|
+| **发明名称** | 一种数字分身Agent工具使用与两阶段响应生成系统 |
+| **发明人** | Chengyue5211 |
+| **申请人** | Chengyue5211 |
+| **首次公开日期** | 2026-03-16 |
+| **公开平台** | GitHub (github.com/Chengyue5211/DualSoul) / Gitee镜像 |
+| **申请宽限期截止** | 2026-09-16 |
+| **技术领域** | 人工智能代理、工具使用（Tool Use）、自然语言处理、社交通信 |
+
+---
+
+## 一、技术领域
+
+本发明属于人工智能代理和工具使用领域，具体涉及一种数字分身在社交对话中自动检测任务请求、通过AI大模型选择并调用外部工具、并将工具执行结果融合为自然语言回复的两阶段响应生成方法和系统。
+
+---
+
+## 二、背景技术
+
+现有AI代理/分身系统在工具使用方面存在以下问题：
+
+（一）**纯对话方案**（传统聊天机器人）：AI只能基于训练数据生成文本回复，无法执行搜索、文档生成等实际操作。当用户说"帮我查一下最新的AI趋势"时，只能凭记忆生成可能过时的回答。
+
+（二）**函数调用方案**（OpenAI Function Calling）：依赖特定AI厂商的函数调用接口，与厂商强耦合。且在社交分身场景中，缺乏基于关键词的任务检测前置判断，所有消息都需经过函数调用判断流程，增加延迟和成本。
+
+（三）**固定流程方案**（RPA机器人流程自动化）：按预定义流程执行任务，无法理解自然语言的模糊请求，且不具备社交人格和对话上下文。
+
+（四）**无降级方案**：工具调用失败时系统报错或无响应，用户体验中断。
+
+**空白地带**：没有一个数字分身系统实现了基于关键词的任务前置检测、厂商无关的工具定义注入、AI自主决策工具调用、以及工具失败优雅降级为普通对话的完整工具使用链路。
+
+---
+
+## 三、发明内容
+
+### 3.1 技术问题
+
+本发明解决的技术问题是：数字分身如何在保持社交人格和对话自然性的前提下，自动识别用户的任务请求，调用外部工具获取信息或执行操作，并将工具结果融合为符合主人风格的自然语言回复。
+
+### 3.2 技术方案
+
+#### 3.2.1 基于关键词的任务检测前置判断
+
+系统在收到消息时首先通过关键词匹配判断是否为任务请求，避免所有消息都进入工具调用流程：
+
+```python
+@staticmethod
+def _needs_agent_tools(msg: str) -> bool:
+    task_keywords = [
+        "帮我查", "帮我搜", "查一下", "搜一下", "搜索", "查资料", "查找",
+        "帮我写", "帮我生成", "写一份", "生成一份",
+        "帮我发", "帮我通知",
+        # ... 更多任务关键词
+    ]
+    return any(kw in msg for kw in task_keywords)
+```
+
+只有消息包含任务关键词时，才激活工具使用流程；其他消息走普通对话回复路径，保持低延迟。
+
+#### 3.2.2 工具定义注入机制
+
+系统将可用工具的名称、用途和调用格式以自然语言注入AI的system prompt，使AI厂商无关地理解工具能力：
+
+```python
+TOOL_DEFINITIONS = """
+你有以下工具可以使用。当用户的请求需要用到工具时，输出JSON格式的工具调用：
+
+1. web_search: 搜索互联网获取信息
+   用法: {"tool": "web_search", "query": "搜索关键词"}
+
+2. generate_doc: 生成文档/总结/报告
+   用法: {"tool": "generate_doc", "title": "标题", "request": "需求描述"}
+
+3. send_platform_message: 在外部Agent平台发送消息
+   用法: {"tool": "send_platform_message", "platform": "平台名", "message": "内容"}
+
+如果不需要工具，直接正常回复。
+如果需要工具，先输出工具调用JSON（用```tool标记），然后系统会返回结果。
+"""
+```
+
+该方式不依赖任何AI厂商的函数调用API（如OpenAI的tools参数），而是通过自然语言指令让任何AI模型都能理解和使用工具。
+
+#### 3.2.3 两阶段响应生成
+
+本发明的核心创新是两阶段响应生成流程：
+
+**第一阶段 — AI决策（是否使用工具）**：
+```python
+# 阶段1: 带工具定义的AI调用
+system_prompt = f"{personality_prompt}\n{TOOL_DEFINITIONS}\n{memory_context}"
+messages = [
+    {"role": "system", "content": system_prompt},
+    {"role": "user", "content": incoming_msg},
+]
+ai_response = await ai_call(messages)
+
+# 解析AI响应中的工具调用
+tool_call = parse_tool_call(ai_response)
+if not tool_call:
+    return ai_response  # 无工具调用，直接返回
+```
+
+**工具调用解析**支持两种格式，增强鲁棒性：
+```python
+def parse_tool_call(ai_response: str) -> dict | None:
+    # 格式1: ```tool ... ``` 代码块
+    tool_match = re.search(r'```tool\s*\n?(.*?)\n?```', ai_response, re.DOTALL)
+    if tool_match:
+        return json.loads(tool_match.group(1))
+
+    # 格式2: 内联JSON {"tool": "..."}
+    json_match = re.search(r'\{[^{}]*"tool"\s*:\s*"[^"]+?"[^{}]*\}', ai_response)
+    if json_match:
+        return json.loads(json_match.group())
+
+    return None  # AI选择不使用工具
+```
+
+**第二阶段 — 工具执行 + 结果融合**：
+```python
+# 阶段2: 执行工具
+tool_result = await execute_tool(tool_call)
+
+# 将工具结果反馈给AI，生成最终回复
+messages.append({"role": "assistant", "content": ai_response})
+messages.append({"role": "user", "content": f"[工具执行结果]\n{tool_result}\n\n请根据结果，用{name}的风格给出最终回复。"})
+
+final_response = await ai_call(messages)
+return final_response
+```
+
+两阶段设计确保：(1) AI在主人人格和记忆上下文中决定工具使用，(2) 最终回复融合工具结果且保持主人说话风格。
+
+#### 3.2.4 三种内置工具
+
+**工具一：web_search（网络搜索）**
+- 主方法：DuckDuckGo Instant Answer API（无需API Key）
+- 降级方法：AI知识合成（当搜索结果不足时，用AI整理相关知识）
+- 输出限制：最多5条结果
+
+**工具二：generate_doc（文档生成）**
+- 接收标题和需求描述
+- 调用AI生成1000-2000字的结构化文档
+- 包含标题、小标题、数据和案例
+
+**工具三：send_platform_message（跨平台消息）**
+- 接收平台名和消息内容
+- 当前为预留接口，记录意图并返回状态
+- 未来接入实际平台API后自动生效
+
+#### 3.2.5 工具执行引擎与路由
+
+工具执行引擎通过注册表模式路由到具体实现：
+
+```python
+TOOLS = {
+    "web_search": web_search,
+    "generate_doc": generate_doc,
+    "send_platform_message": send_platform_message,
+}
+
+async def execute_tool(tool_call: dict) -> str:
+    tool_name = tool_call.get("tool", "")
+    tool_fn = TOOLS.get(tool_name)
+    if not tool_fn:
+        return f"未知工具: {tool_name}"
+    # 根据工具类型提取参数并调用
+    ...
+```
+
+新增工具只需：(1) 实现工具函数，(2) 注册到TOOLS字典，(3) 在TOOL_DEFINITIONS中添加描述。
+
+#### 3.2.6 优雅降级机制
+
+当工具执行失败时，系统进行多层降级：
+
+1. **AI决策阶段失败**：返回None，主调用方回退到普通对话回复
+2. **工具执行失败**：返回友好的错误提示（如"搜索暂时不可用"），AI基于此生成安慰性回复
+3. **结果融合阶段失败**：直接返回工具执行结果的原始文本
+
+```python
+try:
+    final_response = await ai_synthesize(tool_result)
+    return final_response
+except Exception:
+    return tool_result  # 降级：直接返回工具结果
+```
+
+整个链路中任何环节的失败都不会导致用户收不到回复。
+
+#### 3.2.7 叙事记忆融合
+
+工具使用流程中融合了叙事记忆上下文，使分身在使用工具时也能引用过往对话：
+
+```python
+if from_user_id:
+    memories = get_narrative_context(profile.user_id, from_user_id, limit=3)
+    if memories:
+        mem_text = "\n".join(f"- {m['summary']} ({m['tone']})" for m in memories)
+        system_prompt += f"\n\n[你和对方的过往记忆]\n{mem_text}"
+```
+
+### 3.3 有益效果
+
+（一）数字分身从"只会聊天"进化为"能做事"的智能体，可搜索信息、生成文档、与外部平台交互。
+
+（二）关键词前置检测避免所有消息进入工具流程，保持普通对话的低延迟。
+
+（三）工具定义以自然语言注入，不依赖特定AI厂商的函数调用接口，厂商无关。
+
+（四）两阶段响应生成保证工具结果与主人人格融合，最终回复自然且有信息深度。
+
+（五）多层优雅降级确保任何环节失败都不中断用户体验。
+
+（六）注册表模式使新增工具极其简便，系统可扩展性强。
+
+---
+
+## 四、权利要求书
+
+1. 一种数字分身工具使用方法，其特征在于：在社交对话中，系统首先通过关键词匹配检测消息是否为任务请求，仅对任务请求激活工具使用流程，将可用工具的名称、用途和调用格式以自然语言注入AI模型的系统提示词，由AI模型自主决定是否调用工具及选择哪个工具。
+
+2. 根据权利要求1所述的方法，其特征在于：采用两阶段响应生成流程，第一阶段AI在人格上下文和工具定义中生成响应并可能输出工具调用JSON，第二阶段系统执行工具调用并将结果反馈给AI生成融合工具结果与主人说话风格的最终回复。
+
+3. 根据权利要求2所述的方法，其特征在于：工具调用的解析支持两种JSON格式（代码块标记格式和内联JSON格式），增强对不同AI模型输出格式的兼容性。
+
+4. 根据权利要求1所述的方法，其特征在于：工具定义以自然语言描述注入AI提示词，不依赖任何AI厂商的函数调用专有接口，实现AI厂商无关的工具使用能力。
+
+5. 根据权利要求1所述的方法，其特征在于：系统内置三种工具（网络搜索、文档生成、跨平台消息），并通过注册表模式管理工具，新增工具只需实现函数、注册到字典、添加自然语言描述三个步骤。
+
+6. 根据权利要求1所述的方法，其特征在于：系统实现多层优雅降级机制，AI决策阶段失败时回退到普通对话，工具执行失败时AI基于错误提示生成安慰性回复，结果融合失败时直接返回工具结果原文，确保任何环节失败都不中断用户体验。
+
+7. 根据权利要求2所述的方法，其特征在于：两阶段响应生成过程中融合数字分身的叙事记忆上下文，使分身在使用工具时也能引用与当前对话者的过往交流记录。
+
+---
+
+## 五、在先技术对比
+
+| 在先技术 | 与本发明的区别 |
+|----------|---------------|
+| OpenAI Function Calling | 依赖厂商专有API，非自然语言注入，不涉及社交人格融合 |
+| LangChain Agent | 通用Agent框架，非社交分身场景，无关键词前置检测和人格保真 |
+| AutoGPT / BabyAGI | 自主任务执行，非嵌入社交对话的工具使用，缺乏优雅降级 |
+| Siri / Google Assistant | 语音助手工具调用，非社交代理，不保持用户人格风格 |
+| Microsoft Copilot | 办公场景工具使用，非社交分身的两阶段人格融合响应 |
+| 企业微信机器人 | 基于指令匹配调用API，非AI自主决策工具选择 |
+
+本发明的独创性：首次在数字分身社交场景中实现了关键词前置检测 → AI厂商无关的工具定义注入 → AI自主决策工具调用 → 两阶段人格融合响应 → 多层优雅降级的完整工具使用链路。
+
+---
+
+## 六、确权证据
+
+| 证据类型 | 内容 |
+|----------|------|
+| Git提交记录 | `6e45315` (2026-03-16) |
+| GitHub仓库 | github.com/Chengyue5211/DualSoul |
+| Gitee镜像 | gitee.com/chengyue5211/DualSoul |
+| 许可证 | AGPL-3.0-or-later |
+| 关键代码文件 | `dualsoul/twin_engine/agent_tools.py` — 工具定义、执行引擎、两阶段响应生成；`dualsoul/twin_engine/responder.py` — `_needs_agent_tools()` 任务检测 |
+
+---
+
+## 七、附件说明
+
+1. GitHub仓库完整提交历史
+2. 专利技术交底书（docs/PATENT_DISCLOSURE.md）
+3. 参考实现源代码（dualsoul/twin_engine/agent_tools.py, responder.py）
+4. 自动化测试（tests/）
+
+---
+
+发明人：Chengyue5211 | 日期：2026年03月16日
+
+*本文档仅用于专利申请准备。*
