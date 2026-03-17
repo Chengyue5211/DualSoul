@@ -246,13 +246,43 @@ def _get_agent_key_owner(api_key: str) -> dict | None:
 
 ---
 
-## 四、摘要
+## 四、附图说明
+
+附图1为跨平台互操作系统架构图，展示外部Agent平台通过 HTTPS 携带 API 密钥调用 DualSoul RESTful 接口，服务端经密钥验证、scope权限检查、速率限制三层拦截后，调用人格保真引擎生成回复并写入审计日志的完整系统组件关系。
+
+附图2为 API 密钥生命周期管理流程图，展示密钥创建（安全随机数生成→SHA-256哈希存储→明文一次性返回）、使用（哈希比对验证→scope检查→速率计数）、吊销（即时失效）的完整生命周期。
+
+附图3为跨平台对话人格保真引擎数据流图，展示外部消息进入后，依次注入性格画像、说话风格、叙事记忆上下文、跨语言翻译（如需）后生成回复，并附带 external_id 命名空间化处理的数据流向。
+
+（以上附图由专利代理人依据说明书内容绘制。）
+
+---
+
+## 五、具体实施方式
+
+### 实施例一：API 密钥创建与首次跨平台调用
+
+第三方平台"智联助手"为用户甲创建 API 密钥：调用 POST /api/agents/keys，指定 scopes=["twin:reply","twin:profile"]、expires_in=30天，服务端生成 32 字节安全随机字符串，SHA-256 哈希后存入 agent_api_keys 表，仅本次返回明文密钥 ds_live_xxxxxxxx（创建后不再可查询）。
+
+智联助手首次调用：POST /api/agents/reply，Header 携带 Authorization: Bearer ds_live_xxxxxxxx，Body 为 {"platform":"zhilian","sender_id":"Z001","message":"你最近在忙什么"}。服务端哈希比对通过，验证 scope 含 twin:reply，速率计数 0/100，调用甲的人格保真引擎生成回复"最近忙着搞新项目，挺有意思的，不方便多说哈哈"，写入 agent_message_log。
+
+### 实施例二：细粒度 scope 权限控制
+
+智联助手尝试调用 POST /api/agents/keys/revoke（required_scope="agent:admin"），但甲的密钥仅含 ["twin:reply","twin:profile"]，服务端端点级 scope 检查返回 403 Forbidden，密钥权限不被越界使用。
+
+### 实施例三：审计查询与速率限制
+
+甲查询 GET /api/agents/stats，服务端从 agent_message_log 聚合返回：total_interactions=47、success_rate=97.9%。当智联助手调用第 101 次时，服务端检测 rate_count=101 > 100，返回 429 Too Many Requests，Header 附加 Retry-After=3600，保护服务质量。
+
+---
+
+## 六、摘要
 
 本发明公开了一种基于API密钥认证的数字分身跨平台Agent互操作系统。该系统通过加密安全随机数生成API密钥（每用户最多5个，带过期时间），外部Agent平台使用密钥调用RESTful接口与数字分身对话，回复经人格保真引擎处理，包含完整性格、说话风格和叙事记忆；API密钥携带作用域标识（reply/profile/stats/admin），在端点级强制检查权限实现细粒度授权；外部发送者身份以"external:{platform}:{sender_id}"命名空间化处理；所有交互自动记录审计日志（来源平台、外部用户ID、成功状态）；内置速率限制（每密钥100次/小时）防止滥用。本发明解决数字分身平台锁定问题，适用于多平台AI代理互操作、开放分身平台场景。
 
 ---
 
-## 五、权利要求书
+## 七、权利要求书
 
 1. 一种数字分身跨平台Agent互操作方法，其特征在于：系统通过加密安全随机数生成API密钥（每用户最多5个，带过期时间），外部Agent平台使用该密钥通过RESTful API与用户的数字分身进行对话，分身回复经过与本平台完全相同的人格保真引擎，包含完整的性格、说话风格、叙事记忆和情感感知。
 
@@ -272,7 +302,7 @@ def _get_agent_key_owner(api_key: str) -> dict | None:
 
 ---
 
-## 六、在先技术对比
+## 八、在先技术对比
 
 | 在先技术 | 与本发明的区别 |
 |----------|---------------|
@@ -287,7 +317,7 @@ def _get_agent_key_owner(api_key: str) -> dict | None:
 
 ---
 
-## 七、确权证据
+## 九、确权证据
 
 | 证据类型 | 内容 |
 |----------|------|
@@ -299,7 +329,7 @@ def _get_agent_key_owner(api_key: str) -> dict | None:
 
 ---
 
-## 八、附件说明
+## 十、附件说明
 
 1. GitHub仓库完整提交历史
 2. 专利技术交底书（docs/PATENT_DISCLOSURE.md）
