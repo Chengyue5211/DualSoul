@@ -1,5 +1,5 @@
 // DualSoul Service Worker — offline shell + cache
-const CACHE_NAME = 'dualsoul-v87nianlun';
+const CACHE_NAME = 'dualsoul-v87nianlun2';
 const SHELL_URLS = ['/', '/static/manifest.json'];
 
 // Install: cache the app shell
