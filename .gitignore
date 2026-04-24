@@ -28,3 +28,5 @@ Thumbs.db
 .pytest_cache/
 htmlcov/
 .coverage
+
+.claude_last_prompt.tmp
